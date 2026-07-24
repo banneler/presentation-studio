@@ -59,8 +59,8 @@
     },
     "layer2": {
       "id": "layer2",
-      "title": "Layer 2 Core",
-      "subtitle": "High-Availability Redundant Architecture",
+      "title": "Core Transport",
+      "subtitle": "High-Capacity Redundant Architecture",
       "placeholder": "Load Layer_2_Rings.svg",
       "file": "layer_2.png",
       "type": "map",
