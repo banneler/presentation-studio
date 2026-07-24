@@ -1,4 +1,7 @@
 {
+  "settings": {
+    "heroColor": "#991a38"
+  },
   "navOrder": [
     "agenda",
     "core-capabilities",

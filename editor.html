@@ -11,17 +11,18 @@
                 extend: {
                     colors: {
                         ink: '#07162d',
-                        maroon: '#991a38'
+                        maroon: 'rgb(var(--hero-color-rgb) / <alpha-value>)'
                     }
                 }
             }
         };
     </script>
     <style>
+        :root { --hero-color: #991a38; --hero-color-rgb: 153 26 56; }
         body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
         .field-label { display: block; margin-bottom: 0.35rem; font-size: 0.68rem; font-weight: 900; letter-spacing: 0.16em; text-transform: uppercase; color: rgb(100 116 139); }
         .field-input { width: 100%; border-radius: 0.75rem; border: 1px solid rgb(203 213 225); background: white; padding: 0.7rem 0.85rem; font-size: 0.9rem; color: rgb(15 23 42); outline: none; }
-        .field-input:focus { border-color: #991a38; box-shadow: 0 0 0 3px rgba(153, 26, 56, 0.12); }
+        .field-input:focus { border-color: var(--hero-color); box-shadow: 0 0 0 3px rgba(var(--hero-color-rgb), 0.12); }
         .nav-row.dragging { opacity: 0.45; }
     </style>
 </head>
@@ -63,6 +64,8 @@
                 <button id="make-link" class="rounded-xl bg-maroon px-4 py-2 text-sm font-black text-white hover:bg-maroon/90">Create Share Link</button>
                 <button id="reset-draft" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-600 hover:bg-slate-50">Reset</button>
                 <div class="ml-auto flex items-center gap-2">
+                    <label class="field-label mb-0">Hero Color</label>
+                    <input id="hero-color" type="color" class="h-10 w-12 rounded-lg border border-slate-300 bg-white p-1" value="#991a38">
                     <label class="field-label mb-0">Default Mode</label>
                     <select id="default-mode" class="field-input w-36 py-2">
                         <option value="key">Key Concepts</option>
@@ -81,7 +84,7 @@
             </div>
 
             <div class="flex-1 min-h-0 p-4">
-                <iframe id="preview" title="Presentation preview" class="w-full h-full rounded-2xl border border-slate-300 bg-white shadow-xl" src="index.html"></iframe>
+                <iframe id="preview" title="Presentation preview" class="w-full h-full rounded-2xl border border-slate-300 bg-slate-50 shadow-xl" src="index.html?preview=1"></iframe>
             </div>
         </main>
     </div>
@@ -101,6 +104,7 @@
         const preview = document.getElementById('preview');
         const studioShell = document.getElementById('studio-shell');
         const splitter = document.getElementById('splitter');
+        const heroColorInput = document.getElementById('hero-color');
 
         function clone(value) {
             return JSON.parse(JSON.stringify(value));
@@ -112,6 +116,35 @@
             let binary = '';
             bytes.forEach(byte => binary += String.fromCharCode(byte));
             return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+        }
+
+        function hexToRgbParts(color) {
+            const normalized = String(color || '').trim();
+            const match = normalized.match(/^#?([a-f\d]{3}|[a-f\d]{6})$/i);
+            if (!match) return [153, 26, 56];
+            let hex = match[1];
+            if (hex.length === 3) {
+                hex = hex.split('').map(char => char + char).join('');
+            }
+            return [
+                parseInt(hex.slice(0, 2), 16),
+                parseInt(hex.slice(2, 4), 16),
+                parseInt(hex.slice(4, 6), 16)
+            ];
+        }
+
+        function normalizeHeroColor(color) {
+            const fallback = '#991a38';
+            const isHex = /^#?[a-f\d]{3}([a-f\d]{3})?$/i.test(String(color || ''));
+            const normalized = isHex ? String(color) : fallback;
+            return normalized.startsWith('#') ? normalized : `#${normalized}`;
+        }
+
+        function applyHeroColor(color) {
+            const normalized = normalizeHeroColor(color);
+            document.documentElement.style.setProperty('--hero-color', normalized);
+            document.documentElement.style.setProperty('--hero-color-rgb', hexToRgbParts(normalized).join(' '));
+            heroColorInput.value = normalized;
         }
 
         function readFileAsDataUrl(file) {
@@ -162,6 +195,8 @@
             draft = saved ? JSON.parse(saved) : clone(baseData);
             draft.settings = draft.settings || {};
             draft.settings.defaultVersionMode = draft.settings.defaultVersionMode || 'key';
+            draft.settings.heroColor = normalizeHeroColor(draft.settings.heroColor);
+            applyHeroColor(draft.settings.heroColor);
             pageOrder = draft.settings.editorPageOrder || buildDefaultPageOrder();
             selectedPageId = pageOrder[0];
             document.getElementById('default-mode').value = draft.settings.defaultVersionMode;
@@ -503,7 +538,7 @@
 
         function refreshPreview() {
             saveLocal(false);
-            preview.src = `index.html?draft=local&t=${Date.now()}`;
+            preview.src = `index.html?draft=local&preview=1&t=${Date.now()}`;
         }
 
         function makeShareLink() {
@@ -546,6 +581,11 @@
             if (!confirm('Reset the editor draft to content.json?')) return;
             localStorage.removeItem(STORAGE_KEY);
             draft = clone(baseData);
+            draft.settings = draft.settings || {};
+            draft.settings.defaultVersionMode = draft.settings.defaultVersionMode || 'key';
+            draft.settings.heroColor = normalizeHeroColor(draft.settings.heroColor);
+            applyHeroColor(draft.settings.heroColor);
+            document.getElementById('default-mode').value = draft.settings.defaultVersionMode;
             pageOrder = buildDefaultPageOrder();
             selectedPageId = pageOrder[0];
             render();
@@ -553,6 +593,11 @@
         });
         document.getElementById('default-mode').addEventListener('change', event => {
             draft.settings.defaultVersionMode = event.target.value;
+        });
+        heroColorInput.addEventListener('input', event => {
+            draft.settings = draft.settings || {};
+            draft.settings.heroColor = event.target.value;
+            applyHeroColor(event.target.value);
         });
 
         setupResizableSplit();

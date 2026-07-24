@@ -12,7 +12,7 @@
                 extend: {
                     colors: {
                         gpc: {
-                            navy: '#0A192F', blue: '#1E40AF', green: '#65A30D', orange: '#991a38', light: '#F8FAFC', border: '#E2E8F0'
+                            navy: '#0A192F', blue: '#1E40AF', green: '#65A30D', orange: 'rgb(var(--hero-color-rgb) / <alpha-value>)', light: '#F8FAFC', border: '#E2E8F0'
                         }
                     },
                     fontFamily: { 
@@ -24,9 +24,11 @@
         }
     </script>
     <style>
+        :root { --hero-color: #991a38; --hero-color-rgb: 153 26 56; }
+        body.studio-preview { background-color: #f8fafc !important; }
         .fade-in { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .nav-item-active { background-color: rgba(255, 255, 255, 0.1); border-left-color: #991a38 !important; }
+        .nav-item-active { background-color: rgba(255, 255, 255, 0.1); border-left-color: var(--hero-color) !important; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #1E40AF; border-radius: 10px; }
@@ -56,7 +58,7 @@
             position: absolute;
             inset: 0;
             border-radius: 1.5rem;
-            background: linear-gradient(135deg, rgba(234, 88, 12, 0.0), rgba(234, 88, 12, 0.28));
+            background: linear-gradient(135deg, rgba(var(--hero-color-rgb), 0.0), rgba(var(--hero-color-rgb), 0.28));
             opacity: 0;
             transition: opacity 0.25s ease;
             pointer-events: none;
@@ -82,8 +84,8 @@
         .capability-body {
             position: relative;
             background-image:
-                repeating-linear-gradient(45deg, rgba(153, 26, 56, 0.035) 0 1px, transparent 1px 16px),
-                repeating-linear-gradient(-45deg, rgba(153, 26, 56, 0.025) 0 1px, transparent 1px 20px);
+                repeating-linear-gradient(45deg, rgba(var(--hero-color-rgb), 0.035) 0 1px, transparent 1px 16px),
+                repeating-linear-gradient(-45deg, rgba(var(--hero-color-rgb), 0.025) 0 1px, transparent 1px 20px);
         }
         .capability-body > * {
             position: relative;
@@ -133,7 +135,7 @@
         <div class="bg-white rounded-2xl shadow-floating w-[800px] p-8">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold text-slate-800">Configure Client Greeting</h2>
-                <button onclick="closeAdmin()" class="text-slate-400 hover:text-[#991a38] font-bold text-xl">✕</button>
+                <button onclick="closeAdmin()" class="text-slate-400 hover:text-gpc-orange font-bold text-xl">✕</button>
             </div>
             <input type="text" id="client-name-input" class="w-full text-4xl font-bold text-center text-gpc-blue border-b-2 border-slate-200 focus:border-gpc-orange outline-none bg-transparent mb-8 pb-2" placeholder="Enter Client Name..." readonly>
             <div class="flex flex-col gap-2 bg-slate-100 p-4 rounded-xl">
@@ -144,7 +146,7 @@
             </div>
             <div class="flex justify-end gap-4 mt-8 border-t border-slate-100 pt-6">
                 <button onclick="clearClient()" class="px-6 py-3 rounded-lg font-bold text-slate-500 hover:bg-slate-100 transition-colors">Clear Saved Data</button>
-                <button onclick="saveClient()" class="px-8 py-3 rounded-lg font-bold text-white bg-gpc-orange hover:bg-[#991a38] transition-colors shadow-lg">Save & Initialize</button>
+                <button onclick="saveClient()" class="px-8 py-3 rounded-lg font-bold text-white bg-gpc-orange hover:bg-gpc-orange/90 transition-colors shadow-lg">Save & Initialize</button>
             </div>
         </div>
     </div>
@@ -236,11 +238,37 @@
         const AGENDA_REVEAL_DELAY_MS = 3000;
         const AGENDA_REVEAL_ANIMATION_MS = 950;
         const KEY_CONCEPTS_NAV = ['agenda', 'core-capabilities', 'national', 'layer2', 'ip-network', 'key-routes', 'why-gpc'];
+        if (new URLSearchParams(window.location.search).get('preview') === '1') {
+            document.body.classList.add('studio-preview');
+        }
         function getFilteredNavOrder() {
             const visibleNav = navOrder.filter(id => mapData[id] && mapData[id].hidden !== true);
             if (versionMode === 'extended') return visibleNav;
             const keyNav = presentationSettings.keyConceptsNav || KEY_CONCEPTS_NAV;
             return keyNav.filter(id => visibleNav.includes(id));
+        }
+
+        function hexToRgbParts(color) {
+            const normalized = String(color || '').trim();
+            const match = normalized.match(/^#?([a-f\d]{3}|[a-f\d]{6})$/i);
+            if (!match) return [153, 26, 56];
+            let hex = match[1];
+            if (hex.length === 3) {
+                hex = hex.split('').map(char => char + char).join('');
+            }
+            return [
+                parseInt(hex.slice(0, 2), 16),
+                parseInt(hex.slice(2, 4), 16),
+                parseInt(hex.slice(4, 6), 16)
+            ];
+        }
+
+        function applyHeroColor(color) {
+            const fallback = '#991a38';
+            const heroColor = /^#?[a-f\d]{3}([a-f\d]{3})?$/i.test(String(color || '')) ? color : fallback;
+            const normalized = heroColor.startsWith('#') ? heroColor : `#${heroColor}`;
+            document.documentElement.style.setProperty('--hero-color', normalized);
+            document.documentElement.style.setProperty('--hero-color-rgb', hexToRgbParts(normalized).join(' '));
         }
 
         // --- SCALE TO FIT LOGIC ---
@@ -300,6 +328,7 @@
                 navOrder = data.navOrder;
                 pageContent = data.pageContent;
                 presentationSettings = data.settings || {};
+                applyHeroColor(presentationSettings.heroColor);
                 if (presentationSettings.defaultVersionMode) {
                     versionMode = presentationSettings.defaultVersionMode;
                 }
@@ -536,12 +565,12 @@
                         <div class="agenda-content absolute inset-x-0 top-0 bottom-[410px] z-0 flex items-center">
                             <div class="w-full rounded-3xl border border-white/60 bg-white/80 backdrop-blur-sm shadow-2xl p-10">
                                 <div class="mb-7 flex items-center gap-4">
-                                    <span class="h-px w-16 bg-[#991a38]"></span>
-                                    <p class="text-[#991a38] text-xs font-black uppercase tracking-[0.35em]">Meeting Agenda</p>
+                                    <span class="h-px w-16 bg-gpc-orange"></span>
+                                    <p class="text-gpc-orange text-xs font-black uppercase tracking-[0.35em]">Meeting Agenda</p>
                                 </div>
                                 <div class="grid grid-cols-[0.72fr_1.28fr] gap-10 items-start">
                                     <h3 class="text-[2.85rem] font-black text-slate-950 leading-[1.02] tracking-tight">${content.headline || 'A focused conversation around priorities, fit and next steps.'}</h3>
-                                    <ol class="list-decimal list-outside pl-8 space-y-5 text-slate-700 text-[1.45rem] leading-snug font-semibold marker:text-[#991a38] marker:font-black [&_li]:pl-2">
+                                    <ol class="list-decimal list-outside pl-8 space-y-5 text-slate-700 text-[1.45rem] leading-snug font-semibold marker:text-gpc-orange marker:font-black [&_li]:pl-2">
                                         ${(content.items || []).map(item => `<li>${item}</li>`).join('')}
                                     </ol>
                                 </div>
@@ -558,8 +587,8 @@
                         <img src="${ASSET_BASE + content.background}" alt="Rightfiber network map" class="absolute inset-0 w-full h-full object-contain">
                         <div class="absolute left-12 top-12 w-[560px] rounded-3xl border border-white/60 bg-white/85 p-9 pt-10 shadow-2xl backdrop-blur-sm flex flex-col">
                             <div class="flex items-center gap-4 mb-6">
-                                <div class="h-px w-14 bg-[#991a38]"></div>
-                                <span class="text-[#991a38] text-xs font-black uppercase tracking-[0.35em]">${content.kicker}</span>
+                                <div class="h-px w-14 bg-gpc-orange"></div>
+                                <span class="text-gpc-orange text-xs font-black uppercase tracking-[0.35em]">${content.kicker}</span>
                             </div>
                             <h3 class="text-[2.75rem] font-black text-slate-950 leading-[0.98] tracking-tight mb-7">${content.headline}</h3>
                             <ul class="list-disc list-outside pl-6 space-y-4 text-lg text-slate-700 leading-snug font-semibold [&_li]:pl-2">
@@ -584,16 +613,16 @@
                                         <div class="capability-face capability-front absolute inset-0 overflow-hidden rounded-3xl bg-slate-200">
                                             <img src="${ASSET_BASE + image}" alt="${card.title || `Capability ${index + 1}`}" class="absolute inset-0 w-full h-full object-cover">
                                         </div>
-                                        <div class="capability-face capability-back absolute inset-0 overflow-hidden rounded-3xl bg-white text-[#991a38] flex flex-col">
-                                            <div class="bg-[#991a38] h-32 px-8 flex items-center justify-center border-b-4 border-black">
+                                        <div class="capability-face capability-back absolute inset-0 overflow-hidden rounded-3xl bg-white text-gpc-orange flex flex-col">
+                                            <div class="bg-gpc-orange h-32 px-8 flex items-center justify-center border-b-4 border-black">
                                                 <h3 class="text-white text-2xl font-black uppercase tracking-widest leading-tight text-center">${card.title || ''}</h3>
                                             </div>
                                             <div class="capability-body flex-1 px-8 pb-8 pt-12">
                                             ${Array.isArray(card.points) ? `
-                                                <ul class="list-disc list-outside pl-6 space-y-8 text-xl leading-snug font-bold text-[#991a38] [&_li]:pl-1">
+                                                <ul class="list-disc list-outside pl-6 space-y-8 text-xl leading-snug font-bold text-gpc-orange [&_li]:pl-1">
                                                     ${card.points.map(point => `<li>${point}</li>`).join('')}
                                                 </ul>
-                                            ` : `<p class="text-2xl leading-snug font-bold text-[#991a38]">${card.desc || ''}</p>`}
+                                            ` : `<p class="text-2xl leading-snug font-bold text-gpc-orange">${card.desc || ''}</p>`}
                                             </div>
                                         </div>
                                     </div>
@@ -640,14 +669,14 @@
                 const content = pageContent['why-gpc'];
                 html += `
                     <div class="relative w-full h-full fade-in overflow-hidden rounded-2xl border border-slate-200/90 bg-slate-50 text-slate-900 shadow-sm">
-                        <div class="absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(153,26,56,0.10),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.86),rgba(248,250,252,0.94))]"></div>
-                        <div class="absolute inset-x-8 top-6 h-px bg-gradient-to-r from-transparent via-[#991a38]/30 to-transparent"></div>
+                        <div class="absolute inset-0" style="background: radial-gradient(circle at 12% 18%, rgba(var(--hero-color-rgb), 0.10), transparent 28%), linear-gradient(135deg, rgba(255,255,255,0.86), rgba(248,250,252,0.94));"></div>
+                        <div class="absolute inset-x-8 top-6 h-px bg-gradient-to-r from-transparent via-gpc-orange/30 to-transparent"></div>
                         <div class="relative h-full grid grid-cols-12 gap-8 p-10">
                             <div class="col-span-5 flex flex-col justify-between pr-6">
                                 <div>
                                     <div class="mb-8 flex items-center gap-4">
-                                        <span class="h-px w-16 bg-[#991a38]"></span>
-                                        <p class="text-[#991a38] text-sm font-black uppercase tracking-[0.35em]">The GPC Advantage</p>
+                                        <span class="h-px w-16 bg-gpc-orange"></span>
+                                        <p class="text-gpc-orange text-sm font-black uppercase tracking-[0.35em]">The GPC Advantage</p>
                                     </div>
                                     <h3 class="text-[3.4rem] font-black leading-[1.05] tracking-tight text-gpc-navy mb-8">A communications partner built for critical operations.</h3>
                                     <p class="text-2xl text-slate-600 leading-relaxed font-normal">
@@ -660,7 +689,7 @@
                                         <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Years</span>
                                     </div>
                                     <div>
-                                        <span class="block text-3xl font-black text-[#991a38]">24/7</span>
+                                        <span class="block text-3xl font-black text-gpc-orange">24/7</span>
                                         <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Monitoring</span>
                                     </div>
                                     <div>
@@ -675,8 +704,8 @@
                 content.pillars.forEach(p => {
                     html += `
                                 <div class="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white/90 p-9 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
-                                    <div class="absolute inset-y-9 left-0 w-1 bg-[#991a38]"></div>
-                                    <svg class="absolute -right-6 -top-8 w-48 h-48 text-[#991a38]/[0.06]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" d="${p.icon}"></path></svg>
+                                    <div class="absolute inset-y-9 left-0 w-1 bg-gpc-orange"></div>
+                                    <svg class="absolute -right-6 -top-8 w-48 h-48 text-gpc-orange/[0.06]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" d="${p.icon}"></path></svg>
                                     <div class="relative z-10 flex h-full flex-col justify-end">
                                         <h3 class="text-3xl font-black text-gpc-navy leading-tight mb-5">${p.title}</h3>
                                         <p class="text-xl text-slate-600 leading-relaxed font-normal">${p.desc}</p>
