@@ -81,7 +81,7 @@
             </div>
 
             <div class="flex-1 min-h-0 p-4">
-                <iframe id="preview" title="Presentation preview" class="w-full h-full rounded-2xl border border-slate-300 bg-slate-50 shadow-xl" src="index.html?preview=1"></iframe>
+                <iframe id="preview" title="Presentation preview" class="w-full h-full rounded-2xl border border-slate-300 bg-slate-50 shadow-xl" src="index.html?draft=local&preview=1"></iframe>
             </div>
         </main>
     </div>
@@ -207,7 +207,7 @@
             pageOrder = draft.settings.editorPageOrder || buildDefaultPageOrder();
             selectedPageId = pageOrder[0];
             render();
-            saveLocal(false);
+            refreshPreview();
         }
 
         function buildDefaultPageOrder() {
@@ -283,6 +283,7 @@
                     }
                     draft.settings[settingKey] = pageOrder.filter(id => current.has(id));
                     render();
+                    refreshPreview();
                 });
             });
 
@@ -304,6 +305,7 @@
                     nextOrder.splice(nextOrder.indexOf(targetId), 0, draggedPageId);
                     pageOrder = nextOrder;
                     render();
+                    refreshPreview();
                 });
             });
         }
