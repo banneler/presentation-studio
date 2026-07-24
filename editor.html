@@ -88,6 +88,7 @@
 
     <script>
         const STORAGE_KEY = 'presentation-studio-draft';
+        const PREVIEW_STORAGE_KEY = 'presentation-studio-preview-draft';
         const EDITOR_WIDTH_KEY = 'presentation-studio-editor-width';
         const DEFAULT_KEY_CONCEPTS_NAV = ['agenda', 'core-capabilities', 'national', 'layer2', 'ip-network', 'key-routes', 'why-gpc'];
         let baseData = null;
@@ -565,7 +566,8 @@
 
         function refreshPreview() {
             saveLocal(false);
-            preview.src = `index.html?draft=local&preview=1&t=${Date.now()}`;
+            sessionStorage.setItem(PREVIEW_STORAGE_KEY, JSON.stringify(draft));
+            preview.src = `index.html?preview=1&previewDraft=session&t=${Date.now()}`;
         }
 
         function makeShareLink() {

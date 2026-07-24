@@ -224,6 +224,7 @@
         // Image paths: '' = same folder as index.html
         const ASSET_BASE = '';
         const PRESENTATION_STORAGE_KEY = 'presentation-studio-draft';
+        const PRESENTATION_PREVIEW_KEY = 'presentation-studio-preview-draft';
 
         // --- GLOBAL STATE ---
         let mapData = {};
@@ -311,6 +312,10 @@
             const params = new URLSearchParams(window.location.search);
             const encodedConfig = params.get('config');
             if (encodedConfig) return decodePresentationPayload(encodedConfig);
+            if (params.get('previewDraft') === 'session') {
+                const previewDraft = sessionStorage.getItem(PRESENTATION_PREVIEW_KEY);
+                if (previewDraft) return JSON.parse(previewDraft);
+            }
             if (params.get('draft') === 'local') {
                 const savedDraft = localStorage.getItem(PRESENTATION_STORAGE_KEY);
                 if (savedDraft) return JSON.parse(savedDraft);
