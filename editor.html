@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presentation Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: '#07162d',
+                        maroon: '#991a38'
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        .field-label { display: block; margin-bottom: 0.35rem; font-size: 0.68rem; font-weight: 900; letter-spacing: 0.16em; text-transform: uppercase; color: rgb(100 116 139); }
+        .field-input { width: 100%; border-radius: 0.75rem; border: 1px solid rgb(203 213 225); background: white; padding: 0.7rem 0.85rem; font-size: 0.9rem; color: rgb(15 23 42); outline: none; }
+        .field-input:focus { border-color: #991a38; box-shadow: 0 0 0 3px rgba(153, 26, 56, 0.12); }
+        .nav-row.dragging { opacity: 0.45; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900">
+    <div class="h-screen grid grid-cols-[440px_1fr] overflow-hidden">
+        <aside class="bg-ink text-white overflow-y-auto border-r border-slate-900">
+            <div class="sticky top-0 z-10 bg-ink/95 backdrop-blur border-b border-white/10 p-6">
+                <p class="text-maroon text-xs font-black uppercase tracking-[0.35em] mb-2">Presentation Studio</p>
+                <h1 class="text-3xl font-black tracking-tight">Template Editor</h1>
+                <p class="text-slate-300 text-sm mt-2 leading-relaxed">Customize content, logos, page visibility, nav order, and image references without touching the template code.</p>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <section class="rounded-2xl bg-white/5 border border-white/10 p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-sm font-black uppercase tracking-widest text-slate-200">Pages</h2>
+                        <span class="text-[10px] uppercase tracking-widest text-slate-400">Drag to reorder</span>
+                    </div>
+                    <div id="page-list" class="space-y-2"></div>
+                </section>
+
+                <section class="rounded-2xl bg-white text-slate-900 p-5 shadow-xl">
+                    <div class="mb-5">
+                        <p class="text-maroon text-xs font-black uppercase tracking-[0.28em] mb-2">Selected Page</p>
+                        <h2 id="selected-heading" class="text-2xl font-black">Loading...</h2>
+                    </div>
+
+                    <div id="editor-fields" class="space-y-4"></div>
+                </section>
+            </div>
+        </aside>
+
+        <main class="flex flex-col min-w-0">
+            <div class="bg-white border-b border-slate-200 p-4 flex items-center gap-3">
+                <button id="save-local" class="rounded-xl bg-ink px-4 py-2 text-sm font-black text-white hover:bg-slate-800">Save Draft</button>
+                <button id="refresh-preview" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-800 hover:bg-slate-50">Refresh Preview</button>
+                <button id="make-link" class="rounded-xl bg-maroon px-4 py-2 text-sm font-black text-white hover:bg-maroon/90">Create Share Link</button>
+                <button id="reset-draft" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-600 hover:bg-slate-50">Reset</button>
+                <div class="ml-auto flex items-center gap-2">
+                    <label class="field-label mb-0">Default Mode</label>
+                    <select id="default-mode" class="field-input w-36 py-2">
+                        <option value="key">Key Concepts</option>
+                        <option value="extended">Extended</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="share-panel" class="hidden border-b border-slate-200 bg-white p-4">
+                <label class="field-label">Shareable Presentation Link</label>
+                <div class="flex gap-3">
+                    <input id="share-url" class="field-input font-mono text-xs" readonly>
+                    <button id="copy-link" class="rounded-xl bg-ink px-4 py-2 text-sm font-black text-white">Copy</button>
+                </div>
+                <p id="share-note" class="mt-2 text-xs text-slate-500">This link stores the edited configuration in the URL. Large uploaded images will create large URLs.</p>
+            </div>
+
+            <div class="flex-1 min-h-0 p-4">
+                <iframe id="preview" title="Presentation preview" class="w-full h-full rounded-2xl border border-slate-300 bg-white shadow-xl" src="index.html"></iframe>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'presentation-studio-draft';
+        let baseData = null;
+        let draft = null;
+        let selectedPageId = null;
+        let pageOrder = [];
+        let draggedPageId = null;
+
+        const pageList = document.getElementById('page-list');
+        const editorFields = document.getElementById('editor-fields');
+        const selectedHeading = document.getElementById('selected-heading');
+        const preview = document.getElementById('preview');
+
+        function clone(value) {
+            return JSON.parse(JSON.stringify(value));
+        }
+
+        function encodeConfig(value) {
+            const json = JSON.stringify(value);
+            const bytes = new TextEncoder().encode(json);
+            let binary = '';
+            bytes.forEach(byte => binary += String.fromCharCode(byte));
+            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+        }
+
+        function readFileAsDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function init() {
+            const response = await fetch('content.json');
+            baseData = await response.json();
+            const saved = localStorage.getItem(STORAGE_KEY);
+            draft = saved ? JSON.parse(saved) : clone(baseData);
+            draft.settings = draft.settings || {};
+            draft.settings.defaultVersionMode = draft.settings.defaultVersionMode || 'key';
+            pageOrder = draft.settings.editorPageOrder || buildDefaultPageOrder();
+            selectedPageId = pageOrder[0];
+            document.getElementById('default-mode').value = draft.settings.defaultVersionMode;
+            render();
+            saveLocal(false);
+        }
+
+        function buildDefaultPageOrder() {
+            const ids = new Set([...(draft.navOrder || []), ...Object.keys(draft.mapData || {})]);
+            return Array.from(ids);
+        }
+
+        function syncVisibleNavFromOrder() {
+            const visible = new Set(draft.navOrder || []);
+            draft.navOrder = pageOrder.filter(id => visible.has(id));
+            draft.settings = draft.settings || {};
+            draft.settings.editorPageOrder = pageOrder;
+            draft.settings.keyConceptsNav = draft.navOrder.slice();
+        }
+
+        function render() {
+            syncVisibleNavFromOrder();
+            renderPageList();
+            renderEditorFields();
+        }
+
+        function renderPageList() {
+            const visible = new Set(draft.navOrder || []);
+            pageList.innerHTML = pageOrder.map((id, index) => {
+                const page = draft.mapData[id];
+                if (!page) return '';
+                const isSelected = id === selectedPageId;
+                return `
+                    <div draggable="true" data-page-id="${id}" class="nav-row rounded-xl border ${isSelected ? 'border-maroon bg-maroon/15' : 'border-white/10 bg-white/5'} p-3 cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs text-slate-500 font-black w-5">${index + 1}</span>
+                            <input data-visible-id="${id}" type="checkbox" ${visible.has(id) ? 'checked' : ''} class="h-4 w-4 accent-maroon">
+                            <div class="min-w-0 flex-1" data-select-id="${id}">
+                                <p class="truncate text-sm font-black text-white">${page.navLabel || page.title || id}</p>
+                                <p class="truncate text-[11px] text-slate-400">${id}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            pageList.querySelectorAll('[data-select-id]').forEach(item => {
+                item.addEventListener('click', () => {
+                    selectedPageId = item.dataset.selectId;
+                    render();
+                });
+            });
+
+            pageList.querySelectorAll('[data-visible-id]').forEach(input => {
+                input.addEventListener('change', () => {
+                    if (input.checked) {
+                        if (!draft.navOrder.includes(input.dataset.visibleId)) draft.navOrder.push(input.dataset.visibleId);
+                    } else {
+                        draft.navOrder = draft.navOrder.filter(id => id !== input.dataset.visibleId);
+                    }
+                    render();
+                });
+            });
+
+            pageList.querySelectorAll('.nav-row').forEach(row => {
+                row.addEventListener('dragstart', () => {
+                    draggedPageId = row.dataset.pageId;
+                    row.classList.add('dragging');
+                });
+                row.addEventListener('dragend', () => {
+                    draggedPageId = null;
+                    row.classList.remove('dragging');
+                });
+                row.addEventListener('dragover', event => event.preventDefault());
+                row.addEventListener('drop', event => {
+                    event.preventDefault();
+                    const targetId = row.dataset.pageId;
+                    if (!draggedPageId || draggedPageId === targetId) return;
+                    const nextOrder = pageOrder.filter(id => id !== draggedPageId);
+                    nextOrder.splice(nextOrder.indexOf(targetId), 0, draggedPageId);
+                    pageOrder = nextOrder;
+                    render();
+                });
+            });
+        }
+
+        function input(label, value, onChange, type = 'text') {
+            const id = `field-${Math.random().toString(36).slice(2)}`;
+            setTimeout(() => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', event => onChange(event.target.value));
+            });
+            return `
+                <label>
+                    <span class="field-label">${label}</span>
+                    <input id="${id}" type="${type}" class="field-input" value="${escapeAttr(value || '')}">
+                </label>
+            `;
+        }
+
+        function textarea(label, value, onChange, rows = 4) {
+            const id = `field-${Math.random().toString(36).slice(2)}`;
+            setTimeout(() => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', event => onChange(event.target.value));
+            });
+            return `
+                <label>
+                    <span class="field-label">${label}</span>
+                    <textarea id="${id}" rows="${rows}" class="field-input resize-y">${escapeHtml(value || '')}</textarea>
+                </label>
+            `;
+        }
+
+        function imageField(label, value, onChange) {
+            const textId = `field-${Math.random().toString(36).slice(2)}`;
+            const fileId = `field-${Math.random().toString(36).slice(2)}`;
+            setTimeout(() => {
+                const text = document.getElementById(textId);
+                const file = document.getElementById(fileId);
+                if (text) text.addEventListener('input', event => onChange(event.target.value));
+                if (file) {
+                    file.addEventListener('change', async event => {
+                        const selected = event.target.files && event.target.files[0];
+                        if (!selected) return;
+                        const dataUrl = await readFileAsDataUrl(selected);
+                        onChange(dataUrl);
+                        renderEditorFields();
+                    });
+                }
+            });
+            return `
+                <div>
+                    <span class="field-label">${label}</span>
+                    <input id="${textId}" type="text" class="field-input mb-2" value="${escapeAttr(value || '')}" placeholder="asset.png or https://...">
+                    <input id="${fileId}" type="file" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-bold file:text-slate-700">
+                </div>
+            `;
+        }
+
+        function renderEditorFields() {
+            const page = draft.mapData[selectedPageId];
+            const content = draft.pageContent[selectedPageId];
+            if (!page) return;
+
+            selectedHeading.textContent = page.navLabel || page.title || selectedPageId;
+
+            let html = `
+                ${input('Title', page.title, value => page.title = value)}
+                ${input('Nav Label', page.navLabel || '', value => page.navLabel = value)}
+                ${input('Subtitle', page.subtitle || '', value => page.subtitle = value)}
+                ${imageField('Customer / Page Logo', page.logo || '', value => page.logo = value)}
+            `;
+
+            if (page.type === 'map') {
+                html += imageField('Static Map Image', page.file || '', value => page.file = value);
+                html += textarea('Insight Copy', page.insight || '', value => page.insight = value, 5);
+            }
+
+            if (selectedPageId === 'agenda' && content) {
+                html += `<hr class="border-slate-200 my-5">`;
+                html += textarea('Agenda Headline', content.headline || '', value => content.headline = value, 2);
+                html += editStringArray('Agenda Items', content.items || [], value => content.items = value);
+                html += editStringArray('Agenda Hero Images', content.heroImages || [], value => content.heroImages = value, true);
+            }
+
+            if (selectedPageId === 'core-capabilities' && content) {
+                html += `<hr class="border-slate-200 my-5">`;
+                html += editStringArray('Capability Hero Images', content.heroImages || [], value => content.heroImages = value, true);
+                html += editCapabilityCards(content.cards || [], value => content.cards = value);
+            }
+
+            if (selectedPageId === 'rightfiber' && content) {
+                html += `<hr class="border-slate-200 my-5">`;
+                html += imageField('Rightfiber Background', content.background || '', value => content.background = value);
+                html += input('Kicker', content.kicker || '', value => content.kicker = value);
+                html += textarea('Headline', content.headline || '', value => content.headline = value, 2);
+                html += editStringArray('Talking Points', content.points || [], value => content.points = value);
+            }
+
+            if (selectedPageId === 'why-gpc' && content) {
+                html += `<hr class="border-slate-200 my-5">`;
+                html += textarea('Intro Copy', content.intro || '', value => content.intro = value, 4);
+                html += editPillars(content.pillars || [], value => content.pillars = value);
+            }
+
+            if (content && !['agenda', 'core-capabilities', 'rightfiber', 'why-gpc'].includes(selectedPageId)) {
+                html += `<hr class="border-slate-200 my-5">`;
+                html += textarea('Raw Content JSON', JSON.stringify(content, null, 2), value => {
+                    try {
+                        draft.pageContent[selectedPageId] = JSON.parse(value);
+                    } catch (error) {
+                        // Keep typing fluid; invalid JSON simply waits for the next valid edit.
+                    }
+                }, 12);
+            }
+
+            editorFields.innerHTML = html;
+        }
+
+        function editStringArray(label, values, onChange, images = false) {
+            const id = `array-${Math.random().toString(36).slice(2)}`;
+            setTimeout(() => {
+                const root = document.getElementById(id);
+                if (!root) return;
+                root.querySelectorAll('[data-array-index]').forEach(input => {
+                    input.addEventListener('input', event => {
+                        const next = [...values];
+                        next[Number(input.dataset.arrayIndex)] = event.target.value;
+                        onChange(next);
+                    });
+                });
+                root.querySelector('[data-add-item]')?.addEventListener('click', () => {
+                    onChange([...values, '']);
+                    renderEditorFields();
+                });
+                root.querySelectorAll('[data-remove-index]').forEach(button => {
+                    button.addEventListener('click', () => {
+                        onChange(values.filter((_, index) => index !== Number(button.dataset.removeIndex)));
+                        renderEditorFields();
+                    });
+                });
+                root.querySelectorAll('[data-file-index]').forEach(input => {
+                    input.addEventListener('change', async event => {
+                        const selected = event.target.files && event.target.files[0];
+                        if (!selected) return;
+                        const next = [...values];
+                        next[Number(input.dataset.fileIndex)] = await readFileAsDataUrl(selected);
+                        onChange(next);
+                        renderEditorFields();
+                    });
+                });
+            });
+
+            return `
+                <div id="${id}" class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="field-label mb-0">${label}</span>
+                        <button type="button" data-add-item class="rounded-lg bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">Add</button>
+                    </div>
+                    ${values.map((value, index) => `
+                        <div class="rounded-xl border border-slate-200 p-3">
+                            <div class="flex gap-2">
+                                <input data-array-index="${index}" class="field-input" value="${escapeAttr(value)}">
+                                <button type="button" data-remove-index="${index}" class="rounded-lg border border-slate-200 px-3 text-xs font-black text-slate-500">Remove</button>
+                            </div>
+                            ${images ? `<input data-file-index="${index}" type="file" accept="image/*" class="mt-2 block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-bold file:text-slate-700">` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function editCapabilityCards(cards, onChange) {
+            const id = `cards-${Math.random().toString(36).slice(2)}`;
+            setTimeout(() => {
+                const root = document.getElementById(id);
+                if (!root) return;
+                root.querySelectorAll('[data-card-title]').forEach(input => {
+                    input.addEventListener('input', event => {
+                        const next = clone(cards);
+                        next[Number(input.dataset.cardTitle)].title = event.target.value;
+                        onChange(next);
+                    });
+                });
+                root.querySelectorAll('[data-card-points]').forEach(input => {
+                    input.addEventListener('input', event => {
+                        const next = clone(cards);
+                        next[Number(input.dataset.cardPoints)].points = event.target.value.split('\n').filter(Boolean);
+                        onChange(next);
+                    });
+                });
+            });
+
+            return `
+                <div id="${id}" class="space-y-4">
+                    <span class="field-label">Capability Cards</span>
+                    ${cards.map((card, index) => `
+                        <div class="rounded-2xl border border-slate-200 p-4">
+                            <label class="block mb-3">
+                                <span class="field-label">Card ${index + 1} Title</span>
+                                <input data-card-title="${index}" class="field-input" value="${escapeAttr(card.title || '')}">
+                            </label>
+                            <label>
+                                <span class="field-label">Card ${index + 1} Bullets</span>
+                                <textarea data-card-points="${index}" rows="5" class="field-input resize-y">${escapeHtml((card.points || []).join('\n'))}</textarea>
+                            </label>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function editPillars(pillars, onChange) {
+            const id = `pillars-${Math.random().toString(36).slice(2)}`;
+            setTimeout(() => {
+                const root = document.getElementById(id);
+                if (!root) return;
+                root.querySelectorAll('[data-pillar-title]').forEach(input => {
+                    input.addEventListener('input', event => {
+                        const next = clone(pillars);
+                        next[Number(input.dataset.pillarTitle)].title = event.target.value;
+                        onChange(next);
+                    });
+                });
+                root.querySelectorAll('[data-pillar-desc]').forEach(input => {
+                    input.addEventListener('input', event => {
+                        const next = clone(pillars);
+                        next[Number(input.dataset.pillarDesc)].desc = event.target.value;
+                        onChange(next);
+                    });
+                });
+            });
+
+            return `
+                <div id="${id}" class="space-y-4">
+                    <span class="field-label">Advantage Pillars</span>
+                    ${pillars.map((pillar, index) => `
+                        <div class="rounded-2xl border border-slate-200 p-4">
+                            <label class="block mb-3">
+                                <span class="field-label">Pillar ${index + 1} Title</span>
+                                <input data-pillar-title="${index}" class="field-input" value="${escapeAttr(pillar.title || '')}">
+                            </label>
+                            <label>
+                                <span class="field-label">Pillar ${index + 1} Copy</span>
+                                <textarea data-pillar-desc="${index}" rows="3" class="field-input resize-y">${escapeHtml(pillar.desc || '')}</textarea>
+                            </label>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function saveLocal(showNotice = true) {
+            syncVisibleNavFromOrder();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+            if (showNotice) flashButton(document.getElementById('save-local'), 'Saved');
+        }
+
+        function refreshPreview() {
+            saveLocal(false);
+            preview.src = `index.html?draft=local&t=${Date.now()}`;
+        }
+
+        function makeShareLink() {
+            syncVisibleNavFromOrder();
+            const encoded = encodeConfig(draft);
+            const target = new URL('index.html', window.location.href);
+            target.searchParams.set('config', encoded);
+            document.getElementById('share-url').value = target.toString();
+            document.getElementById('share-panel').classList.remove('hidden');
+        }
+
+        function flashButton(button, label) {
+            const previous = button.textContent;
+            button.textContent = label;
+            setTimeout(() => button.textContent = previous, 1100);
+        }
+
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[char]));
+        }
+
+        function escapeAttr(value) {
+            return escapeHtml(value).replace(/`/g, '&#96;');
+        }
+
+        document.getElementById('save-local').addEventListener('click', () => saveLocal(true));
+        document.getElementById('refresh-preview').addEventListener('click', refreshPreview);
+        document.getElementById('make-link').addEventListener('click', makeShareLink);
+        document.getElementById('copy-link').addEventListener('click', async () => {
+            await navigator.clipboard.writeText(document.getElementById('share-url').value);
+            flashButton(document.getElementById('copy-link'), 'Copied');
+        });
+        document.getElementById('reset-draft').addEventListener('click', () => {
+            if (!confirm('Reset the editor draft to content.json?')) return;
+            localStorage.removeItem(STORAGE_KEY);
+            draft = clone(baseData);
+            pageOrder = buildDefaultPageOrder();
+            selectedPageId = pageOrder[0];
+            render();
+            refreshPreview();
+        });
+        document.getElementById('default-mode').addEventListener('change', event => {
+            draft.settings.defaultVersionMode = event.target.value;
+        });
+
+        init().catch(error => {
+            console.error(error);
+            selectedHeading.textContent = 'Failed to load content.json';
+        });
+    </script>
+</body>
+</html>
