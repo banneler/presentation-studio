@@ -42,7 +42,7 @@
         }
         .hero-image-card { transition: all 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
         .agenda-content { opacity: 0; transform: translateX(40px); transition: opacity 0.6s ease 0.35s, transform 0.6s ease 0.35s; }
-        .agenda-card { bottom: 0; left: var(--start-left); width: calc(25% - 12px); height: 100%; }
+        .agenda-card { bottom: 0; left: var(--start-left); width: var(--card-width, calc(25% - 12px)); height: 100%; }
         .agenda-hero.is-revealed .agenda-card { height: 370px; }
         .agenda-hero.is-revealed .agenda-card.agenda-card-top-crop img { object-position: center 20%; }
         .agenda-hero.is-revealed .agenda-content { opacity: 1; transform: translateX(0); }
@@ -478,11 +478,15 @@
         }
 
         function renderAgendaImageCards(images) {
-            const startLefts = ['0px', 'calc(25% + 4px)', 'calc(50% + 8px)', 'calc(75% + 12px)'];
-            return images.map((image, index) => {
+            const visibleImages = images.slice(0, 4);
+            const imageCount = Math.max(visibleImages.length, 1);
+            const gap = 16;
+            const cardWidth = `calc(${100 / imageCount}% - ${((imageCount - 1) * gap) / imageCount}px)`;
+            return visibleImages.map((image, index) => {
                 const cropClass = index === 3 ? ' agenda-card-top-crop' : '';
+                const startLeft = index === 0 ? '0px' : `calc(${(index * 100) / imageCount}% + ${(index * gap) / imageCount}px)`;
                 return `
-                    <div class="agenda-card hero-image-card${cropClass} absolute overflow-hidden rounded-2xl shadow-floating bg-slate-200" style="--start-left: ${startLefts[index] || '0px'};">
+                    <div class="agenda-card hero-image-card${cropClass} absolute overflow-hidden rounded-2xl shadow-floating bg-slate-200" style="--start-left: ${startLeft}; --card-width: ${cardWidth};">
                         <img src="${ASSET_BASE + image}" alt="Tenaska discussion visual ${index + 1}" class="absolute inset-0 w-full h-full object-cover">
                     </div>
                 `;
@@ -568,9 +572,11 @@
             else if (viewId === 'core-capabilities' && pageContent['core-capabilities']) {
                 const content = pageContent['core-capabilities'];
                 const cards = content.cards || [];
+                const heroImages = (content.heroImages || []).slice(0, 4);
+                const columnCount = Math.max(heroImages.length, 1);
                 html += `
-                    <div class="grid grid-cols-4 gap-4 w-full h-full fade-in">
-                        ${(content.heroImages || []).map((image, index) => {
+                    <div class="grid gap-4 w-full h-full fade-in" style="grid-template-columns: repeat(${columnCount}, minmax(0, 1fr));">
+                        ${heroImages.map((image, index) => {
                             const card = cards[index] || {};
                             return `
                                 <div id="capability-card-${index}" onclick="toggleCapabilityCard(${index})" class="capability-card relative h-full rounded-3xl shadow-floating cursor-pointer">

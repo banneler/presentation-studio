@@ -26,7 +26,7 @@
     </style>
 </head>
 <body class="bg-slate-100 text-slate-900">
-    <div class="h-screen grid grid-cols-[440px_1fr] overflow-hidden">
+    <div id="studio-shell" class="h-screen grid overflow-hidden" style="grid-template-columns: 440px 8px minmax(0, 1fr);">
         <aside class="bg-ink text-white overflow-y-auto border-r border-slate-900">
             <div class="sticky top-0 z-10 bg-ink/95 backdrop-blur border-b border-white/10 p-6">
                 <p class="text-maroon text-xs font-black uppercase tracking-[0.35em] mb-2">Presentation Studio</p>
@@ -53,6 +53,8 @@
                 </section>
             </div>
         </aside>
+
+        <div id="splitter" class="bg-slate-300 hover:bg-maroon cursor-col-resize transition-colors" title="Drag to resize editor and preview"></div>
 
         <main class="flex flex-col min-w-0">
             <div class="bg-white border-b border-slate-200 p-4 flex items-center gap-3">
@@ -86,6 +88,7 @@
 
     <script>
         const STORAGE_KEY = 'presentation-studio-draft';
+        const EDITOR_WIDTH_KEY = 'presentation-studio-editor-width';
         let baseData = null;
         let draft = null;
         let selectedPageId = null;
@@ -96,6 +99,8 @@
         const editorFields = document.getElementById('editor-fields');
         const selectedHeading = document.getElementById('selected-heading');
         const preview = document.getElementById('preview');
+        const studioShell = document.getElementById('studio-shell');
+        const splitter = document.getElementById('splitter');
 
         function clone(value) {
             return JSON.parse(JSON.stringify(value));
@@ -115,6 +120,38 @@
                 reader.onload = () => resolve(reader.result);
                 reader.onerror = reject;
                 reader.readAsDataURL(file);
+            });
+        }
+
+        function setEditorWidth(width) {
+            const maxWidth = Math.max(520, window.innerWidth - 520);
+            const clampedWidth = Math.min(Math.max(width, 320), maxWidth);
+            studioShell.style.gridTemplateColumns = `${clampedWidth}px 8px minmax(0, 1fr)`;
+            localStorage.setItem(EDITOR_WIDTH_KEY, String(clampedWidth));
+        }
+
+        function setupResizableSplit() {
+            const savedWidth = Number(localStorage.getItem(EDITOR_WIDTH_KEY));
+            if (savedWidth) setEditorWidth(savedWidth);
+
+            let isResizing = false;
+            splitter.addEventListener('pointerdown', event => {
+                isResizing = true;
+                splitter.setPointerCapture(event.pointerId);
+                document.body.style.userSelect = 'none';
+            });
+            splitter.addEventListener('pointermove', event => {
+                if (!isResizing) return;
+                setEditorWidth(event.clientX);
+            });
+            splitter.addEventListener('pointerup', event => {
+                isResizing = false;
+                splitter.releasePointerCapture(event.pointerId);
+                document.body.style.userSelect = '';
+            });
+            window.addEventListener('resize', () => {
+                const currentWidth = Number(localStorage.getItem(EDITOR_WIDTH_KEY)) || 440;
+                setEditorWidth(currentWidth);
             });
         }
 
@@ -518,6 +555,7 @@
             draft.settings.defaultVersionMode = event.target.value;
         });
 
+        setupResizableSplit();
         init().catch(error => {
             console.error(error);
             selectedHeading.textContent = 'Failed to load content.json';
