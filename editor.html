@@ -81,14 +81,13 @@
             </div>
 
             <div class="flex-1 min-h-0 p-4">
-                <iframe id="preview" title="Presentation preview" class="w-full h-full rounded-2xl border border-slate-300 bg-slate-50 shadow-xl" src="index.html?draft=local&preview=1"></iframe>
+                <iframe id="preview" title="Presentation preview" class="w-full h-full rounded-2xl border border-slate-300 bg-slate-50 shadow-xl" src="index.html?preview=1"></iframe>
             </div>
         </main>
     </div>
 
     <script>
         const STORAGE_KEY = 'presentation-studio-draft';
-        const PREVIEW_STORAGE_KEY = 'presentation-studio-preview-draft';
         const EDITOR_WIDTH_KEY = 'presentation-studio-editor-width';
         const DEFAULT_KEY_CONCEPTS_NAV = ['agenda', 'core-capabilities', 'national', 'layer2', 'ip-network', 'key-routes', 'why-gpc'];
         let baseData = null;
@@ -208,7 +207,7 @@
             pageOrder = draft.settings.editorPageOrder || buildDefaultPageOrder();
             selectedPageId = pageOrder[0];
             render();
-            refreshPreview();
+            saveLocal(false);
         }
 
         function buildDefaultPageOrder() {
@@ -284,7 +283,6 @@
                     }
                     draft.settings[settingKey] = pageOrder.filter(id => current.has(id));
                     render();
-                    refreshPreview();
                 });
             });
 
@@ -306,7 +304,6 @@
                     nextOrder.splice(nextOrder.indexOf(targetId), 0, draggedPageId);
                     pageOrder = nextOrder;
                     render();
-                    refreshPreview();
                 });
             });
         }
@@ -566,8 +563,7 @@
 
         function refreshPreview() {
             saveLocal(false);
-            sessionStorage.setItem(PREVIEW_STORAGE_KEY, JSON.stringify(draft));
-            preview.src = `index.html?preview=1&previewDraft=session&t=${Date.now()}`;
+            preview.src = `index.html?preview=1&config=${encodeConfig(draft)}&t=${Date.now()}`;
         }
 
         function makeShareLink() {
