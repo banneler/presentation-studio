@@ -241,11 +241,14 @@
         if (new URLSearchParams(window.location.search).get('preview') === '1') {
             document.body.classList.add('studio-preview');
         }
+        function getVisibleNavList(settingKey, fallbackOrder) {
+            const order = presentationSettings[settingKey] || fallbackOrder;
+            return order.filter(id => mapData[id] && mapData[id].hidden !== true);
+        }
+
         function getFilteredNavOrder() {
-            const visibleNav = navOrder.filter(id => mapData[id] && mapData[id].hidden !== true);
-            if (versionMode === 'extended') return visibleNav;
-            const keyNav = presentationSettings.keyConceptsNav || KEY_CONCEPTS_NAV;
-            return keyNav.filter(id => visibleNav.includes(id));
+            if (versionMode === 'extended') return getVisibleNavList('extendedNav', navOrder);
+            return getVisibleNavList('keyConceptsNav', KEY_CONCEPTS_NAV);
         }
 
         function hexToRgbParts(color) {

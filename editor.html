@@ -24,6 +24,8 @@
         .field-input { width: 100%; border-radius: 0.75rem; border: 1px solid rgb(203 213 225); background: white; padding: 0.7rem 0.85rem; font-size: 0.9rem; color: rgb(15 23 42); outline: none; }
         .field-input:focus { border-color: var(--hero-color); box-shadow: 0 0 0 3px rgba(var(--hero-color-rgb), 0.12); }
         .nav-row.dragging { opacity: 0.45; }
+        .nav-dot { appearance: none; width: 1rem; height: 1rem; border-radius: 9999px; border: 1px solid rgba(148, 163, 184, 0.65); cursor: pointer; background: transparent; }
+        .nav-dot:checked { background: var(--hero-color); border-color: var(--hero-color); box-shadow: inset 0 0 0 3px rgb(30 41 59); }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-900">
@@ -66,11 +68,6 @@
                 <div class="ml-auto flex items-center gap-2">
                     <label class="field-label mb-0">Hero Color</label>
                     <input id="hero-color" type="color" class="h-10 w-12 rounded-lg border border-slate-300 bg-white p-1" value="#991a38">
-                    <label class="field-label mb-0">Default Mode</label>
-                    <select id="default-mode" class="field-input w-36 py-2">
-                        <option value="key">Key Concepts</option>
-                        <option value="extended">Extended</option>
-                    </select>
                 </div>
             </div>
 
@@ -92,6 +89,7 @@
     <script>
         const STORAGE_KEY = 'presentation-studio-draft';
         const EDITOR_WIDTH_KEY = 'presentation-studio-editor-width';
+        const DEFAULT_KEY_CONCEPTS_NAV = ['agenda', 'core-capabilities', 'national', 'layer2', 'ip-network', 'key-routes', 'why-gpc'];
         let baseData = null;
         let draft = null;
         let selectedPageId = null;
@@ -138,6 +136,10 @@
             const isHex = /^#?[a-f\d]{3}([a-f\d]{3})?$/i.test(String(color || ''));
             const normalized = isHex ? String(color) : fallback;
             return normalized.startsWith('#') ? normalized : `#${normalized}`;
+        }
+
+        function sameList(left = [], right = []) {
+            return left.length === right.length && left.every((value, index) => value === right[index]);
         }
 
         function applyHeroColor(color) {
@@ -194,12 +196,16 @@
             const saved = localStorage.getItem(STORAGE_KEY);
             draft = saved ? JSON.parse(saved) : clone(baseData);
             draft.settings = draft.settings || {};
-            draft.settings.defaultVersionMode = draft.settings.defaultVersionMode || 'key';
+            const hadExtendedNav = Array.isArray(draft.settings.extendedNav);
+            if (!hadExtendedNav && sameList(draft.settings.keyConceptsNav || [], draft.navOrder || [])) {
+                draft.settings.keyConceptsNav = DEFAULT_KEY_CONCEPTS_NAV.filter(id => draft.mapData[id]);
+            }
+            draft.settings.extendedNav = draft.settings.extendedNav || (draft.navOrder || []).slice();
+            draft.settings.keyConceptsNav = draft.settings.keyConceptsNav || DEFAULT_KEY_CONCEPTS_NAV.filter(id => draft.mapData[id]);
             draft.settings.heroColor = normalizeHeroColor(draft.settings.heroColor);
             applyHeroColor(draft.settings.heroColor);
             pageOrder = draft.settings.editorPageOrder || buildDefaultPageOrder();
             selectedPageId = pageOrder[0];
-            document.getElementById('default-mode').value = draft.settings.defaultVersionMode;
             render();
             saveLocal(false);
         }
@@ -210,11 +216,13 @@
         }
 
         function syncVisibleNavFromOrder() {
-            const visible = new Set(draft.navOrder || []);
-            draft.navOrder = pageOrder.filter(id => visible.has(id));
             draft.settings = draft.settings || {};
+            const extendedVisible = new Set(draft.settings.extendedNav || draft.navOrder || []);
+            const keyVisible = new Set(draft.settings.keyConceptsNav || DEFAULT_KEY_CONCEPTS_NAV);
             draft.settings.editorPageOrder = pageOrder;
-            draft.settings.keyConceptsNav = draft.navOrder.slice();
+            draft.settings.extendedNav = pageOrder.filter(id => extendedVisible.has(id));
+            draft.settings.keyConceptsNav = pageOrder.filter(id => keyVisible.has(id));
+            draft.navOrder = draft.settings.extendedNav.slice();
         }
 
         function render() {
@@ -224,19 +232,32 @@
         }
 
         function renderPageList() {
-            const visible = new Set(draft.navOrder || []);
-            pageList.innerHTML = pageOrder.map((id, index) => {
+            const keyVisible = new Set(draft.settings.keyConceptsNav || []);
+            const extendedVisible = new Set(draft.settings.extendedNav || draft.navOrder || []);
+            pageList.innerHTML = `
+                <div class="grid grid-cols-[1.5rem_minmax(0,1fr)_3rem_3rem] gap-3 px-3 pb-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                    <span></span>
+                    <span></span>
+                    <span class="text-center">Key</span>
+                    <span class="text-center">Ext</span>
+                </div>
+            ` + pageOrder.map((id, index) => {
                 const page = draft.mapData[id];
                 if (!page) return '';
                 const isSelected = id === selectedPageId;
                 return `
                     <div draggable="true" data-page-id="${id}" class="nav-row rounded-xl border ${isSelected ? 'border-maroon bg-maroon/15' : 'border-white/10 bg-white/5'} p-3 cursor-pointer">
-                        <div class="flex items-center gap-3">
+                        <div class="grid grid-cols-[1.5rem_minmax(0,1fr)_3rem_3rem] items-center gap-3">
                             <span class="text-xs text-slate-500 font-black w-5">${index + 1}</span>
-                            <input data-visible-id="${id}" type="checkbox" ${visible.has(id) ? 'checked' : ''} class="h-4 w-4 accent-maroon">
                             <div class="min-w-0 flex-1" data-select-id="${id}">
                                 <p class="truncate text-sm font-black text-white">${page.navLabel || page.title || id}</p>
                                 <p class="truncate text-[11px] text-slate-400">${id}</p>
+                            </div>
+                            <div class="flex justify-center">
+                                <input data-nav-id="${id}" data-nav-mode="key" type="checkbox" ${keyVisible.has(id) ? 'checked' : ''} class="nav-dot" title="Include in Key Concepts">
+                            </div>
+                            <div class="flex justify-center">
+                                <input data-nav-id="${id}" data-nav-mode="extended" type="checkbox" ${extendedVisible.has(id) ? 'checked' : ''} class="nav-dot" title="Include in Extended">
                             </div>
                         </div>
                     </div>
@@ -250,13 +271,17 @@
                 });
             });
 
-            pageList.querySelectorAll('[data-visible-id]').forEach(input => {
+            pageList.querySelectorAll('[data-nav-id]').forEach(input => {
                 input.addEventListener('change', () => {
+                    const settingKey = input.dataset.navMode === 'key' ? 'keyConceptsNav' : 'extendedNav';
+                    const pageId = input.dataset.navId;
+                    const current = new Set(draft.settings[settingKey] || []);
                     if (input.checked) {
-                        if (!draft.navOrder.includes(input.dataset.visibleId)) draft.navOrder.push(input.dataset.visibleId);
+                        current.add(pageId);
                     } else {
-                        draft.navOrder = draft.navOrder.filter(id => id !== input.dataset.visibleId);
+                        current.delete(pageId);
                     }
+                    draft.settings[settingKey] = pageOrder.filter(id => current.has(id));
                     render();
                 });
             });
@@ -582,17 +607,14 @@
             localStorage.removeItem(STORAGE_KEY);
             draft = clone(baseData);
             draft.settings = draft.settings || {};
-            draft.settings.defaultVersionMode = draft.settings.defaultVersionMode || 'key';
+            draft.settings.extendedNav = draft.settings.extendedNav || (draft.navOrder || []).slice();
+            draft.settings.keyConceptsNav = draft.settings.keyConceptsNav || DEFAULT_KEY_CONCEPTS_NAV.filter(id => draft.mapData[id]);
             draft.settings.heroColor = normalizeHeroColor(draft.settings.heroColor);
             applyHeroColor(draft.settings.heroColor);
-            document.getElementById('default-mode').value = draft.settings.defaultVersionMode;
             pageOrder = buildDefaultPageOrder();
             selectedPageId = pageOrder[0];
             render();
             refreshPreview();
-        });
-        document.getElementById('default-mode').addEventListener('change', event => {
-            draft.settings.defaultVersionMode = event.target.value;
         });
         heroColorInput.addEventListener('input', event => {
             draft.settings = draft.settings || {};
