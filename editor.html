@@ -191,6 +191,7 @@
         }
 
         async function init() {
+            registerServiceWorker();
             const response = await fetch('content.json');
             baseData = await response.json();
             const saved = localStorage.getItem(STORAGE_KEY);
@@ -208,6 +209,13 @@
             selectedPageId = pageOrder[0];
             render();
             saveLocal(false);
+        }
+
+        function registerServiceWorker() {
+            if (!('serviceWorker' in navigator) || window.location.protocol === 'file:') return;
+            navigator.serviceWorker.register('./sw.js').catch(error => {
+                console.warn('Service worker registration failed:', error);
+            });
         }
 
         function buildDefaultPageOrder() {
@@ -563,7 +571,7 @@
 
         function refreshPreview() {
             saveLocal(false);
-            preview.src = `index.html?preview=1&config=${encodeConfig(draft)}&t=${Date.now()}`;
+            preview.src = `index.html?draft=local&preview=1&t=${Date.now()}`;
         }
 
         function makeShareLink() {

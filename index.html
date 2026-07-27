@@ -235,7 +235,7 @@
         let agendaRevealTimer = null;
         let agendaRevealCompletionTimer = null;
         let agendaRevealCompleted = false;
-        const AGENDA_REVEAL_DELAY_MS = 3000;
+        const AGENDA_REVEAL_DELAY_MS = 500;
         const AGENDA_REVEAL_ANIMATION_MS = 950;
         const KEY_CONCEPTS_NAV = ['agenda', 'core-capabilities', 'national', 'layer2', 'ip-network', 'key-routes', 'why-gpc'];
         if (new URLSearchParams(window.location.search).get('preview') === '1') {
@@ -285,6 +285,7 @@
 
         // --- INITIALIZATION ---
         async function init() {
+            registerServiceWorker();
             startClock();
             setupScreensaver();
             setupFullscreen();
@@ -316,6 +317,13 @@
                 if (savedDraft) return JSON.parse(savedDraft);
             }
             return null;
+        }
+
+        function registerServiceWorker() {
+            if (!('serviceWorker' in navigator) || window.location.protocol === 'file:') return;
+            navigator.serviceWorker.register('./sw.js').catch(error => {
+                console.warn('Service worker registration failed:', error);
+            });
         }
 
         // --- FETCH JSON DATA ---
