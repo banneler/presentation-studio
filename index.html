@@ -26,6 +26,8 @@
     <style>
         :root { --hero-color: #991a38; --hero-color-rgb: 153 26 56; }
         body.studio-preview { background-color: #f8fafc !important; }
+        body.studio-preview #scale-container { background-color: #f8fafc; }
+        body:not(.studio-preview) #scale-container { background-color: #000; }
         .fade-in { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .nav-item-active { background-color: rgba(255, 255, 255, 0.1); border-left-color: var(--hero-color) !important; }
@@ -260,7 +262,7 @@
     </style>
 </head>
 <body class="bg-black text-slate-800 h-screen w-screen overflow-hidden relative select-none font-sans antialiased" oncontextmenu="return false;">
-    <div id="scale-container" class="fixed inset-0 flex items-center justify-center overflow-hidden bg-black">
+    <div id="scale-container" class="fixed inset-0 flex items-center justify-center overflow-hidden">
     <div id="app-wrapper" class="w-[1920px] h-[1080px] bg-slate-100 flex relative overflow-hidden shrink-0 origin-center">
     <div id="screensaver" class="absolute inset-0 z-50 bg-gpc-navy flex flex-col items-center justify-center transition-opacity duration-1000 opacity-0 cursor-pointer overflow-hidden">
         <div class="absolute inset-0 opacity-20 ken-burns" style="background-image: radial-gradient(circle at center, #1E40AF 0%, transparent 70%);"></div>
@@ -755,12 +757,20 @@
         }
 
         // --- SCALE TO FIT LOGIC ---
-        // Cover the viewport (no letterbox bars). May crop a sliver on the long edge.
+        // Contain: keep the full 16:9 canvas visible while resizing (editor preview + live).
+        // Preview pins top-left so the navy nav meets the frame; live stays centered.
         function scaleApp() {
             const wrapper = document.getElementById('app-wrapper');
-            const scale = Math.max(window.innerWidth / 1920, window.innerHeight / 1080);
-            wrapper.style.transformOrigin = 'center center';
+            const container = document.getElementById('scale-container');
+            if (!wrapper || !container) return;
+            const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+            const isPreview = document.body.classList.contains('studio-preview');
+            wrapper.style.transformOrigin = isPreview ? 'top left' : 'center center';
             wrapper.style.transform = `scale(${scale})`;
+            container.classList.toggle('items-start', isPreview);
+            container.classList.toggle('justify-start', isPreview);
+            container.classList.toggle('items-center', !isPreview);
+            container.classList.toggle('justify-center', !isPreview);
         }
         window.addEventListener('resize', scaleApp);
         scaleApp(); // Initial scale
