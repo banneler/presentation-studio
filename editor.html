@@ -506,6 +506,9 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     draft.pageContent[pageId].heroImages = normalizeHeroImageList(draft.pageContent[pageId].heroImages);
                 }
             });
+            if (draft.pageContent?.pricing) {
+                draft.pageContent.pricing.sideImage = normalizeHeroImage(draft.pageContent.pricing.sideImage);
+            }
             pageOrder = draft.settings.editorPageOrder || buildDefaultPageOrder();
             selectedPageId = pageOrder[0];
             syncIdentityFieldsFromDraft();
@@ -955,12 +958,18 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 const optionCount = Array.isArray(content.options) ? content.options.length : 0;
                 const locationCount = (content.options || []).reduce((sum, opt) => sum + ((opt.locations || []).length), 0);
                 const firstTotal = optionCount ? formatStudioMoney(computeOptionMonthlyTotal(content.options[0], !!content.enableDecimalPointsAmy), !!content.enableDecimalPointsAmy) : '—';
+                content.sideImage = normalizeHeroImage(content.sideImage);
                 html += `<hr class="border-slate-200 my-5">`;
-                html += imageField('Side Image', content.sideImage || '', value => {
-                    content.sideImage = value;
+                html += editHeroImages('Side Image', [content.sideImage], value => {
+                    content.sideImage = normalizeHeroImage((value && value[0]) || '');
+                }, {
+                    dualCrop: false,
+                    maxSlots: 1,
+                    previewCount: 4,
+                    help: 'Same crop controls as hero images. Sized like one of four agenda cards; stays put while the pricing table scrolls. Refresh Preview to review.'
                 });
                 html += `
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2 text-sm text-slate-700">
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2 text-sm text-slate-700 mt-4">
                         <p class="font-bold text-slate-900">Imported from Enterprise Proposals</p>
                         <p class="text-xs text-slate-500">${escapeHtml(content.sourceName || 'Unknown .spec')}</p>
                         <dl class="grid grid-cols-2 gap-2 text-xs pt-1">
@@ -968,7 +977,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                             <div><dt class="text-slate-400 uppercase tracking-wider font-bold">Locations</dt><dd class="font-semibold text-slate-800">${locationCount}</dd></div>
                             <div class="col-span-2"><dt class="text-slate-400 uppercase tracking-wider font-bold">First option MRC</dt><dd class="font-semibold text-slate-800">${escapeHtml(firstTotal)}</dd></div>
                         </dl>
-                        <p class="text-[11px] text-slate-500 pt-1">Side image fills the right column beside the table. Hit Refresh Preview to see editor changes. Re-upload a .spec above to replace pricing data.</p>
+                        <p class="text-[11px] text-slate-500 pt-1">Re-upload a .spec above to replace pricing data. Side image crop settings are kept.</p>
                     </div>
                 `;
             } else if (content && !['agenda', 'core-capabilities', 'rightfiber', 'why-gpc'].includes(selectedPageId)) {
@@ -1062,11 +1071,17 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
         function editHeroImages(label, values, onChange, options = {}) {
             const dualCrop = options.dualCrop === true;
-            const heroes = normalizeHeroImageList(values || []);
+            const maxSlots = Math.max(1, Math.min(4, options.maxSlots ?? 4));
+            const showEnabledToggle = options.showEnabledToggle !== false;
+            const allowRemove = options.allowRemove !== false && maxSlots > 1;
+            const allowAdd = options.allowAdd !== false && maxSlots > 1;
+            let heroes = normalizeHeroImageList(values || []).slice(0, maxSlots);
+            if (maxSlots === 1 && !heroes.length) heroes = [normalizeHeroImage('')];
             const id = `heroes-${Math.random().toString(36).slice(2)}`;
             const activeCount = Math.max(1, heroes.filter(hero => hero.enabled).length || heroes.length);
-            const fullSize = heroPreviewMetrics(activeCount, 'full');
-            const condensedSize = heroPreviewMetrics(activeCount, dualCrop ? 'condensed' : 'capability');
+            const metricCount = Math.max(1, Math.min(4, options.previewCount || activeCount));
+            const fullSize = heroPreviewMetrics(metricCount, 'full');
+            const condensedSize = heroPreviewMetrics(metricCount, dualCrop ? 'condensed' : 'capability');
 
             const commit = (next, { rerender = false } = {}) => {
                 onChange(normalizeHeroImageList(next));
@@ -1210,7 +1225,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 });
 
                 root.querySelector('[data-add-hero]')?.addEventListener('click', () => {
-                    if (heroes.length >= 4) return;
+                    if (heroes.length >= maxSlots) return;
                     heroes.push(normalizeHeroImage('', heroes.length));
                     commit(heroes, { rerender: true });
                 });
@@ -1219,16 +1234,23 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     button.addEventListener('click', () => {
                         const index = Number(button.dataset.removeHero);
                         heroes.splice(index, 1);
+                        if (maxSlots === 1 && !heroes.length) heroes = [normalizeHeroImage('')];
                         commit(heroes, { rerender: true });
                     });
+                });
+
+                root.querySelector('[data-clear-hero]')?.addEventListener('click', () => {
+                    heroes[0] = normalizeHeroImage('');
+                    commit(heroes, { rerender: true });
                 });
 
                 heroes.forEach((_, index) => applyPanPreview(index));
             });
 
-            const help = dualCrop
-                ? 'Full left, condensed right. Preview aspect tracks visible image count. Each crop has its own zoom + vertical pan; horizontal pan is shared.'
-                : 'Toggle slots on/off. Preview aspect tracks visible image count. Zoom in for more pan room on wide photos.';
+            const help = options.help
+                || (dualCrop
+                    ? 'Full left, condensed right. Preview aspect tracks visible image count. Each crop has its own zoom + vertical pan; horizontal pan is shared.'
+                    : 'Toggle slots on/off. Preview aspect tracks visible image count. Zoom in for more pan room on wide photos.');
 
             return `
                 <div id="${id}" class="space-y-3">
@@ -1237,7 +1259,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                             <span class="field-label mb-0">${label}</span>
                             <p class="text-[11px] text-slate-500 mt-1">${help}</p>
                         </div>
-                        <button type="button" data-add-hero class="rounded-lg bg-slate-100 hover:bg-orange-50 hover:text-orange-600 border border-slate-200 px-3 py-1 text-xs font-bold text-slate-700 transition ${heroes.length >= 4 ? 'opacity-40 pointer-events-none' : ''}">Add Slot</button>
+                        ${allowAdd ? `<button type="button" data-add-hero class="rounded-lg bg-slate-100 hover:bg-orange-50 hover:text-orange-600 border border-slate-200 px-3 py-1 text-xs font-bold text-slate-700 transition ${heroes.length >= maxSlots ? 'opacity-40 pointer-events-none' : ''}">Add Slot</button>` : ''}
                     </div>
                     ${heroes.map((hero, index) => {
                         const previewSrc = resolveEditorAsset(hero.src);
@@ -1310,11 +1332,15 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         return `
                             <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm ${hero.enabled ? '' : 'opacity-70'}">
                                 <div class="flex items-center justify-between gap-2 mb-3">
-                                    <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer">
-                                        <input data-hero-enabled="${index}" type="checkbox" ${hero.enabled ? 'checked' : ''} class="h-4 w-4 accent-orange-500">
-                                        Show container ${index + 1}
-                                    </label>
-                                    <button type="button" data-remove-hero="${index}" class="text-xs font-bold text-slate-500 hover:text-red-500 transition">Remove</button>
+                                    ${showEnabledToggle ? `
+                                        <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer">
+                                            <input data-hero-enabled="${index}" type="checkbox" ${hero.enabled ? 'checked' : ''} class="h-4 w-4 accent-orange-500">
+                                            ${maxSlots === 1 ? 'Show side image' : `Show container ${index + 1}`}
+                                        </label>
+                                    ` : `<span class="text-sm font-semibold text-slate-700">${maxSlots === 1 ? 'Side image' : `Container ${index + 1}`}</span>`}
+                                    ${allowRemove
+                                        ? `<button type="button" data-remove-hero="${index}" class="text-xs font-bold text-slate-500 hover:text-red-500 transition">Remove</button>`
+                                        : (maxSlots === 1 ? `<button type="button" data-clear-hero class="text-xs font-bold text-slate-500 hover:text-red-500 transition">Clear</button>` : '')}
                                 </div>
                                 <input data-hero-src="${index}" class="field-input font-mono text-xs mb-3" value="${escapeAttr(hero.src)}" placeholder="hero_1.png or https://...">
                                 <input data-hero-file="${index}" type="file" accept="image/*" class="hidden">
@@ -1822,7 +1848,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             draft.mapData = draft.mapData || {};
             draft.pageContent = draft.pageContent || {};
             const priorShowStats = draft.mapData.pricing?.showStats === true;
-            const priorSideImage = draft.pageContent?.pricing?.sideImage || '';
+            const priorSideImage = normalizeHeroImage(draft.pageContent?.pricing?.sideImage || '');
             draft.mapData.pricing = {
                 id: 'pricing',
                 title: 'Proposed Pricing',
