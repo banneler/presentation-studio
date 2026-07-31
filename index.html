@@ -120,25 +120,48 @@
             min-height: 100%;
             padding: 1.75rem 2rem 2.25rem;
             background: #f8fafc;
-            animation: pricingStageIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .pricing-stage.is-animated {
+            animation: pricingStageIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
         @keyframes pricingStageIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: none; }
         }
-        .pricing-shell {
-            max-width: 920px;
+        .pricing-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(280px, 36%);
+            gap: 1.5rem;
+            align-items: stretch;
+            max-width: 1480px;
             margin: 0 auto;
+        }
+        .pricing-layout.is-solo {
+            grid-template-columns: minmax(0, 920px);
+            justify-content: center;
+        }
+        .pricing-shell {
+            min-width: 0;
             border-radius: 1rem;
             overflow: hidden;
             border: 1px solid #e2e8f0;
             box-shadow: 0 12px 28px -18px rgba(15, 23, 42, 0.25);
             background: #ffffff;
-            animation: pricingShellIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
         }
-        @keyframes pricingShellIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: none; }
+        .pricing-aside {
+            min-height: 100%;
+            min-height: 420px;
+            border-radius: 1rem;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            background: #e2e8f0;
+            box-shadow: 0 12px 28px -18px rgba(15, 23, 42, 0.18);
+        }
+        .pricing-aside img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
         .pricing-option-tab {
             border: 1px solid #cbd5e1;
@@ -195,11 +218,6 @@
             font-size: 1.15rem;
             padding: 1rem 1.25rem;
             letter-spacing: 0.02em;
-            animation: pricingTotalIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both;
-        }
-        @keyframes pricingTotalIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: none; }
         }
         .pricing-total-bar .pricing-total-amount {
             font-variant-numeric: tabular-nums;
@@ -505,7 +523,7 @@
             `;
         }
 
-        function renderPricingPage(content) {
+        function renderPricingPage(content, { animate = true } = {}) {
             const options = Array.isArray(content?.options) ? content.options : [];
             if (!options.length) {
                 return `<div class="pricing-stage flex items-center justify-center text-slate-500">No pricing data imported.</div>`;
@@ -513,6 +531,8 @@
             if (pricingOptionIndex >= options.length) pricingOptionIndex = 0;
             const active = options[pricingOptionIndex];
             const multi = options.length > 1;
+            const sideImage = String(content.sideImage || '').trim();
+            const hasSideImage = !!sideImage;
             const tabs = multi ? `
                 <div class="flex flex-wrap gap-2 mb-4">
                     ${options.map((opt, index) => {
@@ -530,20 +550,26 @@
             const solution = active.solutionId
                 ? `<span class="ml-2 text-sm font-semibold text-gpc-orange">(${escapeHtml(active.solutionId)})</span>`
                 : '';
+            const aside = hasSideImage
+                ? `<aside class="pricing-aside"><img src="${resolveAsset(sideImage).replace(/"/g, '&quot;')}" alt=""></aside>`
+                : '';
 
             return `
-                <div class="pricing-stage fade-in">
+                <div class="pricing-stage${animate ? ' is-animated' : ''}">
                     ${tabs}
                     ${biz}
-                    <div class="pricing-shell">
-                        <div class="px-5 pt-5 pb-3 bg-white border-b border-slate-100">
-                            <div class="flex items-center gap-3 mb-1">
-                                <span class="h-px w-10 bg-gpc-orange"></span>
-                                <p class="text-gpc-orange text-[11px] font-black uppercase tracking-[0.28em]">Investment</p>
+                    <div class="pricing-layout${hasSideImage ? '' : ' is-solo'}">
+                        <div class="pricing-shell">
+                            <div class="px-5 pt-5 pb-3 bg-white border-b border-slate-100">
+                                <div class="flex items-center gap-3 mb-1">
+                                    <span class="h-px w-10 bg-gpc-orange"></span>
+                                    <p class="text-gpc-orange text-[11px] font-black uppercase tracking-[0.28em]">Investment</p>
+                                </div>
+                                <h3 class="text-2xl font-black text-slate-900 tracking-tight">${escapeHtml(headerLabel)}${solution}</h3>
                             </div>
-                            <h3 class="text-2xl font-black text-slate-900 tracking-tight">${escapeHtml(headerLabel)}${solution}</h3>
+                            ${renderPricingOptionBody(active, content)}
                         </div>
-                        ${renderPricingOptionBody(active, content)}
+                        ${aside}
                     </div>
                 </div>
             `;
@@ -555,7 +581,7 @@
                     const next = Number(button.dataset.pricingOption);
                     if (!Number.isFinite(next) || next === pricingOptionIndex) return;
                     pricingOptionIndex = next;
-                    renderHTMLContent('pricing', container);
+                    renderHTMLContent('pricing', container, { animate: false });
                 });
             });
         }
@@ -1018,7 +1044,7 @@
         }
 
         // --- HTML CONTENT RENDERER ---
-        function renderHTMLContent(viewId, container) {
+        function renderHTMLContent(viewId, container, options = {}) {
             let html = '';
             const lockOverflow = viewId === 'agenda' || viewId === 'core-capabilities' || viewId === 'rightfiber';
             container.classList.toggle('overflow-hidden', lockOverflow);
@@ -1223,7 +1249,7 @@
                 html += '</div>';
             }
             else if (viewId === 'pricing' && pageContent.pricing) {
-                html = renderPricingPage(pageContent.pricing);
+                html = renderPricingPage(pageContent.pricing, { animate: options.animate !== false });
             }
             
             container.innerHTML = html;

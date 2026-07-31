@@ -884,7 +884,6 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 if (statsToggle) {
                     statsToggle.addEventListener('change', () => {
                         page.showStats = statsToggle.checked;
-                        refreshPreview();
                     });
                 }
             });
@@ -957,6 +956,9 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 const locationCount = (content.options || []).reduce((sum, opt) => sum + ((opt.locations || []).length), 0);
                 const firstTotal = optionCount ? formatStudioMoney(computeOptionMonthlyTotal(content.options[0], !!content.enableDecimalPointsAmy), !!content.enableDecimalPointsAmy) : '—';
                 html += `<hr class="border-slate-200 my-5">`;
+                html += imageField('Side Image', content.sideImage || '', value => {
+                    content.sideImage = value;
+                });
                 html += `
                     <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2 text-sm text-slate-700">
                         <p class="font-bold text-slate-900">Imported from Enterprise Proposals</p>
@@ -966,7 +968,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                             <div><dt class="text-slate-400 uppercase tracking-wider font-bold">Locations</dt><dd class="font-semibold text-slate-800">${locationCount}</dd></div>
                             <div class="col-span-2"><dt class="text-slate-400 uppercase tracking-wider font-bold">First option MRC</dt><dd class="font-semibold text-slate-800">${escapeHtml(firstTotal)}</dd></div>
                         </dl>
-                        <p class="text-[11px] text-slate-500 pt-1">Re-upload a .spec above to replace this pricing page. Edit titles with the fields at the top.</p>
+                        <p class="text-[11px] text-slate-500 pt-1">Side image fills the right column beside the table. Hit Refresh Preview to see editor changes. Re-upload a .spec above to replace pricing data.</p>
                     </div>
                 `;
             } else if (content && !['agenda', 'core-capabilities', 'rightfiber', 'why-gpc'].includes(selectedPageId)) {
@@ -1820,6 +1822,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             draft.mapData = draft.mapData || {};
             draft.pageContent = draft.pageContent || {};
             const priorShowStats = draft.mapData.pricing?.showStats === true;
+            const priorSideImage = draft.pageContent?.pricing?.sideImage || '';
             draft.mapData.pricing = {
                 id: 'pricing',
                 title: 'Proposed Pricing',
@@ -1846,6 +1849,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 enableQuoteExpiration: extracted.enableQuoteExpiration,
                 quoteExpirationDays: extracted.quoteExpirationDays,
                 enableTaxesFeesExclusion: extracted.enableTaxesFeesExclusion,
+                sideImage: priorSideImage,
                 options: extracted.options
             };
             insertPricingIntoPageOrder();
