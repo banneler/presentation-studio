@@ -31,11 +31,13 @@ module.exports = async function handler(req, res) {
     followUpContent.settings = followUpContent.settings || {};
     followUpContent.settings.presentationName = name;
     followUpContent.settings.presentationSlug = slug;
+    followUpContent.settings.repName = String(followUpContent.settings.repName || content.settings?.repName || '').trim();
     followUpContent.settings.variant = 'follow-up';
     followUpContent.meta = {
       ...(followUpContent.meta || {}),
       name,
       slug,
+      repName: followUpContent.settings.repName,
       variant: 'follow-up',
       updatedAt: new Date().toISOString()
     };

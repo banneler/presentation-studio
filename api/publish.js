@@ -29,10 +29,12 @@ module.exports = async function handler(req, res) {
     content.settings = content.settings || {};
     content.settings.presentationName = name;
     content.settings.presentationSlug = slug;
+    content.settings.repName = String(content.settings.repName || body.repName || '').trim();
     content.meta = {
       ...(content.meta || {}),
       name,
       slug,
+      repName: content.settings.repName,
       updatedAt: new Date().toISOString()
     };
 

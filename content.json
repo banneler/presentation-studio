@@ -1,6 +1,8 @@
 {
   "settings": {
     "heroColor": "#991a38",
+    "customerLogo": "tenaska_logo.png",
+    "repName": "",
     "keyConceptsNav": ["agenda", "core-capabilities", "national", "layer2", "ip-network", "key-routes", "why-gpc"],
     "extendedNav": ["agenda", "core-capabilities", "national", "layer2", "ip-network", "nebraska", "omaha-metro", "key-routes", "data-centers", "products", "why-gpc"]
   },
@@ -23,7 +25,7 @@
       "title": "Meeting Agenda",
       "navLabel": "Meeting Agenda",
       "subtitle": "Executive Conversation Agenda",
-      "logo": "tenaska_logo.png",
+      "useCustomerLogo": true,
       "logoPosition": "right",
       "type": "html",
       "stats": []
@@ -33,7 +35,7 @@
       "title": "Core Capabilities",
       "navLabel": "Core Capabilities",
       "subtitle": "GPC Network Capabilities for Energy Operations",
-      "logo": "tenaska_logo.png",
+      "useCustomerLogo": true,
       "logoPosition": "right",
       "type": "html",
       "stats": []

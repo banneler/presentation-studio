@@ -16,12 +16,14 @@ module.exports = async function handler(req, res) {
       dirs.map(async dir => {
         const contentFile = await getFile(`presentations/${dir.name}/content.json`);
         let name = dir.name;
+        let repName = '';
         let hasFollowUp = false;
         if (contentFile?.content) {
           try {
             const decoded = Buffer.from(contentFile.content, 'base64').toString('utf8');
             const parsed = JSON.parse(decoded);
             name = parsed.settings?.presentationName || parsed.meta?.name || dir.name;
+            repName = parsed.settings?.repName || parsed.meta?.repName || '';
           } catch (error) {
             // keep slug as name
           }
@@ -35,6 +37,7 @@ module.exports = async function handler(req, res) {
         return {
           slug: dir.name,
           name,
+          repName,
           url: `/presentations/${dir.name}/`,
           followUpUrl: hasFollowUp ? `/presentations/${dir.name}/follow-up/` : null,
           hasFollowUp

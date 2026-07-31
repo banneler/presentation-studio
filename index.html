@@ -46,8 +46,25 @@
         .agenda-content { opacity: 0; transform: translateX(40px); transition: opacity 0.6s ease 0.35s, transform 0.6s ease 0.35s; }
         .agenda-card { bottom: 0; left: var(--start-left); width: var(--card-width, calc(25% - 12px)); height: 100%; }
         .agenda-hero.is-revealed .agenda-card { height: 370px; }
-        .agenda-hero.is-revealed .agenda-card.agenda-card-top-crop img { object-position: center 20%; }
         .agenda-hero.is-revealed .agenda-content { opacity: 1; transform: translateX(0); }
+        /* Zoom + pan via scale/origin; object-position covers zoom=1 crop framing. */
+        .agenda-card img.agenda-hero-img {
+            object-fit: cover;
+            object-position: var(--pan-x, 50%) var(--pan-y-full, 50%);
+            transform: scale(var(--zoom-full, 1));
+            transform-origin: var(--pan-x, 50%) var(--pan-y-full, 50%);
+        }
+        .agenda-hero.is-revealed .agenda-card img.agenda-hero-img {
+            object-position: var(--pan-x, 50%) var(--pan-y-condensed, 50%);
+            transform: scale(var(--zoom-condensed, 1));
+            transform-origin: var(--pan-x, 50%) var(--pan-y-condensed, 50%);
+        }
+        .capability-front img.capability-hero-img {
+            object-fit: cover;
+            object-position: var(--pan-x, 50%) var(--pan-y-condensed, 50%);
+            transform: scale(var(--zoom-condensed, 1));
+            transform-origin: var(--pan-x, 50%) var(--pan-y-condensed, 50%);
+        }
         .capability-card { perspective: 1200px; transition: box-shadow 0.2s ease, transform 0.2s ease; }
         .capability-card-inner { transform-style: preserve-3d; transition: transform 0.65s ease-in-out; }
         .capability-card.is-revealed .capability-card-inner { transform: rotateY(180deg); }
@@ -91,6 +108,11 @@
             position: relative;
             z-index: 1;
         }
+        .capability-body li b,
+        .capability-body li strong { font-weight: 900; }
+        .capability-body li i,
+        .capability-body li em { font-style: italic; }
+        .capability-body li u { text-decoration: underline; }
         
         /* When dismissed, screensaver stays in layout so grid animation never stops */
         .screensaver-dismissed { visibility: hidden; pointer-events: none; }
@@ -179,7 +201,7 @@
                 <h2 id="view-title" class="text-3xl font-bold text-slate-900 tracking-tight fade-in">Loading...</h2>
                 <p id="view-subtitle" class="text-base text-slate-500 mt-1 fade-in font-medium">Initializing System</p>
             </div>
-            <div id="stats-container" class="flex gap-8 fade-in"></div>
+            <div id="stats-container" class="flex items-center gap-8 fade-in min-w-0"></div>
         </header>
 
         <section class="flex-1 relative overflow-hidden flex items-center justify-center p-8">
@@ -250,6 +272,107 @@
             if (screensaverLogo) screensaverLogo.src = ASSET_BASE + 'GPC-White-1-1.webp';
             if (brandLogo) brandLogo.src = ASSET_BASE + 'GPC-White-1-1.webp';
         }
+        function clamp01(value, fallback = 0.5) {
+            const number = Number(value);
+            if (!Number.isFinite(number)) return fallback;
+            return Math.max(0, Math.min(1, number));
+        }
+
+        function resolveAsset(src) {
+            if (!src) return '';
+            if (/^(data:|https?:|blob:|\/)/i.test(src)) return src;
+            return ASSET_BASE + src;
+        }
+
+        function resolvePageLogo(page = {}) {
+            if (page.useCustomerLogo === false) return '';
+            if (page.useCustomerLogo === true) {
+                return presentationSettings.customerLogo || page.logo || '';
+            }
+            // Legacy drafts: explicit page logo still works
+            return page.logo || '';
+        }
+
+        function clampZoom(value, fallback = 1) {
+            const number = Number(value);
+            if (!Number.isFinite(number)) return fallback;
+            return Math.max(1, Math.min(2.5, number));
+        }
+
+        function normalizeHeroImage(entry, index = 0) {
+            const defaultPanY = index === 3 ? 0.2 : 0.5;
+            const defaults = {
+                src: '',
+                panX: 0.5,
+                panYFull: 0.5,
+                panY: defaultPanY,
+                zoomFull: 1,
+                zoomCondensed: 1,
+                enabled: true
+            };
+            if (!entry) return { ...defaults };
+            if (typeof entry === 'string') return { ...defaults, src: entry };
+            const zoomFallback = entry.zoom != null ? entry.zoom : 1;
+            const legacyPanY = entry.panY != null ? entry.panY : defaultPanY;
+            return {
+                src: entry.src || entry.url || entry.file || '',
+                panX: clamp01(entry.panX ?? entry.pan, 0.5),
+                panYFull: clamp01(entry.panYFull ?? 0.5, 0.5),
+                panY: clamp01(entry.panYCondensed ?? legacyPanY, defaultPanY),
+                zoomFull: clampZoom(entry.zoomFull ?? zoomFallback, 1),
+                zoomCondensed: clampZoom(entry.zoomCondensed ?? zoomFallback, 1),
+                enabled: entry.enabled !== false
+            };
+        }
+
+        function getActiveHeroImages(list = []) {
+            return list
+                .map((entry, index) => normalizeHeroImage(entry, index))
+                .filter(entry => entry.enabled && entry.src)
+                .slice(0, 4);
+        }
+
+        function heroFrameVars(hero = {}) {
+            const normalized = normalizeHeroImage(hero);
+            return [
+                `--pan-x: ${(normalized.panX * 100).toFixed(0)}%`,
+                `--pan-y-full: ${(normalized.panYFull * 100).toFixed(0)}%`,
+                `--pan-y-condensed: ${(normalized.panY * 100).toFixed(0)}%`,
+                `--zoom-full: ${normalized.zoomFull}`,
+                `--zoom-condensed: ${normalized.zoomCondensed}`
+            ].join('; ') + ';';
+        }
+
+        function sanitizeRichText(html) {
+            const template = document.createElement('template');
+            template.innerHTML = String(html || '');
+            const allowed = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'BR']);
+            const clean = (parent) => {
+                for (let i = 0; i < parent.childNodes.length; i += 1) {
+                    const child = parent.childNodes[i];
+                    if (child.nodeType === Node.TEXT_NODE) continue;
+                    if (child.nodeType !== Node.ELEMENT_NODE) {
+                        parent.removeChild(child);
+                        i -= 1;
+                        continue;
+                    }
+                    if (!allowed.has(child.tagName)) {
+                        while (child.firstChild) parent.insertBefore(child.firstChild, child);
+                        parent.removeChild(child);
+                        i -= 1;
+                        continue;
+                    }
+                    [...child.attributes].forEach(attr => child.removeAttribute(attr.name));
+                    clean(child);
+                }
+            };
+            clean(template.content);
+            return template.innerHTML
+                .replace(/&nbsp;/g, ' ')
+                .replace(/\u00a0/g, ' ')
+                .trim();
+        }
+
         function getVisibleNavList(settingKey, fallbackOrder) {
             const order = presentationSettings[settingKey] || fallbackOrder;
             return order.filter(id => mapData[id] && mapData[id].hidden !== true);
@@ -452,28 +575,24 @@
             const title = document.getElementById('view-title');
             const sub = document.getElementById('view-subtitle');
             title.classList.remove('fade-in'); sub.classList.remove('fade-in');
-            void title.offsetWidth; 
-            title.textContent = '';
-            if (data.logo && data.logoPosition !== 'right') {
-                const logo = document.createElement('img');
-                logo.src = ASSET_BASE + data.logo;
-                logo.alt = `${data.title} logo`;
-                logo.className = 'h-14 w-auto object-contain';
-                title.appendChild(logo);
-            } else {
-                title.innerText = data.title;
-            }
+            void title.offsetWidth;
+            title.innerText = data.title;
             sub.innerText = data.subtitle;
             title.classList.add('fade-in'); sub.classList.add('fade-in');
 
+            const pageLogo = resolvePageLogo(data);
             const stats = document.getElementById('stats-container');
+            const pageStats = Array.isArray(data.stats) ? data.stats : [];
             stats.innerHTML = '';
-            if (data.logo && data.logoPosition === 'right') {
-                stats.innerHTML = `<img src="${ASSET_BASE + data.logo}" alt="${data.title} logo" class="h-14 w-auto object-contain">`;
-            } else {
-                data.stats.forEach(s => {
+            pageStats.forEach(s => {
                 stats.innerHTML += `<div class="flex flex-col items-start border-l border-slate-200 pl-6"><span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">${s.label}</span><span class="text-2xl font-bold ${s.color}">${s.value}</span></div>`;
-                });
+            });
+            if (pageLogo) {
+                // Agenda/capabilities: logo alone on the right. Stats pages: keep stats and tuck logo after them.
+                const logoClass = pageStats.length
+                    ? 'h-14 w-auto object-contain border-l border-slate-200 pl-6 ml-2 shrink-0'
+                    : 'h-14 w-auto object-contain shrink-0';
+                stats.innerHTML += `<img src="${resolveAsset(pageLogo)}" alt="${data.title} logo" class="${logoClass}">`;
             }
 
             const mapLayer = document.getElementById('map-layer');
@@ -493,7 +612,7 @@
                 const fallback = document.getElementById('map-fallback');
                 
                 if (data.file) {
-                    mapImg.src = ASSET_BASE + data.file;
+                    mapImg.src = resolveAsset(data.file);
                     mapImg.classList.remove('hidden');
                     fallback.classList.add('hidden');
                 } else {
@@ -548,24 +667,23 @@
         }
 
         function renderHeroImageCards(images, extraClasses = '') {
-            return images.map((image, index) => `
+            return getActiveHeroImages(images).map((image, index) => `
                 <div class="hero-image-card relative overflow-hidden rounded-2xl shadow-floating bg-slate-200 ${extraClasses}">
-                    <img src="${ASSET_BASE + image}" alt="Tenaska discussion visual ${index + 1}" class="absolute inset-0 w-full h-full object-cover">
+                    <img src="${resolveAsset(image.src)}" alt="Discussion visual ${index + 1}" class="absolute inset-0 w-full h-full object-cover" style="${heroFrameVars(image)}">
                 </div>
             `).join('');
         }
 
         function renderAgendaImageCards(images) {
-            const visibleImages = images.slice(0, 4);
+            const visibleImages = getActiveHeroImages(images);
             const imageCount = Math.max(visibleImages.length, 1);
             const gap = 16;
             const cardWidth = `calc(${100 / imageCount}% - ${((imageCount - 1) * gap) / imageCount}px)`;
             return visibleImages.map((image, index) => {
-                const cropClass = index === 3 ? ' agenda-card-top-crop' : '';
                 const startLeft = index === 0 ? '0px' : `calc(${(index * 100) / imageCount}% + ${(index * gap) / imageCount}px)`;
                 return `
-                    <div class="agenda-card hero-image-card${cropClass} absolute overflow-hidden rounded-2xl shadow-floating bg-slate-200" style="--start-left: ${startLeft}; --card-width: ${cardWidth};">
-                        <img src="${ASSET_BASE + image}" alt="Tenaska discussion visual ${index + 1}" class="absolute inset-0 w-full h-full object-cover">
+                    <div class="agenda-card hero-image-card absolute overflow-hidden rounded-2xl shadow-floating bg-slate-200" style="--start-left: ${startLeft}; --card-width: ${cardWidth};">
+                        <img src="${resolveAsset(image.src)}" alt="Discussion visual ${index + 1}" class="agenda-hero-img absolute inset-0 w-full h-full object-cover" style="${heroFrameVars(image)}">
                     </div>
                 `;
             }).join('');
@@ -633,7 +751,7 @@
                 const content = pageContent.rightfiber;
                 html += `
                     <div class="relative w-full h-full fade-in overflow-hidden rounded-2xl bg-slate-100">
-                        <img src="${ASSET_BASE + content.background}" alt="Rightfiber network map" class="absolute inset-0 w-full h-full object-contain">
+                        <img src="${resolveAsset(content.background)}" alt="Rightfiber network map" class="absolute inset-0 w-full h-full object-contain">
                         <div class="absolute left-12 top-12 w-[560px] rounded-3xl border border-white/60 bg-white/85 p-9 pt-10 shadow-2xl backdrop-blur-sm flex flex-col">
                             <div class="flex items-center gap-4 mb-6">
                                 <div class="h-px w-14 bg-gpc-orange"></div>
@@ -650,17 +768,20 @@
             else if (viewId === 'core-capabilities' && pageContent['core-capabilities']) {
                 const content = pageContent['core-capabilities'];
                 const cards = content.cards || [];
-                const heroImages = (content.heroImages || []).slice(0, 4);
-                const columnCount = Math.max(heroImages.length, 1);
+                const heroSlots = (content.heroImages || [])
+                    .map((image, index) => ({ ...normalizeHeroImage(image, index), card: cards[index] || {}, slotIndex: index }))
+                    .filter(slot => slot.enabled && slot.src)
+                    .slice(0, 4);
+                const columnCount = Math.max(heroSlots.length, 1);
                 html += `
                     <div class="grid gap-4 w-full h-full fade-in" style="grid-template-columns: repeat(${columnCount}, minmax(0, 1fr));">
-                        ${heroImages.map((image, index) => {
-                            const card = cards[index] || {};
+                        ${heroSlots.map((slot, index) => {
+                            const card = slot.card || {};
                             return `
                                 <div id="capability-card-${index}" onclick="toggleCapabilityCard(${index})" class="capability-card relative h-full rounded-3xl shadow-floating cursor-pointer">
                                     <div class="capability-card-inner relative h-full w-full">
                                         <div class="capability-face capability-front absolute inset-0 overflow-hidden rounded-3xl bg-slate-200">
-                                            <img src="${ASSET_BASE + image}" alt="${card.title || `Capability ${index + 1}`}" class="absolute inset-0 w-full h-full object-cover">
+                                            <img src="${resolveAsset(slot.src)}" alt="${card.title || `Capability ${index + 1}`}" class="capability-hero-img absolute inset-0 w-full h-full object-cover" style="${heroFrameVars(slot)}">
                                         </div>
                                         <div class="capability-face capability-back absolute inset-0 overflow-hidden rounded-3xl bg-white text-gpc-orange flex flex-col">
                                             <div class="bg-gpc-orange h-32 px-8 flex items-center justify-center border-b-4 border-black">
@@ -669,9 +790,9 @@
                                             <div class="capability-body flex-1 px-8 pb-8 pt-12">
                                             ${Array.isArray(card.points) ? `
                                                 <ul class="list-disc list-outside pl-6 space-y-8 text-xl leading-snug font-bold text-gpc-orange [&_li]:pl-1">
-                                                    ${card.points.map(point => `<li>${point}</li>`).join('')}
+                                                    ${card.points.map(point => `<li>${sanitizeRichText(point)}</li>`).join('')}
                                                 </ul>
-                                            ` : `<p class="text-2xl leading-snug font-bold text-gpc-orange">${card.desc || ''}</p>`}
+                                            ` : `<p class="text-2xl leading-snug font-bold text-gpc-orange">${sanitizeRichText(card.desc || '')}</p>`}
                                             </div>
                                         </div>
                                     </div>

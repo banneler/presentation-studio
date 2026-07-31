@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/editor.html",
+      "permanent": false
+    }
+  ]
+}

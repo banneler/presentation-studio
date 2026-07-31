@@ -4,142 +4,215 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Presentation Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        ink: '#07162d',
-                        maroon: 'rgb(var(--hero-color-rgb) / <alpha-value>)'
+                        brand: { orange: '#DE5A24', navy: '#12243D' }
                     }
                 }
             }
         };
     </script>
     <style>
-        :root { --hero-color: #991a38; --hero-color-rgb: 153 26 56; }
-        body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-        .field-label { display: block; margin-bottom: 0.35rem; font-size: 0.68rem; font-weight: 900; letter-spacing: 0.16em; text-transform: uppercase; color: rgb(100 116 139); }
-        .field-input { width: 100%; border-radius: 0.75rem; border: 1px solid rgb(203 213 225); background: white; padding: 0.7rem 0.85rem; font-size: 0.9rem; color: rgb(15 23 42); outline: none; }
-        .field-input:focus { border-color: var(--hero-color); box-shadow: 0 0 0 3px rgba(var(--hero-color-rgb), 0.12); }
-        .nav-row.dragging { opacity: 0.45; }
-        .nav-dot { appearance: none; width: 1rem; height: 1rem; border-radius: 9999px; border: 1px solid rgba(148, 163, 184, 0.65); cursor: pointer; background: transparent; }
-        .nav-dot:checked { background: var(--hero-color); border-color: var(--hero-color); box-shadow: inset 0 0 0 3px rgb(30 41 59); }
-        .modal-backdrop { background: rgba(7, 22, 45, 0.72); }
+        :root { --hero-color: #991a38; --hero-color-rgb: 153 26 56; --brand-orange: #DE5A24; }
+        body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .field-label { display: block; margin-bottom: 0.25rem; font-size: 0.75rem; font-weight: 600; color: rgb(51 65 85); }
+        .field-label-micro { display: block; margin-bottom: 0.35rem; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgb(100 116 139); }
+        .field-input { width: 100%; border-radius: 0.375rem; border: 1px solid rgb(203 213 225); background: rgb(248 250 252); padding: 0.5rem 0.75rem; font-size: 0.875rem; color: rgb(30 41 59); outline: none; transition: border-color 0.15s ease, background 0.15s ease; }
+        .field-input:focus { border-color: #f97316; background: white; }
+        .btn-primary { background: #f97316; color: white; font-weight: 700; padding: 0.5rem 1.25rem; border-radius: 0.375rem; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); transition: background 0.15s ease; }
+        .btn-primary:hover { background: #ea580c; }
+        .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+        .btn-secondary { background: rgb(241 245 249); color: rgb(51 65 85); font-weight: 700; padding: 0.5rem 0.85rem; border-radius: 0.5rem; border: 1px solid rgb(203 213 225); box-shadow: 0 1px 2px rgb(0 0 0 / 0.05); transition: background 0.15s ease; }
+        .btn-secondary:hover { background: rgb(226 232 240); }
+        .btn-dark { background: rgb(30 41 59); color: white; font-weight: 700; padding: 0.5rem 0.85rem; border-radius: 0.5rem; transition: background 0.15s ease; }
+        .btn-dark:hover { background: rgb(15 23 42); }
+        .panel { background: white; border: 1px solid rgb(226 232 240); border-radius: 0.75rem; box-shadow: 0 1px 2px rgb(0 0 0 / 0.05); }
+        .nav-row.dragging { opacity: 0.55; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15); }
+        .nav-dot { appearance: none; width: 1rem; height: 1rem; border-radius: 9999px; border: 1px solid rgb(203 213 225); cursor: pointer; background: white; }
+        .nav-dot:checked { background: #f97316; border-color: #f97316; box-shadow: inset 0 0 0 3px white; }
+        .modal-backdrop { background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); }
+        /* Rotate horizontal ranges — writing-mode is unreliable for range tracks */
+        .slider-v-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.5rem;
+            flex-shrink: 0;
+        }
+        .slider-v-wrap input[type="range"] {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            margin: 0;
+            padding: 0;
+            height: 1.15rem;
+            accent-color: #f97316;
+            cursor: pointer;
+            transform-origin: center center;
+            transform: translate(-50%, -50%) rotate(-90deg);
+        }
+        /* Pan V: min (top of image) at top of control */
+        .slider-v-wrap.slider-v-pan input[type="range"] {
+            transform: translate(-50%, -50%) rotate(90deg);
+        }
+        .capability-edit-card .rich-bullet {
+            min-height: 3.25rem;
+            line-height: 1.45;
+        }
+        .capability-edit-card .rich-bullet:focus {
+            border-color: #f97316;
+            background: white;
+        }
+        .capability-edit-card .rich-bullet b,
+        .capability-edit-card .rich-bullet strong { font-weight: 800; }
+        .capability-edit-card .rich-bullet i,
+        .capability-edit-card .rich-bullet em { font-style: italic; }
+        .capability-edit-card .rich-bullet u { text-decoration: underline; }
+        .rich-toolbar button.is-active {
+            background: #ffedd5;
+            border-color: #fb923c;
+            color: #c2410c;
+        }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-900">
-    <div id="studio-shell" class="h-screen grid overflow-hidden" style="grid-template-columns: 440px 8px minmax(0, 1fr);">
-        <aside class="bg-ink text-white overflow-y-auto border-r border-slate-900">
-            <div class="sticky top-0 z-10 bg-ink/95 backdrop-blur border-b border-white/10 p-6 space-y-4">
-                <div>
-                    <p class="text-maroon text-xs font-black uppercase tracking-[0.35em] mb-2">Presentation Studio</p>
-                    <h1 class="text-3xl font-black tracking-tight">Template Editor</h1>
-                    <p class="text-slate-300 text-sm mt-2 leading-relaxed">Name a presentation, publish it to a live directory, then create a tracked follow-up after the meeting.</p>
-                </div>
+<body class="bg-slate-100 text-slate-800 h-screen flex flex-col overflow-hidden">
+    <header class="bg-slate-900 text-white px-4 py-3 shadow-md flex justify-between items-center z-20 border-b-4 border-orange-500 shrink-0">
+        <div class="flex items-center gap-4 min-w-0">
+            <img src="GPC-White-1-1.webp" alt="Great Plains Communications" class="h-8 flex-shrink-0">
+            <h1 class="text-xl font-bold tracking-wide border-l border-slate-700 pl-4 flex-shrink-0">Presentation Studio</h1>
+            <p id="status-line" class="hidden sm:block text-sm font-medium text-slate-300 ml-1 truncate">Draft not saved yet.</p>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+            <button id="follow-up-btn" type="button" class="btn-secondary text-sm hidden sm:inline-flex">Create Follow-Up</button>
+            <button id="publish-btn" type="button" class="btn-primary text-sm">Publish</button>
+        </div>
+    </header>
 
-                <div class="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-3">
+    <div id="studio-shell" class="flex-1 grid overflow-hidden min-h-0" style="grid-template-columns: 440px 6px minmax(0, 1fr);">
+        <aside class="bg-white overflow-y-auto border-r border-slate-200 shadow-inner">
+            <div class="border-b border-slate-100 p-6 space-y-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2 mb-3">1. Presentation</h2>
+                    <p class="text-xs text-slate-500 mb-4">Name a deck, publish to a live directory, then create a tracked follow-up after the meeting.</p>
+                </div>
+                <div class="space-y-3">
                     <label>
-                        <span class="field-label text-slate-400">Presentation Name</span>
+                        <span class="field-label">Presentation Name</span>
                         <input id="presentation-name" class="field-input" placeholder="Tenaska">
                     </label>
                     <label>
-                        <span class="field-label text-slate-400">Directory Slug</span>
-                        <input id="presentation-slug" class="field-input font-mono text-xs" placeholder="tenaska">
+                        <span class="field-label">Rep Name</span>
+                        <input id="rep-name" class="field-input" placeholder="Alex Rivera">
                     </label>
-                    <p id="status-line" class="text-xs text-slate-400">Draft not saved yet.</p>
+                    <div class="flex items-start gap-3">
+                        <div class="shrink-0">
+                            <span class="field-label">Hero Color</span>
+                            <label class="block h-14 w-28 rounded-lg border border-slate-200 overflow-hidden cursor-pointer" title="Presentation accent only">
+                                <input id="hero-color" type="color" class="h-full w-full cursor-pointer border-0 p-0 bg-transparent" value="#991a38">
+                            </label>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <span class="field-label">Customer Logo</span>
+                            <div class="flex items-start gap-3">
+                                <div id="customer-logo-preview" class="h-14 w-28 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+                                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">None</span>
+                                </div>
+                                <div class="min-w-0 flex-1 space-y-2">
+                                    <input id="customer-logo-path" class="field-input font-mono text-xs" placeholder="logo.png or upload below">
+                                    <input id="customer-logo-file" type="file" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-bold file:text-slate-700">
+                                    <button id="customer-logo-clear" type="button" class="text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-red-500">Clear logo</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="p-6 space-y-6">
-                <section class="rounded-2xl bg-white/5 border border-white/10 p-4">
-                    <div class="flex items-center justify-between mb-3">
-                        <h2 class="text-sm font-black uppercase tracking-widest text-slate-200">Library</h2>
-                        <button id="refresh-library" type="button" class="text-[10px] uppercase tracking-widest text-slate-400 hover:text-white">Refresh</button>
+            <div class="p-6 space-y-8">
+                <section>
+                    <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+                        <h2 class="text-lg font-bold text-slate-800">Library</h2>
+                        <button id="refresh-library" type="button" class="text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-orange-500 transition">Refresh</button>
                     </div>
-                    <button id="new-presentation" type="button" class="mb-3 w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-left text-sm font-bold text-white hover:bg-white/10">+ New from template</button>
-                    <div id="library-list" class="space-y-2 text-sm text-slate-300">Loading...</div>
+                    <button id="new-presentation" type="button" class="mb-3 w-full text-left px-3 py-2 rounded-lg border border-slate-200 bg-white hover:border-orange-500 hover:bg-orange-50/80 text-sm font-medium text-slate-700 shadow-sm transition">+ New from template</button>
+                    <div id="library-list" class="space-y-2 text-sm">Loading...</div>
                 </section>
 
-                <section class="rounded-2xl bg-white/5 border border-white/10 p-4">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-sm font-black uppercase tracking-widest text-slate-200">Pages</h2>
-                        <span class="text-[10px] uppercase tracking-widest text-slate-400">Drag to reorder</span>
+                <section>
+                    <div class="flex items-center justify-between mb-1">
+                        <h2 class="text-lg font-bold text-slate-800">2. Pages</h2>
+                        <span class="text-xs text-slate-500">Drag to reorder</span>
                     </div>
+                    <p class="text-xs text-slate-500 mb-4 border-b border-slate-100 pb-2">Toggle Key Concepts / Extended visibility</p>
                     <div id="page-list" class="space-y-2"></div>
                 </section>
 
-                <section class="rounded-2xl bg-white text-slate-900 p-5 shadow-xl">
-                    <div class="mb-5">
-                        <p class="text-maroon text-xs font-black uppercase tracking-[0.28em] mb-2">Selected Page</p>
-                        <h2 id="selected-heading" class="text-2xl font-black">Loading...</h2>
+                <section class="panel p-5">
+                    <div class="mb-4 border-b border-slate-100 pb-3">
+                        <p class="field-label-micro mb-1">Selected Page</p>
+                        <h2 id="selected-heading" class="text-2xl font-bold text-slate-800">Loading...</h2>
                     </div>
                     <div id="editor-fields" class="space-y-4"></div>
                 </section>
             </div>
         </aside>
 
-        <div id="splitter" class="bg-slate-300 hover:bg-maroon cursor-col-resize transition-colors" title="Drag to resize editor and preview"></div>
+        <div id="splitter" class="bg-slate-200 hover:bg-orange-400 cursor-col-resize transition-colors" title="Drag to resize editor and preview"></div>
 
-        <main class="flex flex-col min-w-0">
-            <div class="bg-white border-b border-slate-200 p-4 flex flex-wrap items-center gap-3">
-                <button id="save-local" class="rounded-xl bg-ink px-4 py-2 text-sm font-black text-white hover:bg-slate-800">Save Draft</button>
-                <button id="refresh-preview" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-800 hover:bg-slate-50">Refresh Preview</button>
-                <button id="publish-btn" class="rounded-xl bg-maroon px-4 py-2 text-sm font-black text-white hover:bg-maroon/90">Publish</button>
-                <button id="follow-up-btn" class="rounded-xl border border-maroon/40 bg-white px-4 py-2 text-sm font-black text-maroon hover:bg-maroon/5">Create Follow-Up</button>
-                <button id="make-link" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-600 hover:bg-slate-50">Copy Draft Link</button>
-                <button id="reset-draft" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-600 hover:bg-slate-50">Reset</button>
-                <div class="ml-auto flex items-center gap-2">
-                    <label class="field-label mb-0">Hero Color</label>
-                    <input id="hero-color" type="color" class="h-10 w-12 rounded-lg border border-slate-300 bg-white p-1" value="#991a38">
-                </div>
+        <main class="flex flex-col min-w-0 bg-slate-100">
+            <div class="bg-white border-b border-slate-200 px-4 py-3 flex flex-wrap items-center gap-2">
+                <button id="save-local" type="button" class="btn-dark text-sm">Save Draft</button>
+                <button id="refresh-preview" type="button" class="btn-secondary text-sm">Refresh Preview</button>
+                <button id="make-link" type="button" class="btn-secondary text-sm">Copy Draft Link</button>
+                <button id="reset-draft" type="button" class="btn-secondary text-sm">Reset</button>
             </div>
 
-            <div id="publish-panel" class="hidden border-b border-slate-200 bg-white p-4 space-y-3">
+            <div id="publish-panel" class="hidden border-b border-slate-200 bg-white px-4 py-3 space-y-3">
                 <div>
                     <label class="field-label">Live Presentation URL</label>
-                    <div class="flex gap-3">
+                    <div class="flex gap-2">
                         <input id="live-url" class="field-input font-mono text-xs" readonly>
-                        <button id="copy-live-url" class="rounded-xl bg-ink px-4 py-2 text-sm font-black text-white">Copy</button>
+                        <button id="copy-live-url" type="button" class="btn-dark text-sm shrink-0">Copy</button>
                     </div>
                 </div>
                 <div id="follow-up-url-wrap" class="hidden">
                     <label class="field-label">Follow-Up URL</label>
-                    <div class="flex gap-3">
+                    <div class="flex gap-2">
                         <input id="follow-up-url" class="field-input font-mono text-xs" readonly>
-                        <button id="copy-follow-up-url" class="rounded-xl bg-ink px-4 py-2 text-sm font-black text-white">Copy</button>
+                        <button id="copy-follow-up-url" type="button" class="btn-dark text-sm shrink-0">Copy</button>
                     </div>
                 </div>
-                <p id="publish-note" class="text-xs text-slate-500">Publishing writes `presentations/{slug}/` to GitHub and goes live after Vercel deploys.</p>
-            </div>
-
-            <div id="share-panel" class="hidden border-b border-slate-200 bg-white p-4">
-                <label class="field-label">Local Draft Link (escape hatch)</label>
-                <div class="flex gap-3">
-                    <input id="share-url" class="field-input font-mono text-xs" readonly>
-                    <button id="copy-link" class="rounded-xl bg-ink px-4 py-2 text-sm font-black text-white">Copy</button>
-                </div>
-                <p class="mt-2 text-xs text-slate-500">Encoded draft config for quick local sharing. Prefer Publish for customer links.</p>
             </div>
 
             <div class="flex-1 min-h-0 p-4">
-                <iframe id="preview" title="Presentation preview" class="w-full h-full rounded-2xl border border-slate-300 bg-slate-50 shadow-xl" src="index.html?preview=1"></iframe>
+                <iframe id="preview" title="Presentation preview" class="w-full h-full rounded-xl border border-slate-200 bg-white shadow-sm" src="index.html?preview=1"></iframe>
             </div>
         </main>
     </div>
 
     <div id="follow-up-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop p-6">
-        <div class="w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl">
-            <div class="mb-6 flex items-start justify-between gap-4">
+        <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 overflow-hidden">
+            <div class="bg-slate-50 border-b border-slate-200 px-6 py-5 flex items-start justify-between gap-4">
                 <div>
-                    <p class="text-maroon text-xs font-black uppercase tracking-[0.28em] mb-2">Follow-Up</p>
-                    <h2 class="text-3xl font-black text-slate-950">Create Meeting Recap</h2>
-                    <p class="mt-2 text-slate-600">Clone this deck into a tracked follow-up directory with concise next steps.</p>
+                    <p class="field-label-micro mb-1">Follow-Up</p>
+                    <h2 class="text-2xl font-bold text-slate-800">Create Meeting Recap</h2>
+                    <p class="mt-1 text-sm text-slate-500">Clone this deck into a tracked follow-up directory with concise next steps.</p>
                 </div>
-                <button id="close-follow-up" type="button" class="text-slate-400 hover:text-slate-700 text-xl font-black">✕</button>
+                <button id="close-follow-up" type="button" class="text-slate-400 hover:text-slate-700 text-xl font-bold leading-none">✕</button>
             </div>
-            <div class="space-y-4">
+            <div class="px-6 py-5 space-y-4">
                 <label>
                     <span class="field-label">Recap Headline</span>
                     <textarea id="recap-headline" rows="2" class="field-input resize-y">Thank you for the conversation. Here are the next steps.</textarea>
@@ -152,13 +225,13 @@ Schedule time with key technical stakeholders.
 Share Rightfiber / Ritter Communications merger update and expanded fiber footprint.</textarea>
                 </label>
                 <label class="flex items-center gap-3 text-sm font-semibold text-slate-700">
-                    <input id="recap-rightfiber" type="checkbox" checked class="h-4 w-4 accent-[color:var(--hero-color)]">
+                    <input id="recap-rightfiber" type="checkbox" checked class="h-4 w-4 accent-orange-500">
                     Include Rightfiber in Key Concepts and Extended
                 </label>
             </div>
-            <div class="mt-8 flex justify-end gap-3">
-                <button id="cancel-follow-up" type="button" class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-black text-slate-600">Cancel</button>
-                <button id="confirm-follow-up" type="button" class="rounded-xl bg-maroon px-4 py-2 text-sm font-black text-white">Publish Follow-Up</button>
+            <div class="bg-slate-50 border-t border-slate-200 px-6 py-4 flex justify-end gap-2">
+                <button id="cancel-follow-up" type="button" class="btn-secondary text-sm">Cancel</button>
+                <button id="confirm-follow-up" type="button" class="btn-primary text-sm">Publish Follow-Up</button>
             </div>
         </div>
     </div>
@@ -176,6 +249,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         let draggedPageId = null;
         let presentationName = '';
         let presentationSlug = '';
+        let repName = '';
         let publishedUrl = '';
         let followUpUrl = '';
         let library = [];
@@ -188,7 +262,11 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         const splitter = document.getElementById('splitter');
         const heroColorInput = document.getElementById('hero-color');
         const nameInput = document.getElementById('presentation-name');
-        const slugInput = document.getElementById('presentation-slug');
+        const repNameInput = document.getElementById('rep-name');
+        const customerLogoPath = document.getElementById('customer-logo-path');
+        const customerLogoFile = document.getElementById('customer-logo-file');
+        const customerLogoClear = document.getElementById('customer-logo-clear');
+        const customerLogoPreview = document.getElementById('customer-logo-preview');
         const statusLine = document.getElementById('status-line');
         const libraryList = document.getElementById('library-list');
         const followUpModal = document.getElementById('follow-up-modal');
@@ -211,14 +289,6 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             return slug ? `presentation-studio-draft:${slug}` : LEGACY_STORAGE_KEY;
         }
 
-        function encodeConfig(value) {
-            const json = JSON.stringify(value);
-            const bytes = new TextEncoder().encode(json);
-            let binary = '';
-            bytes.forEach(byte => binary += String.fromCharCode(byte));
-            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-        }
-
         function hexToRgbParts(color) {
             const normalized = String(color || '').trim();
             const match = normalized.match(/^#?([a-f\d]{3}|[a-f\d]{6})$/i);
@@ -227,6 +297,55 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             if (hex.length === 3) hex = hex.split('').map(char => char + char).join('');
             return [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
         }
+
+        function clamp01(value, fallback = 0.5) {
+            const number = Number(value);
+            if (!Number.isFinite(number)) return fallback;
+            return Math.max(0, Math.min(1, number));
+        }
+
+        function clampZoom(value, fallback = 1) {
+            const number = Number(value);
+            if (!Number.isFinite(number)) return fallback;
+            return Math.max(1, Math.min(2.5, number));
+        }
+
+        function resolveEditorAsset(src) {
+            if (!src) return '';
+            if (/^(data:|https?:|blob:|\/)/i.test(src)) return src;
+            return src;
+        }
+
+        function normalizeHeroImage(entry, index = 0) {
+            const defaultPanY = index === 3 ? 0.2 : 0.5;
+            const defaults = {
+                src: '',
+                panX: 0.5,
+                panYFull: 0.5,
+                panY: defaultPanY,
+                zoomFull: 1,
+                zoomCondensed: 1,
+                enabled: true
+            };
+            if (!entry) return { ...defaults };
+            if (typeof entry === 'string') return { ...defaults, src: entry };
+            const zoomFallback = entry.zoom != null ? entry.zoom : 1;
+            const legacyPanY = entry.panY != null ? entry.panY : defaultPanY;
+            return {
+                src: entry.src || entry.url || entry.file || '',
+                panX: clamp01(entry.panX ?? entry.pan, 0.5),
+                panYFull: clamp01(entry.panYFull ?? 0.5, 0.5),
+                panY: clamp01(entry.panYCondensed ?? legacyPanY, defaultPanY),
+                zoomFull: clampZoom(entry.zoomFull ?? zoomFallback, 1),
+                zoomCondensed: clampZoom(entry.zoomCondensed ?? zoomFallback, 1),
+                enabled: entry.enabled !== false
+            };
+        }
+
+        function normalizeHeroImageList(list = []) {
+            return list.map((entry, index) => normalizeHeroImage(entry, index));
+        }
+
 
         function normalizeHeroColor(color) {
             const fallback = '#991a38';
@@ -258,7 +377,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         function setEditorWidth(width) {
             const maxWidth = Math.max(520, window.innerWidth - 520);
             const clampedWidth = Math.min(Math.max(width, 320), maxWidth);
-            studioShell.style.gridTemplateColumns = `${clampedWidth}px 8px minmax(0, 1fr)`;
+            studioShell.style.gridTemplateColumns = `${clampedWidth}px 6px minmax(0, 1fr)`;
             localStorage.setItem(EDITOR_WIDTH_KEY, String(clampedWidth));
         }
 
@@ -290,19 +409,9 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             statusLine.textContent = message;
         }
 
-        function syncNameFields(fromName = false) {
-            if (fromName) {
-                presentationName = nameInput.value.trim();
-                if (!slugInput.dataset.manual || slugInput.dataset.manual === '0') {
-                    presentationSlug = slugify(presentationName);
-                    slugInput.value = presentationSlug;
-                }
-            } else {
-                presentationSlug = slugify(slugInput.value);
-                slugInput.value = presentationSlug;
-                slugInput.dataset.manual = presentationSlug ? '1' : '0';
-            }
+        function syncNameFields() {
             presentationName = nameInput.value.trim();
+            presentationSlug = slugify(presentationName);
         }
 
         function prepareDraft(data) {
@@ -315,15 +424,54 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             draft.settings.extendedNav = draft.settings.extendedNav || (draft.navOrder || []).slice();
             draft.settings.keyConceptsNav = draft.settings.keyConceptsNav || DEFAULT_KEY_CONCEPTS_NAV.filter(id => draft.mapData[id]);
             draft.settings.heroColor = normalizeHeroColor(draft.settings.heroColor);
+            draft.settings.repName = draft.settings.repName || '';
+            draft.settings.customerLogo = draft.settings.customerLogo || '';
             applyHeroColor(draft.settings.heroColor);
+
+            Object.values(draft.mapData || {}).forEach(page => {
+                if (page.useCustomerLogo === undefined) {
+                    page.useCustomerLogo = Boolean(page.logo);
+                }
+                if (!draft.settings.customerLogo && page.logo) {
+                    draft.settings.customerLogo = page.logo;
+                }
+            });
+
+            ['agenda', 'core-capabilities'].forEach(pageId => {
+                if (draft.pageContent?.[pageId]?.heroImages) {
+                    draft.pageContent[pageId].heroImages = normalizeHeroImageList(draft.pageContent[pageId].heroImages);
+                }
+            });
             pageOrder = draft.settings.editorPageOrder || buildDefaultPageOrder();
             selectedPageId = pageOrder[0];
+            syncIdentityFieldsFromDraft();
+        }
+
+        function syncIdentityFieldsFromDraft() {
+            repName = draft?.settings?.repName || repName || '';
+            if (repNameInput) repNameInput.value = repName;
+            if (customerLogoPath) {
+                const logo = draft?.settings?.customerLogo || '';
+                customerLogoPath.value = logo.startsWith('data:') ? '(uploaded image)' : logo;
+            }
+            updateCustomerLogoPreview();
+        }
+
+        function updateCustomerLogoPreview() {
+            if (!customerLogoPreview) return;
+            const src = resolveEditorAsset(draft?.settings?.customerLogo || '');
+            if (!src) {
+                customerLogoPreview.innerHTML = '<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">None</span>';
+                return;
+            }
+            customerLogoPreview.innerHTML = `<img src="${src.replace(/"/g, '&quot;')}" alt="Customer logo" class="max-h-full max-w-full object-contain p-1">`;
         }
 
         function persistActive() {
             localStorage.setItem(ACTIVE_KEY, JSON.stringify({
                 name: presentationName,
                 slug: presentationSlug,
+                repName,
                 publishedUrl,
                 followUpUrl
             }));
@@ -337,14 +485,16 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             const active = JSON.parse(localStorage.getItem(ACTIVE_KEY) || 'null');
             presentationName = active?.name || '';
             presentationSlug = active?.slug || '';
+            repName = active?.repName || '';
             publishedUrl = active?.publishedUrl || '';
             followUpUrl = active?.followUpUrl || '';
             nameInput.value = presentationName;
-            slugInput.value = presentationSlug;
-            if (presentationSlug) slugInput.dataset.manual = '1';
+            if (repNameInput) repNameInput.value = repName;
+            if (!presentationSlug && presentationName) presentationSlug = slugify(presentationName);
 
             const saved = localStorage.getItem(draftKey()) || (!presentationSlug ? localStorage.getItem(LEGACY_STORAGE_KEY) : null);
             prepareDraft(saved ? JSON.parse(saved) : baseData);
+            if (!draft.settings.repName && repName) draft.settings.repName = repName;
             render();
             updatePublishPanel();
             saveLocal(false);
@@ -374,6 +524,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             draft.navOrder = draft.settings.extendedNav.slice();
             draft.settings.presentationName = presentationName;
             draft.settings.presentationSlug = presentationSlug;
+            draft.settings.repName = repName;
         }
 
         function render() {
@@ -388,9 +539,12 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 return;
             }
             libraryList.innerHTML = library.map(item => `
-                <button type="button" data-open-slug="${item.slug}" class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left hover:bg-white/10">
-                    <p class="font-black text-white truncate">${escapeHtml(item.name)}</p>
-                    <p class="text-[11px] text-slate-400 font-mono">/${escapeHtml(item.slug)}/${item.hasFollowUp ? ' · follow-up' : ''}</p>
+                <button type="button" data-open-slug="${item.slug}" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left shadow-sm hover:border-orange-400 hover:bg-orange-50/80 transition group">
+                    <div class="flex items-start justify-between gap-2">
+                        <p class="font-semibold text-slate-800 truncate group-hover:text-slate-900">${escapeHtml(item.name)}</p>
+                        ${item.repName ? `<span class="shrink-0 text-[11px] font-semibold text-slate-500">${escapeHtml(item.repName)}</span>` : ''}
+                    </div>
+                    ${item.hasFollowUp ? '<p class="text-[11px] text-slate-500 mt-1">Includes follow-up</p>' : ''}
                 </button>
             `).join('');
             libraryList.querySelectorAll('[data-open-slug]').forEach(button => {
@@ -414,20 +568,17 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
         async function openPublished(slug) {
             try {
-                const response = await fetch(`/presentations/${slug}/content.json?t=${Date.now()}`);
-                if (!response.ok) throw new Error('Could not load published content');
-                const content = await response.json();
+                const response = await fetch(`/api/get-presentation?slug=${encodeURIComponent(slug)}&t=${Date.now()}`);
+                const data = await response.json();
+                if (!response.ok || !data.ok) throw new Error(data.error || 'Could not load published content');
+                const content = data.content;
                 presentationName = content.settings?.presentationName || content.meta?.name || slug;
                 presentationSlug = slug;
-                publishedUrl = `${window.location.origin}/presentations/${slug}/`;
-                followUpUrl = '';
-                try {
-                    const followResponse = await fetch(`/presentations/${slug}/follow-up/content.json?t=${Date.now()}`);
-                    if (followResponse.ok) followUpUrl = `${window.location.origin}/presentations/${slug}/follow-up/`;
-                } catch (error) {}
+                repName = content.settings?.repName || content.meta?.repName || '';
+                publishedUrl = `${window.location.origin}${data.url || `/presentations/${slug}/`}`;
+                followUpUrl = data.followUpUrl ? `${window.location.origin}${data.followUpUrl}` : '';
                 nameInput.value = presentationName;
-                slugInput.value = presentationSlug;
-                slugInput.dataset.manual = '1';
+                if (repNameInput) repNameInput.value = repName;
                 prepareDraft(content);
                 render();
                 updatePublishPanel();
@@ -444,7 +595,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             const keyVisible = new Set(draft.settings.keyConceptsNav || []);
             const extendedVisible = new Set(draft.settings.extendedNav || draft.navOrder || []);
             pageList.innerHTML = `
-                <div class="grid grid-cols-[1.5rem_minmax(0,1fr)_3rem_3rem] gap-3 px-3 pb-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                <div class="grid grid-cols-[1.5rem_minmax(0,1fr)_3rem_3rem] gap-3 px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                     <span></span><span></span><span class="text-center">Key</span><span class="text-center">Ext</span>
                 </div>
             ` + pageOrder.map((id, index) => {
@@ -452,11 +603,11 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 if (!page) return '';
                 const isSelected = id === selectedPageId;
                 return `
-                    <div draggable="true" data-page-id="${id}" class="nav-row rounded-xl border ${isSelected ? 'border-maroon bg-maroon/15' : 'border-white/10 bg-white/5'} p-3 cursor-pointer">
+                    <div draggable="true" data-page-id="${id}" class="nav-row rounded-lg border border-slate-200 bg-slate-50 p-3 cursor-grab shadow-sm group transition hover:border-orange-300 ${isSelected ? 'border-l-4 border-l-orange-400 bg-orange-50/60' : ''}">
                         <div class="grid grid-cols-[1.5rem_minmax(0,1fr)_3rem_3rem] items-center gap-3">
-                            <span class="text-xs text-slate-500 font-black w-5">${index + 1}</span>
-                            <div class="min-w-0 flex-1" data-select-id="${id}">
-                                <p class="truncate text-sm font-black text-white">${page.navLabel || page.title || id}</p>
+                            <span class="text-xs text-slate-400 font-bold w-5 group-hover:text-orange-500 transition">${index + 1}</span>
+                            <div class="min-w-0 flex-1 cursor-pointer" data-select-id="${id}">
+                                <p class="truncate text-sm font-medium text-slate-700">${page.navLabel || page.title || id}</p>
                                 <p class="truncate text-[11px] text-slate-400">${id}</p>
                             </div>
                             <div class="flex justify-center">
@@ -560,11 +711,28 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             if (!page) return;
             selectedHeading.textContent = page.navLabel || page.title || selectedPageId;
 
+            const logoToggleId = `use-logo-${Math.random().toString(36).slice(2)}`;
+            setTimeout(() => {
+                const toggle = document.getElementById(logoToggleId);
+                if (!toggle) return;
+                toggle.addEventListener('change', () => {
+                    page.useCustomerLogo = toggle.checked;
+                    if (toggle.checked && draft.settings.customerLogo) page.logo = draft.settings.customerLogo;
+                    if (!toggle.checked) delete page.logo;
+                });
+            });
+
             let html = `
                 ${input('Title', page.title, value => page.title = value)}
                 ${input('Nav Label', page.navLabel || '', value => page.navLabel = value)}
                 ${input('Subtitle', page.subtitle || '', value => page.subtitle = value)}
-                ${imageField('Customer / Page Logo', page.logo || '', value => page.logo = value)}
+                <label class="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700 cursor-pointer">
+                    <input id="${logoToggleId}" type="checkbox" ${page.useCustomerLogo ? 'checked' : ''} class="h-4 w-4 accent-orange-500">
+                    <span>
+                        Show customer logo on this page
+                        <span class="block text-[11px] font-normal text-slate-500 mt-0.5">${draft.settings.customerLogo ? 'Uses the global customer logo above.' : 'Upload a global customer logo above first.'}</span>
+                    </span>
+                </label>
             `;
 
             if (page.type === 'map') {
@@ -573,15 +741,21 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             }
 
             if (selectedPageId === 'agenda' && content) {
+                content.heroImages = normalizeHeroImageList(content.heroImages || []);
                 html += `<hr class="border-slate-200 my-5">`;
                 html += textarea('Agenda Headline', content.headline || '', value => content.headline = value, 2);
                 html += editStringArray('Agenda Items', content.items || [], value => content.items = value);
-                html += editStringArray('Agenda Hero Images', content.heroImages || [], value => content.heroImages = value, true);
+                html += editHeroImages('Agenda Hero Images', content.heroImages, value => {
+                    content.heroImages = value;
+                }, { dualCrop: true });
             }
 
             if (selectedPageId === 'core-capabilities' && content) {
+                content.heroImages = normalizeHeroImageList(content.heroImages || []);
                 html += `<hr class="border-slate-200 my-5">`;
-                html += editStringArray('Capability Hero Images', content.heroImages || [], value => content.heroImages = value, true);
+                html += editHeroImages('Capability Hero Images', content.heroImages, value => {
+                    content.heroImages = value;
+                }, { dualCrop: false });
                 html += editCapabilityCards(content.cards || [], value => content.cards = value);
             }
 
@@ -647,13 +821,13 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 <div id="${id}" class="space-y-3">
                     <div class="flex items-center justify-between">
                         <span class="field-label mb-0">${label}</span>
-                        <button type="button" data-add-item class="rounded-lg bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">Add</button>
+                        <button type="button" data-add-item class="rounded-lg bg-slate-100 hover:bg-orange-50 hover:text-orange-600 border border-slate-200 px-3 py-1 text-xs font-bold text-slate-700 transition">Add</button>
                     </div>
                     ${values.map((value, index) => `
-                        <div class="rounded-xl border border-slate-200 p-3">
+                        <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
                             <div class="flex gap-2">
                                 <input data-array-index="${index}" class="field-input" value="${escapeAttr(value)}">
-                                <button type="button" data-remove-index="${index}" class="rounded-lg border border-slate-200 px-3 text-xs font-black text-slate-500">Remove</button>
+                                <button type="button" data-remove-index="${index}" class="rounded-lg border border-slate-200 px-3 text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 transition">Remove</button>
                             </div>
                             ${images ? `<input data-file-index="${index}" type="file" accept="image/*" class="mt-2 block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-bold file:text-slate-700">` : ''}
                         </div>
@@ -662,23 +836,411 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             `;
         }
 
-        function editCapabilityCards(cards, onChange) {
-            const id = `cards-${Math.random().toString(36).slice(2)}`;
+        function heroPreviewMetrics(activeCount, mode) {
+            const n = Math.max(1, Math.min(4, activeCount || 1));
+            // Approximate presentation column aspect as image count changes (wider when fewer columns).
+            if (mode === 'full') {
+                const h = 200;
+                const w = Math.round(Math.min(150, Math.max(58, (h * 1.7) / n)));
+                return { w, h };
+            }
+            if (mode === 'capability') {
+                const h = 210;
+                const w = Math.round(Math.min(130, Math.max(64, (h * 1.55) / n)));
+                return { w, h };
+            }
+            const h = 88;
+            const w = Math.round(Math.min(150, Math.max(58, (h * 3.5) / n)));
+            return { w, h };
+        }
+
+        function verticalSliderMarkup(height, attrs, pan = false) {
+            return `
+                <div class="slider-v-wrap${pan ? ' slider-v-pan' : ''}" style="height:${height}px;">
+                    <input type="range" ${attrs} style="width:${height}px;">
+                </div>
+            `;
+        }
+
+        function editHeroImages(label, values, onChange, options = {}) {
+            const dualCrop = options.dualCrop === true;
+            const heroes = normalizeHeroImageList(values || []);
+            const id = `heroes-${Math.random().toString(36).slice(2)}`;
+            const activeCount = Math.max(1, heroes.filter(hero => hero.enabled).length || heroes.length);
+            const fullSize = heroPreviewMetrics(activeCount, 'full');
+            const condensedSize = heroPreviewMetrics(activeCount, dualCrop ? 'condensed' : 'capability');
+
+            const commit = (next, { rerender = false } = {}) => {
+                onChange(normalizeHeroImageList(next));
+                if (rerender) renderEditorFields();
+            };
+
             setTimeout(() => {
                 const root = document.getElementById(id);
                 if (!root) return;
-                root.querySelectorAll('[data-card-title]').forEach(input => {
-                    input.addEventListener('input', event => {
-                        const next = clone(cards);
-                        next[Number(input.dataset.cardTitle)].title = event.target.value;
-                        onChange(next);
+
+                const applyPanPreview = (index) => {
+                    const hero = heroes[index];
+                    if (!hero) return;
+                    const src = resolveEditorAsset(hero.src);
+                    const bg = src ? `url("${src.replace(/"/g, '\\"')}")` : '';
+                    const panX = `${(hero.panX * 100).toFixed(0)}%`;
+                    const panYFull = `${(hero.panYFull * 100).toFixed(0)}%`;
+                    const panY = `${(hero.panY * 100).toFixed(0)}%`;
+
+                    root.querySelectorAll(`[data-hero-preview="${index}"]`).forEach(zone => {
+                        const mode = zone.dataset.heroCrop || 'full';
+                        const fill = zone.querySelector('[data-hero-fill]');
+                        zone.classList.toggle('opacity-40', !hero.enabled);
+                        if (!fill) return;
+                        fill.style.backgroundImage = bg;
+                        fill.style.backgroundSize = 'cover';
+                        if (mode === 'full' && dualCrop) {
+                            fill.style.backgroundPosition = `${panX} ${panYFull}`;
+                            fill.style.transform = `scale(${hero.zoomFull})`;
+                            fill.style.transformOrigin = `${panX} ${panYFull}`;
+                        } else {
+                            fill.style.backgroundPosition = `${panX} ${panY}`;
+                            fill.style.transform = `scale(${hero.zoomCondensed})`;
+                            fill.style.transformOrigin = `${panX} ${panY}`;
+                        }
+                    });
+
+                    const zoomLabel = (key, value) => {
+                        const el = root.querySelector(`[data-zoom-label="${key}-${index}"]`);
+                        if (el) el.textContent = `${Number(value).toFixed(2)}×`;
+                    };
+                    zoomLabel('full', hero.zoomFull);
+                    zoomLabel('condensed', hero.zoomCondensed);
+                };
+
+                root.querySelectorAll('[data-hero-enabled]').forEach(input => {
+                    input.addEventListener('change', () => {
+                        const index = Number(input.dataset.heroEnabled);
+                        heroes[index].enabled = input.checked;
+                        commit(heroes, { rerender: true });
                     });
                 });
-                root.querySelectorAll('[data-card-points]').forEach(input => {
-                    input.addEventListener('input', event => {
-                        const next = clone(cards);
-                        next[Number(input.dataset.cardPoints)].points = event.target.value.split('\n').filter(Boolean);
-                        onChange(next);
+
+                root.querySelectorAll('[data-hero-src]').forEach(input => {
+                    input.addEventListener('input', () => {
+                        const index = Number(input.dataset.heroSrc);
+                        heroes[index].src = input.value;
+                        applyPanPreview(index);
+                        commit(heroes);
+                    });
+                });
+
+                root.querySelectorAll('[data-hero-pan-x]').forEach(input => {
+                    input.addEventListener('input', () => {
+                        const index = Number(input.dataset.heroPanX);
+                        heroes[index].panX = clamp01(input.value);
+                        applyPanPreview(index);
+                        commit(heroes);
+                    });
+                });
+
+                root.querySelectorAll('[data-hero-pan-y-full]').forEach(input => {
+                    input.addEventListener('input', () => {
+                        const index = Number(input.dataset.heroPanYFull);
+                        heroes[index].panYFull = clamp01(input.value);
+                        applyPanPreview(index);
+                        commit(heroes);
+                    });
+                });
+
+                root.querySelectorAll('[data-hero-pan-y]').forEach(input => {
+                    input.addEventListener('input', () => {
+                        const index = Number(input.dataset.heroPanY);
+                        heroes[index].panY = clamp01(input.value);
+                        applyPanPreview(index);
+                        commit(heroes);
+                    });
+                });
+
+                root.querySelectorAll('[data-hero-zoom-full]').forEach(input => {
+                    input.addEventListener('input', () => {
+                        const index = Number(input.dataset.heroZoomFull);
+                        heroes[index].zoomFull = clampZoom(input.value);
+                        applyPanPreview(index);
+                        commit(heroes);
+                    });
+                });
+
+                root.querySelectorAll('[data-hero-zoom-condensed]').forEach(input => {
+                    input.addEventListener('input', () => {
+                        const index = Number(input.dataset.heroZoomCondensed);
+                        heroes[index].zoomCondensed = clampZoom(input.value);
+                        applyPanPreview(index);
+                        commit(heroes);
+                    });
+                });
+
+                root.querySelectorAll('[data-hero-file]').forEach(input => {
+                    input.addEventListener('change', async event => {
+                        const selected = event.target.files && event.target.files[0];
+                        if (!selected) return;
+                        const index = Number(input.dataset.heroFile);
+                        heroes[index].src = await readFileAsDataUrl(selected);
+                        heroes[index].enabled = true;
+                        commit(heroes, { rerender: true });
+                    });
+                });
+
+                root.querySelectorAll('[data-hero-preview]').forEach(zone => {
+                    zone.addEventListener('click', () => {
+                        const index = Number(zone.dataset.heroPreview);
+                        root.querySelector(`[data-hero-file="${index}"]`)?.click();
+                    });
+                    zone.addEventListener('dragover', event => {
+                        event.preventDefault();
+                        zone.classList.add('border-orange-400', 'bg-orange-50');
+                    });
+                    zone.addEventListener('dragleave', () => {
+                        zone.classList.remove('border-orange-400', 'bg-orange-50');
+                    });
+                    zone.addEventListener('drop', async event => {
+                        event.preventDefault();
+                        zone.classList.remove('border-orange-400', 'bg-orange-50');
+                        const file = event.dataTransfer?.files?.[0];
+                        if (!file || !file.type.startsWith('image/')) return;
+                        const index = Number(zone.dataset.heroPreview);
+                        heroes[index].src = await readFileAsDataUrl(file);
+                        heroes[index].enabled = true;
+                        commit(heroes, { rerender: true });
+                    });
+                });
+
+                root.querySelector('[data-add-hero]')?.addEventListener('click', () => {
+                    if (heroes.length >= 4) return;
+                    heroes.push(normalizeHeroImage('', heroes.length));
+                    commit(heroes, { rerender: true });
+                });
+
+                root.querySelectorAll('[data-remove-hero]').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const index = Number(button.dataset.removeHero);
+                        heroes.splice(index, 1);
+                        commit(heroes, { rerender: true });
+                    });
+                });
+
+                heroes.forEach((_, index) => applyPanPreview(index));
+            });
+
+            const help = dualCrop
+                ? 'Full left, condensed right. Preview aspect tracks visible image count. Each crop has its own zoom + vertical pan; horizontal pan is shared.'
+                : 'Toggle slots on/off. Preview aspect tracks visible image count. Zoom in for more pan room on wide photos.';
+
+            return `
+                <div id="${id}" class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="field-label mb-0">${label}</span>
+                            <p class="text-[11px] text-slate-500 mt-1">${help}</p>
+                        </div>
+                        <button type="button" data-add-hero class="rounded-lg bg-slate-100 hover:bg-orange-50 hover:text-orange-600 border border-slate-200 px-3 py-1 text-xs font-bold text-slate-700 transition ${heroes.length >= 4 ? 'opacity-40 pointer-events-none' : ''}">Add Slot</button>
+                    </div>
+                    ${heroes.map((hero, index) => {
+                        const previewSrc = resolveEditorAsset(hero.src);
+                        const bg = previewSrc ? `background-image: url('${previewSrc.replace(/'/g, "\\'")}');` : '';
+                        const panX = `${(hero.panX * 100).toFixed(0)}%`;
+                        const panYFull = `${(hero.panYFull * 100).toFixed(0)}%`;
+                        const panY = `${(hero.panY * 100).toFixed(0)}%`;
+                        const empty = '<div class="pointer-events-none absolute inset-0 flex items-center justify-center text-[9px] font-bold uppercase tracking-wider text-slate-400 text-center px-1 z-10">Drop</div>';
+                        const fillFull = `<div data-hero-fill class="absolute inset-0" style="background-size: cover; background-position: ${panX} ${panYFull}; transform: scale(${hero.zoomFull}); transform-origin: ${panX} ${panYFull}; ${bg}"></div>`;
+                        const fillCondensed = `<div data-hero-fill class="absolute inset-0" style="background-size: cover; background-position: ${panX} ${panY}; transform: scale(${hero.zoomCondensed}); transform-origin: ${panX} ${panY}; ${bg}"></div>`;
+
+                        const fullColumn = `
+                            <div class="min-w-0">
+                                <p class="field-label-micro mb-2 text-center">Full</p>
+                                <div class="flex items-center justify-center gap-2">
+                                    <div class="flex flex-col items-center gap-1 shrink-0">
+                                        <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Zoom</span>
+                                        <span data-zoom-label="full-${index}" class="text-[10px] font-semibold text-slate-600">${hero.zoomFull.toFixed(2)}×</span>
+                                        ${verticalSliderMarkup(fullSize.h, `data-hero-zoom-full="${index}" min="1" max="2.5" step="0.01" value="${hero.zoomFull}" title="Zoom"`)}
+                                    </div>
+                                    <div data-hero-preview="${index}" data-hero-crop="full" class="relative rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 overflow-hidden cursor-pointer transition-colors hover:border-orange-400 ${hero.enabled ? '' : 'opacity-40'}" style="width:${fullSize.w}px;height:${fullSize.h}px;" title="Full-height crop — drop or click to replace">
+                                        ${fillFull}${previewSrc ? '' : empty}
+                                    </div>
+                                    <div class="flex flex-col items-center gap-1 shrink-0">
+                                        <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Pan V</span>
+                                        ${verticalSliderMarkup(fullSize.h, `data-hero-pan-y-full="${index}" min="0" max="1" step="0.01" value="${hero.panYFull}" title="Pan vertical (full)"`, true)}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
+                        const condensedColumn = dualCrop ? `
+                            <div class="min-w-0">
+                                <p class="field-label-micro mb-2 text-center">Condensed</p>
+                                <div class="flex items-center justify-center gap-2">
+                                    <div class="flex flex-col items-center gap-1 shrink-0">
+                                        <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Zoom</span>
+                                        <span data-zoom-label="condensed-${index}" class="text-[10px] font-semibold text-slate-600">${hero.zoomCondensed.toFixed(2)}×</span>
+                                        ${verticalSliderMarkup(condensedSize.h, `data-hero-zoom-condensed="${index}" min="1" max="2.5" step="0.01" value="${hero.zoomCondensed}" title="Zoom"`)}
+                                    </div>
+                                    <div data-hero-preview="${index}" data-hero-crop="condensed" class="relative rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 overflow-hidden cursor-pointer transition-colors hover:border-orange-400 ${hero.enabled ? '' : 'opacity-40'}" style="width:${condensedSize.w}px;height:${condensedSize.h}px;" title="Condensed crop — drop or click to replace">
+                                        ${fillCondensed}${previewSrc ? '' : empty}
+                                    </div>
+                                    <div class="flex flex-col items-center gap-1 shrink-0">
+                                        <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Pan V</span>
+                                        ${verticalSliderMarkup(condensedSize.h, `data-hero-pan-y="${index}" min="0" max="1" step="0.01" value="${hero.panY}" title="Pan vertical"`, true)}
+                                    </div>
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="min-w-0">
+                                <p class="field-label-micro mb-2 text-center">Preview</p>
+                                <div class="flex items-center justify-center gap-2">
+                                    <div class="flex flex-col items-center gap-1 shrink-0">
+                                        <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Zoom</span>
+                                        <span data-zoom-label="condensed-${index}" class="text-[10px] font-semibold text-slate-600">${hero.zoomCondensed.toFixed(2)}×</span>
+                                        ${verticalSliderMarkup(condensedSize.h, `data-hero-zoom-condensed="${index}" min="1" max="2.5" step="0.01" value="${hero.zoomCondensed}" title="Zoom"`)}
+                                    </div>
+                                    <div data-hero-preview="${index}" data-hero-crop="condensed" class="relative rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 overflow-hidden cursor-pointer transition-colors hover:border-orange-400 ${hero.enabled ? '' : 'opacity-40'}" style="width:${condensedSize.w}px;height:${condensedSize.h}px;" title="Drop or click to replace">
+                                        ${fillCondensed}${previewSrc ? '' : empty}
+                                    </div>
+                                    <div class="flex flex-col items-center gap-1 shrink-0">
+                                        <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Pan V</span>
+                                        ${verticalSliderMarkup(condensedSize.h, `data-hero-pan-y="${index}" min="0" max="1" step="0.01" value="${hero.panY}" title="Pan vertical"`, true)}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
+                        return `
+                            <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm ${hero.enabled ? '' : 'opacity-70'}">
+                                <div class="flex items-center justify-between gap-2 mb-3">
+                                    <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer">
+                                        <input data-hero-enabled="${index}" type="checkbox" ${hero.enabled ? 'checked' : ''} class="h-4 w-4 accent-orange-500">
+                                        Show container ${index + 1}
+                                    </label>
+                                    <button type="button" data-remove-hero="${index}" class="text-xs font-bold text-slate-500 hover:text-red-500 transition">Remove</button>
+                                </div>
+                                <input data-hero-src="${index}" class="field-input font-mono text-xs mb-3" value="${escapeAttr(hero.src)}" placeholder="hero_1.png or https://...">
+                                <input data-hero-file="${index}" type="file" accept="image/*" class="hidden">
+                                <div class="${dualCrop ? 'grid grid-cols-2 gap-3 items-start' : ''}">
+                                    ${dualCrop ? fullColumn : ''}
+                                    ${condensedColumn}
+                                </div>
+                                <label class="block mt-3">
+                                    <span class="field-label-micro mb-1">Pan horizontal</span>
+                                    <input data-hero-pan-x="${index}" type="range" min="0" max="1" step="0.01" value="${hero.panX}" class="w-full h-2 accent-orange-500">
+                                </label>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function sanitizeRichText(html) {
+            const template = document.createElement('template');
+            template.innerHTML = String(html || '');
+            const allowed = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'BR']);
+            const clean = (parent) => {
+                for (let i = 0; i < parent.childNodes.length; i += 1) {
+                    const child = parent.childNodes[i];
+                    if (child.nodeType === Node.TEXT_NODE) continue;
+                    if (child.nodeType !== Node.ELEMENT_NODE) {
+                        parent.removeChild(child);
+                        i -= 1;
+                        continue;
+                    }
+                    if (!allowed.has(child.tagName)) {
+                        while (child.firstChild) parent.insertBefore(child.firstChild, child);
+                        parent.removeChild(child);
+                        i -= 1;
+                        continue;
+                    }
+                    [...child.attributes].forEach(attr => child.removeAttribute(attr.name));
+                    clean(child);
+                }
+            };
+            clean(template.content);
+            return template.innerHTML
+                .replace(/&nbsp;/g, ' ')
+                .replace(/\u00a0/g, ' ')
+                .trim();
+        }
+
+        function readRichPoints(root, cardIndex) {
+            return [...root.querySelectorAll(`[data-card-point="${cardIndex}"]`)]
+                .map(el => sanitizeRichText(el.innerHTML))
+                .filter(Boolean);
+        }
+
+        function editCapabilityCards(cards, onChange) {
+            const id = `cards-${Math.random().toString(36).slice(2)}`;
+            const working = clone(cards || []);
+
+            setTimeout(() => {
+                const root = document.getElementById(id);
+                if (!root) return;
+
+                const commitCard = (cardIndex) => {
+                    working[cardIndex] = working[cardIndex] || { title: '', points: [] };
+                    working[cardIndex].points = readRichPoints(root, cardIndex);
+                    onChange(clone(working));
+                };
+
+                root.querySelectorAll('[data-card-title]').forEach(input => {
+                    input.addEventListener('input', () => {
+                        const cardIndex = Number(input.dataset.cardTitle);
+                        working[cardIndex] = working[cardIndex] || { title: '', points: [] };
+                        working[cardIndex].title = input.value;
+                        onChange(clone(working));
+                    });
+                });
+
+                root.querySelectorAll('[data-rich-cmd]').forEach(button => {
+                    button.addEventListener('mousedown', event => event.preventDefault());
+                    button.addEventListener('click', () => {
+                        const cardIndex = Number(button.dataset.cardIndex);
+                        const editor = root.querySelector(`[data-card-point="${cardIndex}"].is-focused`)
+                            || root.querySelector(`[data-card-point="${cardIndex}"]`);
+                        if (editor) editor.focus();
+                        document.execCommand(button.dataset.richCmd, false, null);
+                        commitCard(cardIndex);
+                    });
+                });
+
+                root.querySelectorAll('[data-card-point]').forEach(editor => {
+                    editor.addEventListener('focus', () => {
+                        root.querySelectorAll('[data-card-point]').forEach(el => el.classList.remove('is-focused'));
+                        editor.classList.add('is-focused');
+                    });
+                    editor.addEventListener('input', () => commitCard(Number(editor.dataset.cardPoint)));
+                    editor.addEventListener('blur', () => commitCard(Number(editor.dataset.cardPoint)));
+                    editor.addEventListener('keydown', event => {
+                        if (event.key === 'Enter') {
+                            event.preventDefault();
+                            document.execCommand('insertLineBreak');
+                        }
+                    });
+                });
+
+                root.querySelectorAll('[data-add-point]').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const cardIndex = Number(button.dataset.addPoint);
+                        working[cardIndex] = working[cardIndex] || { title: '', points: [] };
+                        working[cardIndex].points = [...readRichPoints(root, cardIndex), ''];
+                        onChange(clone(working));
+                        renderEditorFields();
+                    });
+                });
+
+                root.querySelectorAll('[data-remove-point]').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const cardIndex = Number(button.dataset.removePoint);
+                        const pointIndex = Number(button.dataset.pointIndex);
+                        const points = readRichPoints(root, cardIndex);
+                        points.splice(pointIndex, 1);
+                        working[cardIndex] = working[cardIndex] || { title: '', points: [] };
+                        working[cardIndex].points = points.length ? points : [''];
+                        onChange(clone(working));
+                        renderEditorFields();
                     });
                 });
             });
@@ -686,18 +1248,37 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             return `
                 <div id="${id}" class="space-y-4">
                     <span class="field-label">Capability Cards</span>
-                    ${cards.map((card, index) => `
-                        <div class="rounded-2xl border border-slate-200 p-4">
+                    ${working.map((card, index) => {
+                        const points = (card.points && card.points.length) ? card.points : [''];
+                        return `
+                        <div class="capability-edit-card rounded-xl border border-slate-200 bg-slate-50 p-4 border-l-4 border-l-orange-400">
                             <label class="block mb-3">
                                 <span class="field-label">Card ${index + 1} Title</span>
                                 <input data-card-title="${index}" class="field-input" value="${escapeAttr(card.title || '')}">
                             </label>
-                            <label>
-                                <span class="field-label">Card ${index + 1} Bullets</span>
-                                <textarea data-card-points="${index}" rows="5" class="field-input resize-y">${escapeHtml((card.points || []).join('\n'))}</textarea>
-                            </label>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="field-label mb-0">Card ${index + 1} Bullets</span>
+                                    <div class="rich-toolbar flex items-center gap-1">
+                                        <button type="button" data-rich-cmd="bold" data-card-index="${index}" class="rounded border border-slate-300 bg-white px-2 py-0.5 text-xs font-black hover:bg-orange-50" title="Bold">B</button>
+                                        <button type="button" data-rich-cmd="italic" data-card-index="${index}" class="rounded border border-slate-300 bg-white px-2 py-0.5 text-xs italic font-semibold hover:bg-orange-50" title="Italic">I</button>
+                                        <button type="button" data-rich-cmd="underline" data-card-index="${index}" class="rounded border border-slate-300 bg-white px-2 py-0.5 text-xs underline font-semibold hover:bg-orange-50" title="Underline">U</button>
+                                        <button type="button" data-add-point="${index}" class="ml-1 rounded border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600 hover:bg-orange-50">Add</button>
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    ${points.map((point, pointIndex) => `
+                                        <div class="flex gap-2 items-start">
+                                            <div contenteditable="true" data-card-point="${index}" data-point-index="${pointIndex}" class="field-input rich-bullet flex-1" spellcheck="true">${sanitizeRichText(point) || ''}</div>
+                                            <button type="button" data-remove-point="${index}" data-point-index="${pointIndex}" class="rounded-lg border border-slate-200 px-2 py-2 text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 transition" title="Remove bullet">✕</button>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <p class="text-[11px] text-slate-500">Select text, then use B / I / U. Each box is one bullet.</p>
+                            </div>
                         </div>
-                    `).join('')}
+                        `;
+                    }).join('')}
                 </div>
             `;
         }
@@ -727,7 +1308,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 <div id="${id}" class="space-y-4">
                     <span class="field-label">Advantage Pillars</span>
                     ${pillars.map((pillar, index) => `
-                        <div class="rounded-2xl border border-slate-200 p-4">
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 border-l-4 border-l-orange-400">
                             <label class="block mb-3">
                                 <span class="field-label">Pillar ${index + 1} Title</span>
                                 <input data-pillar-title="${index}" class="field-input" value="${escapeAttr(pillar.title || '')}">
@@ -743,23 +1324,31 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         }
 
         function requireIdentity() {
-            syncNameFields(true);
+            syncNameFields();
             if (!presentationName) {
                 alert('Give this presentation a name first.');
                 nameInput.focus();
                 return false;
             }
             if (!presentationSlug) {
-                alert('A valid directory slug is required.');
-                slugInput.focus();
+                alert('Use a name that can become a URL (letters or numbers).');
+                nameInput.focus();
                 return false;
             }
             return true;
         }
 
         function saveLocal(showNotice = true) {
-            if (presentationName || presentationSlug) syncNameFields(!slugInput.dataset.manual || slugInput.dataset.manual === '0');
+            if (presentationName || nameInput.value.trim()) syncNameFields();
             syncVisibleNavFromOrder();
+            draft.settings.repName = repName;
+            Object.values(draft.mapData || {}).forEach(page => {
+                if (page.useCustomerLogo) {
+                    if (draft.settings.customerLogo) page.logo = draft.settings.customerLogo;
+                } else {
+                    delete page.logo;
+                }
+            });
             localStorage.setItem(draftKey(), JSON.stringify(draft));
             persistActive();
             if (showNotice) {
@@ -774,14 +1363,20 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             preview.src = `index.html?draft=local${slugQuery}&preview=1&t=${Date.now()}`;
         }
 
-        function makeShareLink() {
+        async function makeShareLink() {
             if (!requireIdentity()) return;
             saveLocal(false);
-            const encoded = encodeConfig(draft);
             const target = new URL('index.html', window.location.href);
-            target.searchParams.set('config', encoded);
-            document.getElementById('share-url').value = target.toString();
-            document.getElementById('share-panel').classList.remove('hidden');
+            target.searchParams.set('draft', 'local');
+            target.searchParams.set('slug', draft.settings.presentationSlug || '');
+            const url = target.toString();
+            try {
+                await navigator.clipboard.writeText(url);
+                flashButton(document.getElementById('make-link'), 'Copied');
+                setStatus('Local draft link copied — opens this browser’s saved draft. Publish to share externally.');
+            } catch (error) {
+                alert('Could not copy draft link to clipboard.');
+            }
         }
 
         function updatePublishPanel() {
@@ -808,7 +1403,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             const previous = button.textContent;
             button.textContent = 'Publishing...';
             button.disabled = true;
-            setStatus('Publishing to GitHub...');
+            setStatus('Publishing...');
             try {
                 const response = await fetch('/api/publish', {
                     method: 'POST',
@@ -911,10 +1506,6 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         document.getElementById('publish-btn').addEventListener('click', publishPresentation);
         document.getElementById('follow-up-btn').addEventListener('click', openFollowUpModal);
         document.getElementById('make-link').addEventListener('click', makeShareLink);
-        document.getElementById('copy-link').addEventListener('click', async () => {
-            await navigator.clipboard.writeText(document.getElementById('share-url').value);
-            flashButton(document.getElementById('copy-link'), 'Copied');
-        });
         document.getElementById('copy-live-url').addEventListener('click', async () => {
             await navigator.clipboard.writeText(document.getElementById('live-url').value);
             flashButton(document.getElementById('copy-live-url'), 'Copied');
@@ -925,14 +1516,14 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         });
         document.getElementById('refresh-library').addEventListener('click', refreshLibrary);
         document.getElementById('new-presentation').addEventListener('click', () => {
-            if (!confirm('Start a new presentation from the template? Unsaved draft changes for the current slug may be overwritten when you save.')) return;
+            if (!confirm('Start a new presentation from the template? Unsaved draft changes for the current name may be overwritten when you save.')) return;
             presentationName = '';
             presentationSlug = '';
+            repName = '';
             publishedUrl = '';
             followUpUrl = '';
             nameInput.value = '';
-            slugInput.value = '';
-            slugInput.dataset.manual = '0';
+            if (repNameInput) repNameInput.value = '';
             prepareDraft(baseData);
             render();
             updatePublishPanel();
@@ -953,13 +1544,46 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         document.getElementById('cancel-follow-up').addEventListener('click', closeFollowUpModal);
         document.getElementById('confirm-follow-up').addEventListener('click', publishFollowUp);
         nameInput.addEventListener('input', () => {
-            syncNameFields(true);
+            syncNameFields();
             persistActive();
         });
-        slugInput.addEventListener('input', () => {
-            slugInput.dataset.manual = '1';
-            syncNameFields(false);
+        repNameInput.addEventListener('input', () => {
+            repName = repNameInput.value.trim();
+            draft.settings = draft.settings || {};
+            draft.settings.repName = repName;
             persistActive();
+        });
+        customerLogoPath.addEventListener('input', () => {
+            const value = customerLogoPath.value.trim();
+            if (value === '(uploaded image)') return;
+            draft.settings = draft.settings || {};
+            draft.settings.customerLogo = value;
+            updateCustomerLogoPreview();
+            Object.values(draft.mapData || {}).forEach(page => {
+                if (page.useCustomerLogo) page.logo = draft.settings.customerLogo;
+            });
+        });
+        customerLogoFile.addEventListener('change', async event => {
+            const selected = event.target.files && event.target.files[0];
+            if (!selected) return;
+            const dataUrl = await readFileAsDataUrl(selected);
+            draft.settings = draft.settings || {};
+            draft.settings.customerLogo = dataUrl;
+            customerLogoPath.value = dataUrl.startsWith('data:') ? '(uploaded image)' : dataUrl;
+            updateCustomerLogoPreview();
+            Object.values(draft.mapData || {}).forEach(page => {
+                if (page.useCustomerLogo) page.logo = dataUrl;
+            });
+            customerLogoFile.value = '';
+        });
+        customerLogoClear.addEventListener('click', () => {
+            draft.settings = draft.settings || {};
+            draft.settings.customerLogo = '';
+            customerLogoPath.value = '';
+            updateCustomerLogoPreview();
+            Object.values(draft.mapData || {}).forEach(page => {
+                if (page.useCustomerLogo) delete page.logo;
+            });
         });
         heroColorInput.addEventListener('input', event => {
             draft.settings = draft.settings || {};

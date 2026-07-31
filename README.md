@@ -12,7 +12,7 @@ npx vercel dev
 
 Open:
 
-- Editor: `/editor.html`
+- Editor: `/` (or `/editor.html`)
 - Template preview: `/index.html`
 
 ## Editing Flow
