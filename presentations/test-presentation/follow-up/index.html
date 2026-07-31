@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Presentation Follow-Up - GPC Strategic Partnership</title>
+    <link rel="icon" href="data:,">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gpc: {
+                            navy: '#0A192F', blue: '#1E40AF', green: '#65A30D', orange: 'rgb(var(--hero-color-rgb) / <alpha-value>)', light: '#F8FAFC', border: '#E2E8F0'
+                        }
+                    },
+                    fontFamily: { 
+                        sans: ['"Segoe UI"', '-apple-system', 'BlinkMacSystemFont', 'Roboto', 'sans-serif'] 
+                    },
+                    boxShadow: { 'floating': '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)' }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root { --hero-color: #991a38; --hero-color-rgb: 153 26 56; }
+        body.studio-preview { background-color: #f8fafc !important; }
+        body.studio-preview #scale-container { background-color: #f8fafc; }
+        body:not(.studio-preview) #scale-container { background-color: #000; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .nav-item-active { background-color: rgba(255, 255, 255, 0.1); border-left-color: var(--hero-color) !important; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1E40AF; border-radius: 10px; }
+        
+        .key { transition: all 0.1s; cursor: pointer; user-select: none; }
+        .key:active { transform: scale(0.95); background-color: #CBD5E1; }
+        .briefing-card { transform-style: preserve-3d; }
+        .briefing-card.flipping { animation: briefingFlip 0.6s ease-in-out; }
+        @keyframes briefingFlip {
+            0% { transform: translate(-50%, -50%) perspective(1400px) rotateY(0deg); }
+            50% { transform: translate(-50%, -50%) perspective(1400px) rotateY(90deg); }
+            100% { transform: translate(-50%, -50%) perspective(1400px) rotateY(0deg); }
+        }
+        .hero-image-card { transition: all 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+        .agenda-content { opacity: 0; transform: translateX(40px); transition: opacity 0.6s ease 0.35s, transform 0.6s ease 0.35s; }
+        .agenda-card { bottom: 0; left: var(--start-left); width: var(--card-width, calc(25% - 12px)); height: 100%; }
+        .agenda-hero.is-revealed .agenda-card { height: 370px; }
+        .agenda-hero.is-revealed .agenda-content { opacity: 1; transform: translateX(0); }
+        /* Zoom + pan via scale/origin; object-position covers zoom=1 crop framing. */
+        .agenda-card img.agenda-hero-img {
+            object-fit: cover;
+            object-position: var(--pan-x, 50%) var(--pan-y-full, 50%);
+            transform: scale(var(--zoom-full, 1));
+            transform-origin: var(--pan-x, 50%) var(--pan-y-full, 50%);
+        }
+        .agenda-hero.is-revealed .agenda-card img.agenda-hero-img {
+            object-position: var(--pan-x, 50%) var(--pan-y-condensed, 50%);
+            transform: scale(var(--zoom-condensed, 1));
+            transform-origin: var(--pan-x, 50%) var(--pan-y-condensed, 50%);
+        }
+        .capability-front img.capability-hero-img {
+            object-fit: cover;
+            object-position: var(--pan-x, 50%) var(--pan-y-condensed, 50%);
+            transform: scale(var(--zoom-condensed, 1));
+            transform-origin: var(--pan-x, 50%) var(--pan-y-condensed, 50%);
+        }
+        .capability-card { perspective: 1200px; transition: box-shadow 0.2s ease, transform 0.2s ease; }
+        .capability-card-inner { transform-style: preserve-3d; transition: transform 0.65s ease-in-out; }
+        .capability-card.is-revealed .capability-card-inner { transform: rotateY(180deg); }
+        .capability-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+        .capability-back { transform: rotateY(180deg); }
+        .capability-front::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 1.5rem;
+            background: linear-gradient(135deg, rgba(var(--hero-color-rgb), 0.0), rgba(var(--hero-color-rgb), 0.28));
+            opacity: 0;
+            transition: opacity 0.25s ease;
+            pointer-events: none;
+        }
+        .capability-front::before {
+            content: '›';
+            position: absolute;
+            right: 1.5rem;
+            bottom: 1rem;
+            z-index: 2;
+            color: white;
+            font-size: 4rem;
+            line-height: 1;
+            opacity: 0;
+            transform: translateX(-8px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            text-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+            pointer-events: none;
+        }
+        .capability-card:hover { transform: translateY(-4px); box-shadow: 0 24px 45px -20px rgba(15, 23, 42, 0.5); }
+        .capability-card:hover .capability-front::after, .capability-card:hover .capability-front::before { opacity: 1; }
+        .capability-card:hover .capability-front::before { transform: translateX(0); }
+        .capability-body {
+            position: relative;
+            background-image:
+                repeating-linear-gradient(45deg, rgba(var(--hero-color-rgb), 0.035) 0 1px, transparent 1px 16px),
+                repeating-linear-gradient(-45deg, rgba(var(--hero-color-rgb), 0.025) 0 1px, transparent 1px 20px);
+        }
+        .capability-body > * {
+            position: relative;
+            z-index: 1;
+        }
+        .capability-body li b,
+        .capability-body li strong { font-weight: 900; }
+        .capability-body li i,
+        .capability-body li em { font-style: italic; }
+        .capability-body li u { text-decoration: underline; }
+
+        /* Spec-imported pricing stage */
+        #html-layer.pricing-mode {
+            padding: 0 !important;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+        }
+        .pricing-stage {
+            flex: 1;
+            min-height: 0;
+            height: 100%;
+            padding: 1.25rem 1.5rem;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+        .pricing-stage.is-animated {
+            animation: pricingStageIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        @keyframes pricingStageIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: none; }
+        }
+        .pricing-layout {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 372px;
+            gap: 1.5rem;
+            align-items: stretch;
+            max-width: 1480px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        .pricing-layout.is-solo {
+            grid-template-columns: minmax(0, 920px);
+            justify-content: center;
+        }
+        .pricing-main {
+            min-width: 0;
+            min-height: 0;
+            overflow-y: auto;
+            padding-right: 0.25rem;
+        }
+        .pricing-shell {
+            min-width: 0;
+            border-radius: 1rem;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 12px 28px -18px rgba(15, 23, 42, 0.25);
+            background: #ffffff;
+        }
+        /* Match one of four FULL-height agenda hero cards (~372× content well). Table column scrolls. */
+        .pricing-aside {
+            width: 372px;
+            height: 100%;
+            min-height: 0;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            background: #e2e8f0;
+            box-shadow: 0 12px 28px -18px rgba(15, 23, 42, 0.18);
+        }
+        .pricing-aside img.pricing-side-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: var(--pan-x, 50%) var(--pan-y-full, 50%);
+            transform: scale(var(--zoom-full, 1));
+            transform-origin: var(--pan-x, 50%) var(--pan-y-full, 50%);
+            display: block;
+        }
+        .pricing-option-tab {
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #475569;
+            transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+        .pricing-option-tab:hover { border-color: var(--hero-color); color: #0f172a; }
+        .pricing-option-tab.is-active {
+            background: var(--hero-color);
+            border-color: transparent;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+        .pricing-col-head {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 120px 72px 120px;
+            background: var(--hero-color);
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+        .pricing-col-head > span { padding: 0.7rem 1rem; text-align: center; }
+        .pricing-col-head > span:first-child { text-align: left; }
+        .pricing-loc-bar {
+            background: #6b7280;
+            color: #fff;
+            font-weight: 800;
+            font-size: 0.85rem;
+            letter-spacing: 0.04em;
+            padding: 0.55rem 1rem;
+        }
+        .pricing-line {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 120px 72px 120px;
+            border-top: 1px solid #d1d5db;
+            font-size: 0.92rem;
+        }
+        .pricing-line > span { padding: 0.7rem 1rem; text-align: center; display: flex; align-items: center; justify-content: center; }
+        .pricing-line > span:first-child { text-align: left; justify-content: flex-start; flex-direction: column; align-items: flex-start; gap: 0.2rem; }
+        .pricing-line.is-alt { background: #eef1f4; }
+        .pricing-line.is-promo { background: #ecfdf5; color: #065f46; font-weight: 600; }
+        .pricing-line.is-subtotal { background: #f1f5f9; font-weight: 800; color: #0f172a; border-top: 1px solid #cbd5e1; }
+        .pricing-total-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            background: #12243d;
+            color: #fff;
+            font-weight: 800;
+            font-size: 1.15rem;
+            padding: 1rem 1.25rem;
+            letter-spacing: 0.02em;
+        }
+        .pricing-total-bar .pricing-total-amount {
+            font-variant-numeric: tabular-nums;
+            font-size: 1.35rem;
+            color: #fdba74;
+        }
+        
+        /* When dismissed, screensaver stays in layout so grid animation never stops */
+        .screensaver-dismissed { visibility: hidden; pointer-events: none; }
+        .ken-burns { animation: panZoom 30s infinite alternate linear; }
+        @keyframes panZoom { 0% { transform: scale(1) translate(0, 0); } 100% { transform: scale(1.1) translate(-2%, -2%); } }
+        @keyframes gridMove {
+            0% { transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px); }
+            100% { transform: perspective(500px) rotateX(60deg) translateY(0px) translateZ(-200px); }
+        }
+    </style>
+</head>
+<body class="bg-black text-slate-800 h-screen w-screen overflow-hidden relative select-none font-sans antialiased" oncontextmenu="return false;">
+    <div id="scale-container" class="fixed inset-0 flex items-center justify-center overflow-hidden">
+    <div id="scale-sizer" class="relative shrink-0 overflow-hidden">
+    <div id="app-wrapper" class="absolute top-0 left-0 w-[1920px] h-[1080px] bg-slate-100 flex overflow-hidden origin-top-left">
+    <div id="screensaver" class="absolute inset-0 z-50 bg-gpc-navy flex flex-col items-center justify-center transition-opacity duration-1000 opacity-0 cursor-pointer overflow-hidden">
+        <div class="absolute inset-0 opacity-20 ken-burns" style="background-image: radial-gradient(circle at center, #1E40AF 0%, transparent 70%);"></div>
+        <div id="screensaver-grid" class="absolute inset-0 opacity-10" style="background-image: linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px); background-size: 50px 50px; animation: gridMove 20s linear infinite;"></div>
+
+        <div class="relative z-10 w-full max-w-7xl mx-auto px-8 flex flex-col items-center justify-center mt-32">
+            <img id="screensaver-logo" src="../../../GPC-White-1-1.webp" alt="Great Plains Communications" class="h-40 md:h-48 w-auto object-contain fade-in mb-8 drop-shadow-2xl">
+            <h2 class="text-2xl md:text-3xl font-light text-slate-300 tracking-wide mb-20 fade-in drop-shadow text-center" style="animation-delay: 0.2s;">
+                Fiber Connectivity and Communications Solutions for Test Presentation Follow-Up</h2>
+            
+            <div class="grid grid-cols-3 gap-x-24 gap-y-16 fade-in w-full justify-items-center" style="animation-delay: 0.4s;">
+                <div class="text-center w-full"><span class="block text-6xl font-bold text-gpc-green mb-4 drop-shadow-md">20,000+</span><span class="text-slate-400 uppercase tracking-widest text-sm font-semibold">Fiber Miles</span></div>
+                <div class="text-center w-full"><span class="block text-6xl font-bold text-white mb-4 drop-shadow-md">13</span><span class="text-slate-400 uppercase tracking-widest text-sm font-semibold">States Served</span></div>
+                <div class="text-center w-full"><span class="block text-6xl font-bold text-gpc-orange mb-4 drop-shadow-md">400G</span><span class="text-slate-400 uppercase tracking-widest text-sm font-semibold">Standard Capacity</span></div>
+                <div class="text-center w-full"><span class="block text-6xl font-bold text-gpc-blue mb-4 drop-shadow-md">25+</span><span class="text-slate-400 uppercase tracking-widest text-sm font-semibold">Data Centers</span></div>
+                <div class="text-center w-full"><span class="block text-6xl font-bold text-white mb-4 drop-shadow-md">100+</span><span class="text-slate-400 uppercase tracking-widest text-sm font-semibold">Years Experience</span></div>
+                <div class="text-center w-full"><span class="block text-6xl font-bold text-gpc-green mb-4 drop-shadow-md">24/7</span><span class="text-slate-400 uppercase tracking-widest text-sm font-semibold">Network Monitoring</span></div>
+            </div>
+        </div>
+        
+        <div class="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center z-10 animate-pulse w-full text-center pointer-events-none">
+            <svg class="w-8 h-8 text-gpc-orange mb-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+            <p class="text-slate-300 font-bold tracking-[0.3em] text-lg drop-shadow-lg">Click Screen to Explore</p>
+        </div>
+    </div>
+
+    <div id="admin-modal" class="fixed inset-0 z-40 bg-gpc-navy/90 backdrop-blur-md hidden items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-floating w-[800px] p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-800">Configure Client Greeting</h2>
+                <button onclick="closeAdmin()" class="text-slate-400 hover:text-gpc-orange font-bold text-xl">✕</button>
+            </div>
+            <input type="text" id="client-name-input" class="w-full text-4xl font-bold text-center text-gpc-blue border-b-2 border-slate-200 focus:border-gpc-orange outline-none bg-transparent mb-8 pb-2" placeholder="Enter Client Name..." readonly>
+            <div class="flex flex-col gap-2 bg-slate-100 p-4 rounded-xl">
+                <div class="flex justify-center gap-2" id="row-1"></div>
+                <div class="flex justify-center gap-2" id="row-2"></div>
+                <div class="flex justify-center gap-2" id="row-3"></div>
+                <div class="flex justify-center gap-2 mt-2"><div class="key bg-white shadow rounded-lg h-14 w-96 flex items-center justify-center font-bold text-slate-700 text-xl" onclick="typeKey(' ')">SPACE</div></div>
+            </div>
+            <div class="flex justify-end gap-4 mt-8 border-t border-slate-100 pt-6">
+                <button onclick="clearClient()" class="px-6 py-3 rounded-lg font-bold text-slate-500 hover:bg-slate-100 transition-colors">Clear Saved Data</button>
+                <button onclick="saveClient()" class="px-8 py-3 rounded-lg font-bold text-white bg-gpc-orange hover:bg-gpc-orange/90 transition-colors shadow-lg">Save & Initialize</button>
+            </div>
+        </div>
+    </div>
+
+    <aside class="w-80 bg-gpc-navy flex flex-col z-20 shadow-floating relative shrink-0">
+        <div class="p-8 pb-6 cursor-pointer shrink-0 flex flex-col items-center" id="brand-trigger">
+            <img id="brand-logo" src="../../../GPC-White-1-1.webp" alt="GPC Logo" class="h-24 w-auto object-contain mb-6 drop-shadow-lg transition-transform hover:scale-105">
+            <div class="w-16 h-1.5 bg-gpc-blue rounded-full"></div>
+        </div>
+        <nav class="flex-1 px-4 py-1.5 flex flex-col gap-0.5 overflow-y-auto" id="nav-menu"></nav>
+        <div class="px-4 py-3 border-t border-slate-700/50 shrink-0">
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Version</p>
+            <div class="flex rounded-lg bg-slate-800/80 p-0.5">
+                <button id="version-key" type="button" class="flex-1 py-2 px-3 text-xs font-semibold rounded-md transition-colors text-slate-200 bg-gpc-blue">Key Concepts</button>
+                <button id="version-extended" type="button" class="flex-1 py-2 px-3 text-xs font-semibold rounded-md transition-colors text-slate-400">Extended</button>
+            </div>
+        </div>
+        <div class="p-6 text-sm text-slate-400 border-t border-slate-700/50 flex justify-between items-center font-semibold shrink-0">
+            <span id="clock" class="text-slate-300">00:00</span>
+            <button id="btn-fullscreen" type="button" class="p-1.5 rounded text-slate-400 hover:text-white hover:bg-white/10 transition-colors" title="Toggle full screen">
+                <svg id="icon-fullscreen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1v4m0 0h-4m4 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+                <svg id="icon-exit-fullscreen" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"></path></svg>
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col relative bg-gpc-light overflow-hidden">
+        <header class="h-24 bg-white border-b border-gpc-border flex items-center justify-between px-10 z-10 shadow-sm shrink-0">
+            <div>
+                <h2 id="view-title" class="text-3xl font-bold text-slate-900 tracking-tight fade-in">Loading...</h2>
+                <p id="view-subtitle" class="text-base text-slate-500 mt-1 fade-in font-medium">Initializing System</p>
+            </div>
+            <div id="stats-container" class="flex items-center gap-8 fade-in min-w-0"></div>
+        </header>
+
+        <section class="flex-1 relative overflow-hidden flex items-center justify-center p-8">
+            <div class="w-full h-full bg-white border border-gpc-border rounded-2xl shadow-elegant relative overflow-hidden flex">
+                
+                <div id="map-layer" class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-300 bg-slate-50 z-0">
+                    <img id="map-image" src="" alt="Network Map" class="w-full h-full object-contain hidden p-4">
+                    <div id="map-fallback" class="text-center pointer-events-none">
+                        <svg class="w-20 h-20 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                        <h3 class="text-xl font-semibold text-slate-600 uppercase tracking-wide" id="placeholder-text">Waiting for Data</h3>
+                    </div>
+                </div>
+
+                <div id="html-layer" class="absolute inset-0 hidden overflow-y-auto p-12 bg-slate-50 z-0">
+                    </div>
+
+            </div>
+
+            <div id="talking-points-panel" onclick="toggleBriefingCard()" class="briefing-card absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 hidden w-[860px] h-[560px] cursor-pointer rounded-3xl p-10 shadow-2xl border border-white/40 bg-white/60 backdrop-blur-sm transition-opacity duration-300">
+                <div id="agenda-face">
+                    <div class="flex items-center justify-between mb-8">
+                        <h4 class="text-gpc-orange font-bold text-xl uppercase tracking-widest">Meeting Agenda</h4>
+                        <span class="text-xs font-bold uppercase tracking-widest text-slate-500">Click for capabilities</span>
+                    </div>
+                    <ol id="agenda-list" class="list-decimal list-outside pl-8 space-y-5 text-slate-800 text-2xl leading-snug font-medium [&_li]:pl-2"></ol>
+                </div>
+                <div id="capabilities-face" class="hidden">
+                    <div class="flex items-center justify-between mb-8">
+                        <h4 class="text-gpc-orange font-bold text-xl uppercase tracking-widest">Core Capabilities</h4>
+                        <span class="text-xs font-bold uppercase tracking-widest text-slate-500">Click for agenda</span>
+                    </div>
+                    <ul id="talking-points-list" class="list-disc list-outside pl-8 space-y-5 text-slate-800 text-xl leading-snug font-medium [&_li]:pl-2"></ul>
+                </div>
+            </div>
+
+        </section>
+    </main>
+    </div>
+    </div>
+    </div>
+
+    <script>
+        // Image paths: '' = same folder as index.html
+        const ASSET_BASE = '../../../';
+        const TRACKING_ENABLED = true;
+        const PRESENTATION_SLUG = 'test-presentation';
+        const PRESENTATION_VARIANT = 'follow-up';
+        const PRESENTATION_STORAGE_KEY = 'presentation-studio-draft';
+
+        // --- GLOBAL STATE ---
+        let mapData = {};
+        let navOrder = [];
+        let pageContent = {};
+        let presentationSettings = {};
+        let screensaverTimeoutSeconds = 300; // derived from settings.screensaverTimeoutMinutes
+        let versionMode = 'key'; // 'key' | 'extended'
+        let briefingCardFlipping = false;
+        let agendaRevealTimer = null;
+        let agendaRevealCompletionTimer = null;
+        let agendaRevealCompleted = false;
+        let pricingOptionIndex = 0;
+        const AGENDA_REVEAL_DELAY_MS = 500;
+        const AGENDA_REVEAL_ANIMATION_MS = 950;
+        const KEY_CONCEPTS_NAV = ['agenda', 'core-capabilities', 'national', 'layer2', 'ip-network', 'key-routes', 'why-gpc'];
+        if (new URLSearchParams(window.location.search).get('preview') === '1') {
+            document.body.classList.add('studio-preview');
+        }
+        if (ASSET_BASE) {
+            const screensaverLogo = document.getElementById('screensaver-logo');
+            const brandLogo = document.getElementById('brand-logo');
+            if (screensaverLogo) screensaverLogo.src = ASSET_BASE + 'GPC-White-1-1.webp';
+            if (brandLogo) brandLogo.src = ASSET_BASE + 'GPC-White-1-1.webp';
+        }
+        function clamp01(value, fallback = 0.5) {
+            const number = Number(value);
+            if (!Number.isFinite(number)) return fallback;
+            return Math.max(0, Math.min(1, number));
+        }
+
+        function resolveAsset(src) {
+            if (!src) return '';
+            if (/^(data:|https?:|blob:|\/)/i.test(src)) return src;
+            return ASSET_BASE + src;
+        }
+
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[char]));
+        }
+
+        function formatPricingMoney(amount, useDecimals) {
+            const n = Number(amount) || 0;
+            if (useDecimals) {
+                return n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+            }
+            return Math.ceil(n).toLocaleString('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+        }
+
+        function pricingLineMonthly(price, qty, useDecimals) {
+            const raw = (parseFloat(price) || 0) * (parseInt(qty, 10) || 0);
+            return useDecimals ? raw : Math.ceil(raw);
+        }
+
+        function pricingOptionMonthlyTotal(option, useDecimals) {
+            return (option?.locations || []).reduce((sum, loc) => {
+                return sum + (loc.items || []).reduce((acc, item) => acc + pricingLineMonthly(item.price, item.qty, useDecimals), 0);
+            }, 0);
+        }
+
+        function renderPricingOptionBody(option, flags = {}) {
+            const useDecimals = !!flags.enableDecimalPointsAmy;
+            const showSubtotals = !!flags.enableLocationSubtotals;
+            const locations = Array.isArray(option?.locations) ? option.locations : [];
+            let rowsHtml = '';
+
+            locations.forEach((loc, locIndex) => {
+                const items = Array.isArray(loc.items) ? loc.items : [];
+                const promos = Array.isArray(loc.promotions) ? loc.promotions : [];
+                rowsHtml += `<div class="pricing-loc-bar" style="${locIndex === 0 ? '' : 'margin-top:0'}">${escapeHtml(loc.name || 'Location')}</div>`;
+                let locMonthly = 0;
+                items.forEach((item, idx) => {
+                    const lineTotal = pricingLineMonthly(item.price, item.qty, useDecimals);
+                    locMonthly += lineTotal;
+                    const unit = formatPricingMoney(parseFloat(item.price) || 0, useDecimals);
+                    const nrcBits = [];
+                    if (item.nrcEnabled) {
+                        const nrcLabel = item.nrcDescription ? escapeHtml(item.nrcDescription) : 'Non-recurring charge';
+                        let nrcAmt = '';
+                        const nrcVal = parseFloat(item.nrcAmount);
+                        if (!Number.isNaN(nrcVal)) nrcAmt = ` <strong>${escapeHtml(formatPricingMoney(Math.abs(nrcVal), useDecimals))}</strong>`;
+                        nrcBits.push(`<span class="text-[11px] text-slate-500 font-medium">${nrcLabel}${nrcAmt}</span>`);
+                    }
+                    rowsHtml += `
+                        <div class="pricing-line ${idx % 2 === 0 ? 'is-alt' : ''}">
+                            <span>
+                                <span class="font-semibold text-slate-800">${escapeHtml(item.prod || 'Service')}</span>
+                                ${nrcBits.join('')}
+                            </span>
+                            <span class="text-slate-700 font-medium tabular-nums">${escapeHtml(unit)}</span>
+                            <span class="text-slate-700 font-medium">${escapeHtml(item.qty || '1')}</span>
+                            <span class="text-slate-900 font-bold tabular-nums">${escapeHtml(formatPricingMoney(lineTotal, useDecimals))}</span>
+                        </div>
+                    `;
+                });
+                promos.forEach(promo => {
+                    const amountNum = parseFloat(promo.amount);
+                    const amountText = Number.isNaN(amountNum)
+                        ? (promo.amount ? String(promo.amount) : '')
+                        : formatPricingMoney(-Math.abs(amountNum), useDecimals);
+                    rowsHtml += `
+                        <div class="pricing-line is-promo">
+                            <span>${escapeHtml(promo.description || 'Promotion')}</span>
+                            <span></span>
+                            <span></span>
+                            <span class="tabular-nums font-bold">${escapeHtml(amountText)}</span>
+                        </div>
+                    `;
+                });
+                if (showSubtotals && items.length) {
+                    rowsHtml += `
+                        <div class="pricing-line is-subtotal">
+                            <span>Location subtotal</span>
+                            <span></span>
+                            <span></span>
+                            <span class="tabular-nums">${escapeHtml(formatPricingMoney(locMonthly, useDecimals))}</span>
+                        </div>
+                    `;
+                }
+            });
+
+            const grand = pricingOptionMonthlyTotal(option, useDecimals);
+            const term = String(option?.term || '').trim();
+            const termHtml = term
+                ? `<p class="px-5 py-4 text-sm text-slate-600 border-t border-slate-200 bg-white">Pricing based on a <strong class="text-slate-900">${escapeHtml(term)}</strong>-month term.</p>`
+                : '';
+            const notes = [];
+            if (flags.enableTaxesFeesExclusion) {
+                notes.push('Excludes applicable taxes and fees.');
+            }
+            if (flags.enableQuoteExpiration && flags.quoteExpirationDays) {
+                notes.push(`Quote valid for ${flags.quoteExpirationDays} days.`);
+            }
+            const notesHtml = notes.length
+                ? `<p class="px-5 pb-4 text-xs text-slate-500 bg-white">${notes.map(n => escapeHtml(n)).join(' · ')}</p>`
+                : '';
+
+            return `
+                <div class="pricing-col-head">
+                    <span>Product / Service</span>
+                    <span>MRC</span>
+                    <span>Qty</span>
+                    <span>Monthly</span>
+                </div>
+                <div class="bg-white">
+                    ${rowsHtml || '<div class="p-8 text-center text-slate-500 text-sm">No line items in this option.</div>'}
+                </div>
+                <div class="pricing-total-bar">
+                    <span>TOTAL MONTHLY COST</span>
+                    <span class="pricing-total-amount">${escapeHtml(formatPricingMoney(grand, useDecimals))}</span>
+                </div>
+                ${termHtml}
+                ${notesHtml}
+            `;
+        }
+
+        function renderPricingPage(content, { animate = true } = {}) {
+            const options = Array.isArray(content?.options) ? content.options : [];
+            if (!options.length) {
+                return `<div class="pricing-stage flex items-center justify-center text-slate-500">No pricing data imported.</div>`;
+            }
+            if (pricingOptionIndex >= options.length) pricingOptionIndex = 0;
+            const active = options[pricingOptionIndex];
+            const multi = options.length > 1;
+            const sideHero = normalizeHeroImage(content.sideImage);
+            const hasSideImage = !!(sideHero.enabled && sideHero.src);
+            const tabs = multi ? `
+                <div class="flex flex-wrap gap-2 mb-4">
+                    ${options.map((opt, index) => {
+                        const label = opt.solutionId
+                            ? `Option ${index + 1} · ${opt.solutionId}`
+                            : `Option ${index + 1}`;
+                        return `<button type="button" data-pricing-option="${index}" class="pricing-option-tab rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-wider ${index === pricingOptionIndex ? 'is-active' : ''}">${escapeHtml(label)}</button>`;
+                    }).join('')}
+                </div>
+            ` : '';
+            const biz = content.businessName ? `<p class="text-slate-500 text-sm mb-3">${escapeHtml(content.businessName)}</p>` : '';
+            const headerLabel = multi
+                ? `Proposed Pricing · Option ${pricingOptionIndex + 1}`
+                : 'Proposed Pricing';
+            const solution = active.solutionId
+                ? `<span class="ml-2 text-sm font-semibold text-gpc-orange">(${escapeHtml(active.solutionId)})</span>`
+                : '';
+            const aside = hasSideImage
+                ? `<aside class="pricing-aside"><img class="pricing-side-img" src="${resolveAsset(sideHero.src).replace(/"/g, '&quot;')}" alt="" style="${heroFrameVars(sideHero)}"></aside>`
+                : '';
+
+            return `
+                <div class="pricing-stage${animate ? ' is-animated' : ''}">
+                    <div class="pricing-layout${hasSideImage ? '' : ' is-solo'}">
+                        <div class="pricing-main">
+                            ${tabs}
+                            ${biz}
+                            <div class="pricing-shell">
+                                <div class="px-5 pt-5 pb-3 bg-white border-b border-slate-100">
+                                    <div class="flex items-center gap-3 mb-1">
+                                        <span class="h-px w-10 bg-gpc-orange"></span>
+                                        <p class="text-gpc-orange text-[11px] font-black uppercase tracking-[0.28em]">Investment</p>
+                                    </div>
+                                    <h3 class="text-2xl font-black text-slate-900 tracking-tight">${escapeHtml(headerLabel)}${solution}</h3>
+                                </div>
+                                ${renderPricingOptionBody(active, content)}
+                            </div>
+                        </div>
+                        ${aside}
+                    </div>
+                </div>
+            `;
+        }
+
+        function bindPricingOptionTabs(container) {
+            container.querySelectorAll('[data-pricing-option]').forEach(button => {
+                button.addEventListener('click', () => {
+                    const next = Number(button.dataset.pricingOption);
+                    if (!Number.isFinite(next) || next === pricingOptionIndex) return;
+                    pricingOptionIndex = next;
+                    renderHTMLContent('pricing', container, { animate: false });
+                });
+            });
+        }
+
+        function resolvePageLogo(page = {}) {
+            if (page.useCustomerLogo === false) return '';
+            if (page.useCustomerLogo === true) {
+                return presentationSettings.customerLogo || page.logo || '';
+            }
+            // Legacy drafts: explicit page logo still works
+            return page.logo || '';
+        }
+
+        function normalizeScreensaverTimeoutMinutes(value, fallback = 5) {
+            const number = Number(value);
+            if (!Number.isFinite(number)) return fallback;
+            return Math.max(1, Math.min(60, Math.round(number)));
+        }
+
+        function resolveScreensaverTimeoutSeconds(settings = {}) {
+            if (settings.screensaverTimeoutMinutes != null) {
+                return normalizeScreensaverTimeoutMinutes(settings.screensaverTimeoutMinutes, 5) * 60;
+            }
+            // Legacy drafts stored seconds
+            if (settings.screensaverTimeoutSeconds != null) {
+                const seconds = Number(settings.screensaverTimeoutSeconds);
+                if (Number.isFinite(seconds)) {
+                    return normalizeScreensaverTimeoutMinutes(seconds / 60, 5) * 60;
+                }
+            }
+            return 300;
+        }
+
+        function clampZoom(value, fallback = 1) {
+            const number = Number(value);
+            if (!Number.isFinite(number)) return fallback;
+            return Math.max(1, Math.min(2.5, number));
+        }
+
+        function normalizeHeroImage(entry, index = 0) {
+            const defaultPanY = index === 3 ? 0.2 : 0.5;
+            const defaults = {
+                src: '',
+                panX: 0.5,
+                panYFull: 0.5,
+                panY: defaultPanY,
+                zoomFull: 1,
+                zoomCondensed: 1,
+                enabled: true
+            };
+            if (!entry) return { ...defaults };
+            if (typeof entry === 'string') return { ...defaults, src: entry };
+            const zoomFallback = entry.zoom != null ? entry.zoom : 1;
+            const legacyPanY = entry.panY != null ? entry.panY : defaultPanY;
+            return {
+                src: entry.src || entry.url || entry.file || '',
+                panX: clamp01(entry.panX ?? entry.pan, 0.5),
+                panYFull: clamp01(entry.panYFull ?? 0.5, 0.5),
+                panY: clamp01(entry.panYCondensed ?? legacyPanY, defaultPanY),
+                zoomFull: clampZoom(entry.zoomFull ?? zoomFallback, 1),
+                zoomCondensed: clampZoom(entry.zoomCondensed ?? zoomFallback, 1),
+                enabled: entry.enabled !== false
+            };
+        }
+
+        function getActiveHeroImages(list = []) {
+            return list
+                .map((entry, index) => normalizeHeroImage(entry, index))
+                .filter(entry => entry.enabled && entry.src)
+                .slice(0, 4);
+        }
+
+        function heroFrameVars(hero = {}) {
+            const normalized = normalizeHeroImage(hero);
+            return [
+                `--pan-x: ${(normalized.panX * 100).toFixed(0)}%`,
+                `--pan-y-full: ${(normalized.panYFull * 100).toFixed(0)}%`,
+                `--pan-y-condensed: ${(normalized.panY * 100).toFixed(0)}%`,
+                `--zoom-full: ${normalized.zoomFull}`,
+                `--zoom-condensed: ${normalized.zoomCondensed}`
+            ].join('; ') + ';';
+        }
+
+        function sanitizeRichText(html) {
+            const template = document.createElement('template');
+            template.innerHTML = String(html || '');
+            const allowed = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'BR']);
+            const clean = (parent) => {
+                for (let i = 0; i < parent.childNodes.length; i += 1) {
+                    const child = parent.childNodes[i];
+                    if (child.nodeType === Node.TEXT_NODE) continue;
+                    if (child.nodeType !== Node.ELEMENT_NODE) {
+                        parent.removeChild(child);
+                        i -= 1;
+                        continue;
+                    }
+                    if (!allowed.has(child.tagName)) {
+                        while (child.firstChild) parent.insertBefore(child.firstChild, child);
+                        parent.removeChild(child);
+                        i -= 1;
+                        continue;
+                    }
+                    [...child.attributes].forEach(attr => child.removeAttribute(attr.name));
+                    clean(child);
+                }
+            };
+            clean(template.content);
+            return template.innerHTML
+                .replace(/&nbsp;/g, ' ')
+                .replace(/\u00a0/g, ' ')
+                .trim();
+        }
+
+        function getVisibleNavList(settingKey, fallbackOrder) {
+            const order = presentationSettings[settingKey] || fallbackOrder;
+            return order.filter(id => mapData[id] && mapData[id].hidden !== true);
+        }
+
+        function getFilteredNavOrder() {
+            if (versionMode === 'extended') return getVisibleNavList('extendedNav', navOrder);
+            return getVisibleNavList('keyConceptsNav', KEY_CONCEPTS_NAV);
+        }
+
+        function hexToRgbParts(color) {
+            const normalized = String(color || '').trim();
+            const match = normalized.match(/^#?([a-f\d]{3}|[a-f\d]{6})$/i);
+            if (!match) return [153, 26, 56];
+            let hex = match[1];
+            if (hex.length === 3) {
+                hex = hex.split('').map(char => char + char).join('');
+            }
+            return [
+                parseInt(hex.slice(0, 2), 16),
+                parseInt(hex.slice(2, 4), 16),
+                parseInt(hex.slice(4, 6), 16)
+            ];
+        }
+
+        function applyHeroColor(color) {
+            const fallback = '#991a38';
+            const heroColor = /^#?[a-f\d]{3}([a-f\d]{3})?$/i.test(String(color || '')) ? color : fallback;
+            const normalized = heroColor.startsWith('#') ? heroColor : `#${heroColor}`;
+            document.documentElement.style.setProperty('--hero-color', normalized);
+            document.documentElement.style.setProperty('--hero-color-rgb', hexToRgbParts(normalized).join(' '));
+        }
+
+        // --- SCALE TO FIT LOGIC ---
+        // Contain-fit the 1920×1080 canvas. A sizer matches layout size to the scaled
+        // visual so flex centering isn't based on the unscaled 1920×1080 box.
+        function scaleApp() {
+            const wrapper = document.getElementById('app-wrapper');
+            const sizer = document.getElementById('scale-sizer');
+            const container = document.getElementById('scale-container');
+            if (!wrapper || !sizer || !container) return;
+            const availW = container.clientWidth || window.innerWidth;
+            const availH = container.clientHeight || window.innerHeight;
+            const scale = Math.min(availW / 1920, availH / 1080);
+            sizer.style.width = `${Math.max(0, 1920 * scale)}px`;
+            sizer.style.height = `${Math.max(0, 1080 * scale)}px`;
+            wrapper.style.transformOrigin = 'top left';
+            wrapper.style.transform = `scale(${scale})`;
+        }
+        window.addEventListener('resize', scaleApp);
+        if (typeof ResizeObserver !== 'undefined') {
+            const scaleContainer = document.getElementById('scale-container');
+            if (scaleContainer) new ResizeObserver(() => scaleApp()).observe(scaleContainer);
+        }
+        scaleApp(); // Initial scale
+
+        // --- INITIALIZATION ---
+        async function init() {
+            registerServiceWorker();
+            trackPresentationOpen();
+            startClock();
+            setupScreensaver();
+            setupFullscreen();
+            setupVersionToggle();
+            buildKeyboard();
+            setupBrandAttractTrigger();
+            
+            await loadJSONData();
+            
+            // checkClientGreeting(); // Disabled: hardcoded Tenaska client experience
+            buildNavigation();
+            setupStudioPreviewBridge();
+            const order = getFilteredNavOrder();
+            const requestedView = new URLSearchParams(window.location.search).get('view');
+            const startView = requestedView && mapData[requestedView] ? requestedView : order[0];
+            if (startView) updateView(startView);
+        }
+
+        function dismissScreensaverForStudio() {
+            const ss = document.getElementById('screensaver');
+            if (!ss || ss.classList.contains('screensaver-dismissed')) return;
+            ss.classList.add('opacity-0');
+            setTimeout(() => ss.classList.add('screensaver-dismissed'), 300);
+        }
+
+        function setupStudioPreviewBridge() {
+            window.addEventListener('message', event => {
+                if (event.origin !== window.location.origin) return;
+                const data = event.data || {};
+                if (data.type !== 'presentation-studio-goto' || !data.viewId) return;
+                if (!mapData[data.viewId]) return;
+                dismissScreensaverForStudio();
+                const keyNav = getVisibleNavList('keyConceptsNav', KEY_CONCEPTS_NAV);
+                const extNav = getVisibleNavList('extendedNav', navOrder);
+                if (versionMode === 'key' && !keyNav.includes(data.viewId) && extNav.includes(data.viewId)) {
+                    setVersionMode('extended');
+                }
+                updateView(data.viewId);
+            });
+        }
+
+        function decodePresentationPayload(payload) {
+            const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+            const binary = atob(normalized);
+            const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+            return JSON.parse(new TextDecoder().decode(bytes));
+        }
+
+        function draftStorageKey(slug) {
+            return slug ? `presentation-studio-draft:${slug}` : PRESENTATION_STORAGE_KEY;
+        }
+
+        function getPresentationOverride() {
+            const params = new URLSearchParams(window.location.search);
+            const encodedConfig = params.get('config');
+            if (encodedConfig) return decodePresentationPayload(encodedConfig);
+            if (params.get('draft') === 'local') {
+                const slug = params.get('slug') || '';
+                const savedDraft = localStorage.getItem(draftStorageKey(slug)) || localStorage.getItem(PRESENTATION_STORAGE_KEY);
+                if (savedDraft) return JSON.parse(savedDraft);
+            }
+            return null;
+        }
+
+        function trackPresentationOpen() {
+            if (!TRACKING_ENABLED) return;
+            try {
+                const key = `presentation-studio-tracked:${PRESENTATION_SLUG || 'root'}:${PRESENTATION_VARIANT}`;
+                if (sessionStorage.getItem(key)) return;
+                sessionStorage.setItem(key, '1');
+                fetch('/api/track-open', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        path: window.location.pathname + window.location.search,
+                        referrer: document.referrer || '',
+                        userAgent: navigator.userAgent || '',
+                        presentation: PRESENTATION_SLUG || 'template',
+                        variant: PRESENTATION_VARIANT || 'live'
+                    }),
+                    keepalive: true
+                }).catch(() => {});
+            } catch (error) {
+                // Tracking should never block the presentation.
+            }
+        }
+
+        function registerServiceWorker() {
+            if (!('serviceWorker' in navigator) || window.location.protocol === 'file:') return;
+            navigator.serviceWorker.register('./sw.js').catch(error => {
+                console.warn('Service worker registration failed:', error);
+            });
+        }
+
+        // --- FETCH JSON DATA ---
+        async function loadJSONData() {
+            try {
+                const response = await fetch('content.json');
+                if (!response.ok) throw new Error('Network response was not ok');
+                let data = await response.json();
+                const override = getPresentationOverride();
+                if (override) data = override;
+                
+                mapData = data.mapData;
+                navOrder = data.navOrder;
+                pageContent = data.pageContent;
+                presentationSettings = data.settings || {};
+                applyHeroColor(presentationSettings.heroColor);
+                screensaverTimeoutSeconds = resolveScreensaverTimeoutSeconds(presentationSettings);
+                if (presentationSettings.defaultVersionMode) {
+                    versionMode = presentationSettings.defaultVersionMode;
+                }
+                
+            } catch (error) {
+                console.error("Failed to load content.json. Ensure you are running a local web server.", error);
+                document.getElementById('view-title').innerText = "Error Loading Data";
+                document.getElementById('view-subtitle').innerText = "Check console for CORS/Server details.";
+            }
+        }
+
+        // --- DYNAMIC CLIENT GREETING ---
+        function checkClientGreeting() {
+            const savedClient = localStorage.getItem('gpc-client');
+            if (savedClient) {
+                mapData['guest'] = {
+                    title: `Welcome, ${savedClient}`,
+                    subtitle: 'Strategic Partnership Architecture',
+                    placeholder: 'Load IP_Network_Map.svg', 
+                    type: 'map',
+                    stats: [
+                        { label: 'Strategic Partner', value: savedClient, color: 'text-gpc-blue' },
+                        { label: 'Network Base', value: '100% Fiber', color: 'text-gpc-green' }
+                    ]
+                };
+                if (!navOrder.includes('guest')) navOrder.unshift('guest');
+            } else {
+                if (mapData['guest']) delete mapData['guest'];
+                navOrder = navOrder.filter(id => id !== 'guest');
+            }
+        }
+
+        // --- DOM MANIPULATION ---
+        function buildNavigation() {
+            const nav = document.getElementById('nav-menu');
+            nav.innerHTML = '';
+            getFilteredNavOrder().forEach((key, i) => {
+                const btnNum = i + 1;
+                const isGuest = key === 'guest';
+                
+                nav.innerHTML += `
+                    <button id="nav-btn-${key}" onclick="updateView('${key}')" class="w-full text-left px-4 py-2.5 rounded-lg border-l-4 border-transparent hover:bg-white/5 transition-all group flex items-center justify-between min-h-[52px] ${isGuest ? 'bg-white/5 border-l-gpc-blue' : ''}">
+                        <div class="flex flex-col pr-3 overflow-hidden">
+                            ${isGuest ? '<span class="text-[10px] font-bold tracking-widest uppercase text-gpc-orange mb-1">Custom Briefing</span>' : ''}
+                            <h3 class="text-base font-semibold text-slate-200 group-hover:text-white truncate ${isGuest ? 'text-white' : ''}">${mapData[key].navLabel || mapData[key].title}</h3>
+                        </div>
+                        <div class="w-7 h-7 shrink-0 rounded-full border border-slate-600 flex items-center justify-center text-[10px] text-slate-400 group-hover:border-slate-300 group-hover:text-slate-200 font-semibold shadow-sm">${btnNum}</div>
+                    </button>
+                `;
+            });
+        }
+
+        function updateView(viewId) {
+            const data = mapData[viewId];
+            if (!data) return;
+            if (viewId !== 'pricing') pricingOptionIndex = 0;
+            if (agendaRevealTimer) {
+                clearTimeout(agendaRevealTimer);
+                agendaRevealTimer = null;
+            }
+            if (agendaRevealCompletionTimer) {
+                clearTimeout(agendaRevealCompletionTimer);
+                agendaRevealCompletionTimer = null;
+            }
+            
+            getFilteredNavOrder().forEach(key => {
+                const el = document.getElementById(`nav-btn-${key}`);
+                if (el) el.classList.remove('nav-item-active');
+            });
+            const activeBtn = document.getElementById(`nav-btn-${viewId}`);
+            if (activeBtn) activeBtn.classList.add('nav-item-active');
+
+            const title = document.getElementById('view-title');
+            const sub = document.getElementById('view-subtitle');
+            title.classList.remove('fade-in'); sub.classList.remove('fade-in');
+            void title.offsetWidth;
+            title.innerText = data.title;
+            sub.innerText = data.subtitle;
+            title.classList.add('fade-in'); sub.classList.add('fade-in');
+
+            const pageLogo = resolvePageLogo(data);
+            const stats = document.getElementById('stats-container');
+            // Pricing defaults stats off so the monthly number isn't spoiled before the walkthrough.
+            const statsEnabled = data.type === 'pricing' ? data.showStats === true : data.showStats !== false;
+            const pageStats = statsEnabled && Array.isArray(data.stats) ? data.stats : [];
+            stats.innerHTML = '';
+            pageStats.forEach(s => {
+                stats.innerHTML += `<div class="flex flex-col items-start border-l border-slate-200 pl-6"><span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">${s.label}</span><span class="text-2xl font-bold ${s.color}">${s.value}</span></div>`;
+            });
+            if (pageLogo) {
+                // Agenda/capabilities: logo alone on the right. Stats pages: keep stats and tuck logo after them.
+                const logoClass = pageStats.length
+                    ? 'h-14 w-auto object-contain border-l border-slate-200 pl-6 ml-2 shrink-0'
+                    : 'h-14 w-auto object-contain shrink-0';
+                stats.innerHTML += `<img src="${resolveAsset(pageLogo)}" alt="${data.title} logo" class="${logoClass}">`;
+            }
+
+            const mapLayer = document.getElementById('map-layer');
+            const htmlLayer = document.getElementById('html-layer');
+            const talkingPointsPanel = document.getElementById('talking-points-panel');
+            const talkingPointsList = document.getElementById('talking-points-list');
+            const agendaList = document.getElementById('agenda-list');
+            const agendaFace = document.getElementById('agenda-face');
+            const capabilitiesFace = document.getElementById('capabilities-face');
+
+            if (data.type === 'map') {
+                htmlLayer.classList.add('hidden');
+                htmlLayer.classList.remove('pricing-mode');
+                htmlLayer.innerHTML = '';
+                mapLayer.classList.remove('hidden');
+                
+                // Inject the actual image
+                const mapImg = document.getElementById('map-image');
+                const fallback = document.getElementById('map-fallback');
+                
+                if (data.file) {
+                    mapImg.src = resolveAsset(data.file);
+                    mapImg.classList.remove('hidden');
+                    fallback.classList.add('hidden');
+                } else {
+                    mapImg.classList.add('hidden');
+                    fallback.classList.remove('hidden');
+                    document.getElementById('placeholder-text').innerText = `Missing: ${data.id} asset`;
+                }
+
+                // Show briefing card when a map page has agenda or capability content.
+                const agendaItems = Array.isArray(data.agenda) ? data.agenda : [];
+                const talkingPoints = Array.isArray(data.talkingPoints) ? data.talkingPoints : [];
+                if (agendaItems.length > 0 || talkingPoints.length > 0) {
+                    talkingPointsPanel.classList.remove('hidden');
+                    talkingPointsPanel.classList.remove('flipping');
+                    briefingCardFlipping = false;
+                    agendaFace.classList.remove('hidden');
+                    capabilitiesFace.classList.add('hidden');
+                    agendaList.innerHTML = agendaItems.map(pt => `<li>${pt}</li>`).join('');
+                    talkingPointsList.innerHTML = talkingPoints.map(pt => `<li>${pt}</li>`).join('');
+                } else {
+                    talkingPointsPanel.classList.add('hidden');
+                }
+
+            } else {
+                mapLayer.classList.add('hidden');
+                talkingPointsPanel.classList.add('hidden');
+
+                htmlLayer.classList.remove('hidden');
+                renderHTMLContent(viewId, htmlLayer);
+            }
+        }
+
+        function toggleBriefingCard() {
+            const card = document.getElementById('talking-points-panel');
+            if (card.classList.contains('hidden') || briefingCardFlipping) return;
+
+            const agendaFace = document.getElementById('agenda-face');
+            const capabilitiesFace = document.getElementById('capabilities-face');
+            const showingAgenda = !agendaFace.classList.contains('hidden');
+            briefingCardFlipping = true;
+            card.classList.add('flipping');
+
+            setTimeout(() => {
+                agendaFace.classList.toggle('hidden', showingAgenda);
+                capabilitiesFace.classList.toggle('hidden', !showingAgenda);
+            }, 300);
+
+            setTimeout(() => {
+                card.classList.remove('flipping');
+                briefingCardFlipping = false;
+            }, 620);
+        }
+
+        function renderHeroImageCards(images, extraClasses = '') {
+            return getActiveHeroImages(images).map((image, index) => `
+                <div class="hero-image-card relative overflow-hidden rounded-2xl shadow-floating bg-slate-200 ${extraClasses}">
+                    <img src="${resolveAsset(image.src)}" alt="Discussion visual ${index + 1}" class="absolute inset-0 w-full h-full object-cover" style="${heroFrameVars(image)}">
+                </div>
+            `).join('');
+        }
+
+        function renderAgendaImageCards(images) {
+            const visibleImages = getActiveHeroImages(images);
+            const imageCount = Math.max(visibleImages.length, 1);
+            const gap = 16;
+            const cardWidth = `calc(${100 / imageCount}% - ${((imageCount - 1) * gap) / imageCount}px)`;
+            return visibleImages.map((image, index) => {
+                const startLeft = index === 0 ? '0px' : `calc(${(index * 100) / imageCount}% + ${(index * gap) / imageCount}px)`;
+                return `
+                    <div class="agenda-card hero-image-card absolute overflow-hidden rounded-2xl shadow-floating bg-slate-200" style="--start-left: ${startLeft}; --card-width: ${cardWidth};">
+                        <img src="${resolveAsset(image.src)}" alt="Discussion visual ${index + 1}" class="agenda-hero-img absolute inset-0 w-full h-full object-cover" style="${heroFrameVars(image)}">
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleCapabilityCard(index) {
+            const card = document.getElementById(`capability-card-${index}`);
+            if (!card) return;
+            card.classList.toggle('is-revealed');
+        }
+
+        function scheduleAgendaReveal() {
+            const agendaHero = document.getElementById('agenda-hero');
+            const screensaver = document.getElementById('screensaver');
+            if (agendaRevealCompleted) {
+                if (agendaHero) agendaHero.classList.add('is-revealed');
+                return;
+            }
+            if (!agendaHero || !screensaver || !screensaver.classList.contains('screensaver-dismissed')) return;
+
+            if (agendaRevealTimer) clearTimeout(agendaRevealTimer);
+            agendaRevealTimer = setTimeout(() => {
+                agendaHero.classList.add('is-revealed');
+                agendaRevealCompletionTimer = setTimeout(() => {
+                    agendaRevealCompleted = true;
+                    agendaRevealCompletionTimer = null;
+                }, AGENDA_REVEAL_ANIMATION_MS);
+                agendaRevealTimer = null;
+            }, AGENDA_REVEAL_DELAY_MS);
+        }
+
+        // --- HTML CONTENT RENDERER ---
+        function renderHTMLContent(viewId, container, options = {}) {
+            let html = '';
+            const lockOverflow = viewId === 'agenda' || viewId === 'core-capabilities' || viewId === 'rightfiber' || viewId === 'pricing';
+            container.classList.toggle('overflow-hidden', lockOverflow);
+            container.classList.toggle('overflow-y-auto', !lockOverflow);
+            container.classList.toggle('pricing-mode', viewId === 'pricing');
+            
+            if (viewId === 'agenda' && pageContent.agenda) {
+                const content = pageContent.agenda;
+                html += `
+                    <div id="agenda-hero" class="agenda-hero relative w-full h-full fade-in overflow-hidden ${agendaRevealCompleted ? 'is-revealed' : ''}">
+                        <div class="agenda-image-grid absolute inset-0 z-10">
+                            ${renderAgendaImageCards(content.heroImages || [])}
+                        </div>
+                        <div class="agenda-content absolute inset-x-0 top-0 bottom-[410px] z-0 flex items-center">
+                            <div class="w-full rounded-3xl border border-white/60 bg-white/80 backdrop-blur-sm shadow-2xl p-10">
+                                <div class="mb-7 flex items-center gap-4">
+                                    <span class="h-px w-16 bg-gpc-orange"></span>
+                                    <p class="text-gpc-orange text-xs font-black uppercase tracking-[0.35em]">${content.kicker || 'Meeting Agenda'}</p>
+                                </div>
+                                <div class="grid grid-cols-[0.72fr_1.28fr] gap-10 items-start">
+                                    <h3 class="text-[2.85rem] font-black text-slate-950 leading-[1.02] tracking-tight">${content.headline || 'A focused conversation around priorities, fit and next steps.'}</h3>
+                                    <ol class="list-decimal list-outside pl-8 space-y-5 text-slate-700 text-[1.45rem] leading-snug font-semibold marker:text-gpc-orange marker:font-black [&_li]:pl-2">
+                                        ${(content.items || []).map(item => `<li>${item}</li>`).join('')}
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                scheduleAgendaReveal();
+            }
+            else if (viewId === 'rightfiber' && pageContent.rightfiber) {
+                const content = pageContent.rightfiber;
+                html += `
+                    <div class="relative w-full h-full fade-in overflow-hidden rounded-2xl bg-slate-100">
+                        <img src="${resolveAsset(content.background)}" alt="Rightfiber network map" class="absolute inset-0 w-full h-full object-contain">
+                        <div class="absolute left-12 top-12 w-[560px] rounded-3xl border border-white/60 bg-white/85 p-9 pt-10 shadow-2xl backdrop-blur-sm flex flex-col">
+                            <div class="flex items-center gap-4 mb-6">
+                                <div class="h-px w-14 bg-gpc-orange"></div>
+                                <span class="text-gpc-orange text-xs font-black uppercase tracking-[0.35em]">${content.kicker}</span>
+                            </div>
+                            <h3 class="text-[2.75rem] font-black text-slate-950 leading-[0.98] tracking-tight mb-7">${content.headline}</h3>
+                            <ul class="list-disc list-outside pl-6 space-y-4 text-lg text-slate-700 leading-snug font-semibold [&_li]:pl-2">
+                                ${(content.points || []).map(point => `<li>${point}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+            else if (viewId === 'core-capabilities' && pageContent['core-capabilities']) {
+                const content = pageContent['core-capabilities'];
+                const cards = content.cards || [];
+                const heroSlots = (content.heroImages || [])
+                    .map((image, index) => ({ ...normalizeHeroImage(image, index), card: cards[index] || {}, slotIndex: index }))
+                    .filter(slot => slot.enabled && slot.src)
+                    .slice(0, 4);
+                const columnCount = Math.max(heroSlots.length, 1);
+                html += `
+                    <div class="grid gap-4 w-full h-full fade-in" style="grid-template-columns: repeat(${columnCount}, minmax(0, 1fr));">
+                        ${heroSlots.map((slot, index) => {
+                            const card = slot.card || {};
+                            return `
+                                <div id="capability-card-${index}" onclick="toggleCapabilityCard(${index})" class="capability-card relative h-full rounded-3xl shadow-floating cursor-pointer">
+                                    <div class="capability-card-inner relative h-full w-full">
+                                        <div class="capability-face capability-front absolute inset-0 overflow-hidden rounded-3xl bg-slate-200">
+                                            <img src="${resolveAsset(slot.src)}" alt="${card.title || `Capability ${index + 1}`}" class="capability-hero-img absolute inset-0 w-full h-full object-cover" style="${heroFrameVars(slot)}">
+                                        </div>
+                                        <div class="capability-face capability-back absolute inset-0 overflow-hidden rounded-3xl bg-white text-gpc-orange flex flex-col">
+                                            <div class="bg-gpc-orange h-32 px-8 flex items-center justify-center border-b-4 border-black">
+                                                <h3 class="text-white text-2xl font-black uppercase tracking-widest leading-tight text-center">${card.title || ''}</h3>
+                                            </div>
+                                            <div class="capability-body flex-1 px-8 pb-8 pt-12">
+                                            ${Array.isArray(card.points) ? `
+                                                <ul class="list-disc list-outside pl-6 space-y-8 text-xl leading-snug font-bold text-gpc-orange [&_li]:pl-1">
+                                                    ${card.points.map(point => `<li>${sanitizeRichText(point)}</li>`).join('')}
+                                                </ul>
+                                            ` : `<p class="text-2xl leading-snug font-bold text-gpc-orange">${sanitizeRichText(card.desc || '')}</p>`}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }
+            else if (viewId === 'data-centers' && pageContent['data-centers']) {
+                html += '<div class="grid grid-cols-5 gap-4 w-full max-w-7xl mx-auto content-start fade-in pt-4 pb-8">';
+                pageContent['data-centers'].forEach(dc => {
+                    const hi = dc.highlight === true;
+                    html += `
+                        <div class="group relative p-4 border border-slate-200 rounded-xl transition-colors duration-300 overflow-hidden cursor-default flex flex-col justify-center min-h-[90px] ${hi ? 'bg-gpc-navy shadow-xl' : 'bg-white hover:bg-gpc-navy shadow-sm hover:shadow-xl'}">
+                            <div class="absolute inset-0 bg-gpc-blue transition-opacity duration-300 ${hi ? 'opacity-10' : 'opacity-0 group-hover:opacity-10'}"></div>
+                            <span class="text-[9px] font-bold uppercase tracking-widest block mb-1 z-10 relative ${hi ? 'text-gpc-orange' : 'text-slate-400 group-hover:text-gpc-orange'} transition-colors">${dc.city}</span>
+                            <h3 class="text-sm font-bold transform origin-left transition-all duration-300 z-10 relative leading-tight ${hi ? 'text-white scale-105' : 'text-slate-800 group-hover:text-white group-hover:scale-105'} min-h-0 flex flex-col justify-center"><span class="block truncate" title="${dc.name}">${dc.name}</span>${dc.nameNormal ? `<span class="block font-normal truncate text-[10px] leading-tight mt-0.5" title="${dc.nameNormal}">${dc.nameNormal}</span>` : ''}</h3>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+            else if (viewId === 'products' && pageContent.products) {
+                const products = (pageContent.products || []).filter(p => p && p.enabled !== false);
+                html += '<div class="grid grid-cols-3 gap-8 w-full h-full content-center items-start fade-in max-w-6xl mx-auto py-8">';
+                products.forEach(p => {
+                    html += `
+                        <div class="group relative p-6 border border-slate-200 rounded-xl bg-white hover:bg-gpc-navy transition-colors duration-300 shadow-sm hover:shadow-xl overflow-hidden cursor-default flex flex-col min-h-[220px]">
+                            <div class="absolute inset-0 bg-gpc-blue opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+                            
+                            <svg class="w-8 h-8 text-gpc-blue group-hover:text-gpc-orange transition-colors duration-300 mb-4 z-10 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${p.icon}"></path>
+                            </svg>
+                            
+                            <h3 class="text-lg font-bold text-slate-800 group-hover:text-white group-hover:scale-105 transform origin-left transition-all duration-300 mb-2 z-10 relative">${p.title}</h3>
+                            
+                            <p class="text-sm text-slate-500 group-hover:text-slate-300 transition-colors duration-300 leading-relaxed z-10 relative">${p.desc}</p>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            } 
+            else if (viewId === 'why-gpc' && pageContent['why-gpc']) {
+                const content = pageContent['why-gpc'];
+                html += `
+                    <div class="relative w-full h-full fade-in overflow-hidden rounded-2xl border border-slate-200/90 bg-slate-50 text-slate-900 shadow-sm">
+                        <div class="absolute inset-0" style="background: radial-gradient(circle at 12% 18%, rgba(var(--hero-color-rgb), 0.10), transparent 28%), linear-gradient(135deg, rgba(255,255,255,0.86), rgba(248,250,252,0.94));"></div>
+                        <div class="absolute inset-x-8 top-6 h-px bg-gradient-to-r from-transparent via-gpc-orange/30 to-transparent"></div>
+                        <div class="relative h-full grid grid-cols-12 gap-8 p-10">
+                            <div class="col-span-5 flex flex-col justify-between pr-6">
+                                <div>
+                                    <div class="mb-8 flex items-center gap-4">
+                                        <span class="h-px w-16 bg-gpc-orange"></span>
+                                        <p class="text-gpc-orange text-sm font-black uppercase tracking-[0.35em]">The GPC Advantage</p>
+                                    </div>
+                                    <h3 class="text-[3.4rem] font-black leading-[1.05] tracking-tight text-gpc-navy mb-8">A communications partner built for critical operations.</h3>
+                                    <p class="text-2xl text-slate-600 leading-relaxed font-normal">
+                                        ${content.intro}
+                                    </p>
+                                </div>
+                                <div class="grid grid-cols-3 gap-6 border-t border-slate-200 pt-8">
+                                    <div>
+                                        <span class="block text-3xl font-black text-gpc-navy">100+</span>
+                                        <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Years</span>
+                                    </div>
+                                    <div>
+                                        <span class="block text-3xl font-black text-gpc-orange">24/7</span>
+                                        <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Monitoring</span>
+                                    </div>
+                                    <div>
+                                        <span class="block text-3xl font-black text-gpc-navy">Local</span>
+                                        <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Support</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-span-7 grid grid-cols-2 gap-6 content-stretch">
+                `;
+                
+                content.pillars.forEach(p => {
+                    html += `
+                                <div class="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white/90 p-9 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                                    <div class="absolute inset-y-9 left-0 w-1 bg-gpc-orange"></div>
+                                    <svg class="absolute -right-6 -top-8 w-48 h-48 text-gpc-orange/[0.06]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25" d="${p.icon}"></path></svg>
+                                    <div class="relative z-10 flex h-full flex-col justify-end">
+                                        <h3 class="text-3xl font-black text-gpc-navy leading-tight mb-5">${p.title}</h3>
+                                        <p class="text-xl text-slate-600 leading-relaxed font-normal">${p.desc}</p>
+                                    </div>
+                                </div>
+                    `;
+                });
+                html += `
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            else if (viewId === 'case-studies' && pageContent['case-studies']) {
+                html += '<div class="grid grid-cols-3 gap-8 w-full h-full items-start fade-in">';
+                pageContent['case-studies'].forEach(cs => {
+                    html += `
+                        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col h-full hover:-translate-y-1 transition-transform overflow-hidden">
+                            <img src="${cs.image}" alt="${cs.client}" class="w-full h-48 object-cover bg-slate-100">
+                            <div class="p-8 flex flex-col flex-1">
+                                <span class="text-gpc-orange font-bold text-xs uppercase tracking-widest mb-2">${cs.industry}</span>
+                                <h3 class="text-2xl font-bold text-slate-900 mb-8">${cs.client}</h3>
+                                
+                                <div class="mb-6">
+                                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">The Challenge</h4>
+                                    <p class="text-slate-600 text-sm leading-relaxed">${cs.need}</p>
+                                </div>
+                                
+                                <div class="mb-8 flex-1">
+                                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">The Solution</h4>
+                                    <p class="text-slate-600 text-sm leading-relaxed">${cs.solution}</p>
+                                </div>
+                                
+                                <div class="bg-slate-50 border border-slate-100 p-5 rounded-xl relative mt-auto">
+                                    <span class="text-4xl text-slate-200 font-serif absolute -top-4 -left-1">"</span>
+                                    <p class="text-sm italic font-medium text-slate-700 leading-relaxed relative z-10">${cs.quote}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+            else if (viewId === 'pricing' && pageContent.pricing) {
+                html = renderPricingPage(pageContent.pricing, { animate: options.animate !== false });
+            }
+            
+            container.innerHTML = html;
+            if (viewId === 'pricing') bindPricingOptionTabs(container);
+        }
+
+        // --- SCREENSAVER (ATTRACT MODE) ---
+        let idleTime = 0;
+        function isStudioPreview() {
+            return document.body.classList.contains('studio-preview');
+        }
+
+        function showScreensaver() {
+            if (isStudioPreview()) return;
+            const ss = document.getElementById('screensaver');
+            idleTime = screensaverTimeoutSeconds;
+            ss.classList.remove('screensaver-dismissed');
+            ss.classList.remove('opacity-0');
+            setTimeout(() => ss.classList.add('opacity-100'), 50);
+        }
+
+        function setupScreensaver() {
+            const ss = document.getElementById('screensaver');
+            // Editor preview: skip attract mode so Refresh lands on the active page.
+            if (isStudioPreview()) {
+                ss.classList.add('opacity-0', 'screensaver-dismissed');
+                scheduleAgendaReveal();
+                return;
+            }
+
+            // Show on load (grid stays in layout so animation never stops)
+            setTimeout(() => ss.classList.add('opacity-100'), 50);
+
+            setInterval(() => {
+                idleTime++;
+                if (idleTime >= screensaverTimeoutSeconds) {
+                    ss.classList.remove('screensaver-dismissed');
+                    ss.classList.remove('opacity-0');
+                    setTimeout(() => ss.classList.add('opacity-100'), 50);
+                }
+            }, 1000);
+
+            const resetTimer = () => {
+                idleTime = 0;
+                if (!ss.classList.contains('screensaver-dismissed')) {
+                    ss.classList.remove('opacity-100');
+                    ss.classList.add('opacity-0');
+                    setTimeout(() => {
+                        ss.classList.add('screensaver-dismissed');
+                        scheduleAgendaReveal();
+                    }, 1100);
+                }
+            };
+            
+            // Require click (or touch) to dismiss screensaver
+            window.addEventListener('touchstart', resetTimer, {passive: true}); 
+            window.addEventListener('click', resetTimer);
+        }
+
+        // --- HIDDEN ADMIN & OSK ---
+        function setupBrandAttractTrigger() {
+            document.getElementById('brand-trigger').addEventListener('click', (event) => {
+                event.stopPropagation();
+                if (isStudioPreview()) return;
+                showScreensaver();
+            });
+        }
+
+        function closeAdmin() { document.getElementById('admin-modal').classList.replace('flex', 'hidden'); }
+
+        function buildKeyboard() {
+            const rows = [ ['Q','W','E','R','T','Y','U','I','O','P'], ['A','S','D','F','G','H','J','K','L'], ['Z','X','C','V','B','N','M', 'DEL'] ];
+            rows.forEach((r, i) => {
+                const target = document.getElementById(`row-${i+1}`);
+                r.forEach(k => {
+                    target.innerHTML += `<div class="key bg-white shadow rounded-lg h-14 w-14 flex items-center justify-center font-bold text-slate-700 text-xl" onclick="typeKey('${k}')">${k}</div>`;
+                });
+            });
+        }
+
+        function typeKey(k) {
+            const input = document.getElementById('client-name-input');
+            if (k === 'DEL') input.value = input.value.slice(0, -1);
+            else input.value += k;
+        }
+
+        async function saveClient() {
+            const val = document.getElementById('client-name-input').value.trim();
+            if (val) {
+                localStorage.setItem('gpc-client', val);
+                
+                checkClientGreeting();
+                buildNavigation();
+                updateView('guest');
+                
+                closeAdmin();
+            }
+        }
+
+        function clearClient() {
+            localStorage.removeItem('gpc-client');
+            checkClientGreeting();
+            buildNavigation();
+            const order = getFilteredNavOrder();
+            if (order.length > 0) updateView(order[0]);
+            closeAdmin();
+        }
+
+        // --- VERSION TOGGLE (KEY CONCEPTS / EXTENDED) ---
+        function setupVersionToggle() {
+            document.getElementById('version-key').addEventListener('click', () => setVersionMode('key'));
+            document.getElementById('version-extended').addEventListener('click', () => setVersionMode('extended'));
+        }
+
+        function setVersionMode(mode) {
+            const activeEl = document.querySelector('[id^="nav-btn-"].nav-item-active');
+            const currentViewId = activeEl ? activeEl.id.replace('nav-btn-', '') : null;
+            versionMode = mode;
+
+            const keyButton = document.getElementById('version-key');
+            const extendedButton = document.getElementById('version-extended');
+
+            if (mode === 'key') {
+                keyButton.classList.add('text-slate-200', 'bg-gpc-blue');
+                keyButton.classList.remove('text-slate-400');
+                extendedButton.classList.remove('text-slate-200', 'bg-gpc-blue');
+                extendedButton.classList.add('text-slate-400');
+            } else {
+                extendedButton.classList.add('text-slate-200', 'bg-gpc-blue');
+                extendedButton.classList.remove('text-slate-400');
+                keyButton.classList.remove('text-slate-200', 'bg-gpc-blue');
+                keyButton.classList.add('text-slate-400');
+            }
+
+            buildNavigation();
+            const order = getFilteredNavOrder();
+            if (currentViewId && order.includes(currentViewId)) {
+                updateView(currentViewId);
+            } else if (order.length > 0) {
+                updateView(order[0]);
+            }
+        }
+
+        // --- HARDWARE BUTTONS & UTILS ---
+        window.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'r') {
+                updateView('rightfiber');
+                return;
+            }
+            const num = parseInt(e.key);
+            const order = getFilteredNavOrder();
+            if (num > 0 && num <= 9 && num <= order.length) updateView(order[num - 1]);
+        });
+
+        function startClock() {
+            setInterval(() => {
+                document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            }, 1000);
+        }
+
+        // --- FULLSCREEN TOGGLE ---
+        function setupFullscreen() {
+            const btn = document.getElementById('btn-fullscreen');
+            const iconEnter = document.getElementById('icon-fullscreen');
+            const iconExit = document.getElementById('icon-exit-fullscreen');
+            function updateIcon() {
+                const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+                iconEnter.classList.toggle('hidden', isFs);
+                iconExit.classList.toggle('hidden', !isFs);
+            }
+            document.addEventListener('fullscreenchange', updateIcon);
+            document.addEventListener('webkitfullscreenchange', updateIcon);
+            btn.addEventListener('click', () => {
+                if (document.fullscreenElement || document.webkitFullscreenElement) {
+                    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+                } else {
+                    (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen).call(document.documentElement);
+                }
+            });
+            updateIcon();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
