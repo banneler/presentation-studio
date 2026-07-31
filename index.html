@@ -814,9 +814,15 @@
 
         function dismissScreensaverForStudio() {
             const ss = document.getElementById('screensaver');
-            if (!ss || ss.classList.contains('screensaver-dismissed')) return;
+            if (!ss || ss.classList.contains('screensaver-dismissed')) {
+                scheduleAgendaReveal();
+                return;
+            }
             ss.classList.add('opacity-0');
-            setTimeout(() => ss.classList.add('screensaver-dismissed'), 300);
+            setTimeout(() => {
+                ss.classList.add('screensaver-dismissed');
+                scheduleAgendaReveal();
+            }, 300);
         }
 
         /** Switch Key→Extended when the target page isn't in the Key Concepts list (without jumping to nav[0]). */
@@ -1124,7 +1130,10 @@
                 if (agendaHero) agendaHero.classList.add('is-revealed');
                 return;
             }
-            if (!agendaHero || !screensaver || !screensaver.classList.contains('screensaver-dismissed')) return;
+            // Preview skips attract mode; live waits until screensaver is dismissed.
+            const ready = isStudioPreview()
+                || (screensaver && screensaver.classList.contains('screensaver-dismissed'));
+            if (!agendaHero || !ready) return;
 
             if (agendaRevealTimer) clearTimeout(agendaRevealTimer);
             agendaRevealTimer = setTimeout(() => {
@@ -1168,7 +1177,6 @@
                         </div>
                     </div>
                 `;
-                scheduleAgendaReveal();
             }
             else if (viewId === 'rightfiber' && pageContent.rightfiber) {
                 const content = pageContent.rightfiber;
@@ -1349,6 +1357,8 @@
             
             container.innerHTML = html;
             if (viewId === 'pricing') bindPricingOptionTabs(container);
+            // Must run after innerHTML so #agenda-hero exists (preview has no later dismiss hook).
+            if (viewId === 'agenda') scheduleAgendaReveal();
         }
 
         // --- SCREENSAVER (ATTRACT MODE) ---

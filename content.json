@@ -323,7 +323,7 @@
       "heroImages": [
         {
           "src": "hero_1.jpg",
-          "panX": 0.39,
+          "panX": 0.31,
           "panYFull": 0.76,
           "panY": 0.76,
           "zoomFull": 2.35,
@@ -331,7 +331,7 @@
         },
         {
           "src": "hero_2.jpg",
-          "panX": 0.517,
+          "panX": 0.45,
           "panYFull": 0.76,
           "panY": 0.76,
           "zoomFull": 2.35,
@@ -339,7 +339,7 @@
         },
         {
           "src": "hero_3.jpg",
-          "panX": 0.644,
+          "panX": 0.59,
           "panYFull": 0.76,
           "panY": 0.76,
           "zoomFull": 2.35,
@@ -347,7 +347,7 @@
         },
         {
           "src": "hero_4.jpg",
-          "panX": 0.771,
+          "panX": 0.73,
           "panYFull": 0.76,
           "panY": 0.76,
           "zoomFull": 2.35,
