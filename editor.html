@@ -141,8 +141,8 @@
                         </div>
                     </div>
                     <label>
-                        <span class="field-label">Screensaver Timeout (seconds)</span>
-                        <input id="screensaver-timeout" type="number" min="15" max="3600" step="1" class="field-input" value="300" title="Idle seconds before attract mode returns">
+                        <span class="field-label">Screensaver Timeout (minutes)</span>
+                        <input id="screensaver-timeout" type="number" min="1" max="60" step="1" class="field-input" value="5" title="Idle minutes before attract mode returns">
                     </label>
                 </div>
             </div>
@@ -394,10 +394,21 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             return left.length === right.length && left.every((value, index) => value === right[index]);
         }
 
-        function normalizeScreensaverTimeout(value, fallback = 300) {
+        function normalizeScreensaverTimeoutMinutes(value, fallback = 5) {
             const number = Number(value);
             if (!Number.isFinite(number)) return fallback;
-            return Math.max(15, Math.min(3600, Math.round(number)));
+            return Math.max(1, Math.min(60, Math.round(number)));
+        }
+
+        function resolveScreensaverTimeoutMinutes(settings = {}) {
+            if (settings.screensaverTimeoutMinutes != null) {
+                return normalizeScreensaverTimeoutMinutes(settings.screensaverTimeoutMinutes, 5);
+            }
+            // Legacy drafts stored seconds
+            if (settings.screensaverTimeoutSeconds != null) {
+                return normalizeScreensaverTimeoutMinutes(Number(settings.screensaverTimeoutSeconds) / 60, 5);
+            }
+            return 5;
         }
 
         function applyHeroColor(color) {
@@ -468,7 +479,8 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             draft.settings.heroColor = normalizeHeroColor(draft.settings.heroColor);
             draft.settings.repName = draft.settings.repName || '';
             draft.settings.customerLogo = draft.settings.customerLogo || '';
-            draft.settings.screensaverTimeoutSeconds = normalizeScreensaverTimeout(draft.settings.screensaverTimeoutSeconds, 300);
+            draft.settings.screensaverTimeoutMinutes = resolveScreensaverTimeoutMinutes(draft.settings);
+            delete draft.settings.screensaverTimeoutSeconds;
             applyHeroColor(draft.settings.heroColor);
 
             Object.values(draft.mapData || {}).forEach(page => {

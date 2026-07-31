@@ -3,7 +3,7 @@
     "heroColor": "#991a38",
     "customerLogo": "tenaska_logo.png",
     "repName": "",
-    "screensaverTimeoutSeconds": 300,
+    "screensaverTimeoutMinutes": 5,
     "keyConceptsNav": ["agenda", "core-capabilities", "national", "layer2", "ip-network", "key-routes", "why-gpc"],
     "extendedNav": ["agenda", "core-capabilities", "national", "layer2", "ip-network", "nebraska", "omaha-metro", "key-routes", "data-centers", "products", "why-gpc"]
   },
