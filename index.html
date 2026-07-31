@@ -263,7 +263,8 @@
 </head>
 <body class="bg-black text-slate-800 h-screen w-screen overflow-hidden relative select-none font-sans antialiased" oncontextmenu="return false;">
     <div id="scale-container" class="fixed inset-0 flex items-center justify-center overflow-hidden">
-    <div id="app-wrapper" class="w-[1920px] h-[1080px] bg-slate-100 flex relative overflow-hidden shrink-0 origin-center">
+    <div id="scale-sizer" class="relative shrink-0 overflow-hidden">
+    <div id="app-wrapper" class="absolute top-0 left-0 w-[1920px] h-[1080px] bg-slate-100 flex overflow-hidden origin-top-left">
     <div id="screensaver" class="absolute inset-0 z-50 bg-gpc-navy flex flex-col items-center justify-center transition-opacity duration-1000 opacity-0 cursor-pointer overflow-hidden">
         <div class="absolute inset-0 opacity-20 ken-burns" style="background-image: radial-gradient(circle at center, #1E40AF 0%, transparent 70%);"></div>
         <div id="screensaver-grid" class="absolute inset-0 opacity-10" style="background-image: linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px); background-size: 50px 50px; animation: gridMove 20s linear infinite;"></div>
@@ -376,6 +377,7 @@
 
         </section>
     </main>
+    </div>
     </div>
     </div>
 
@@ -757,22 +759,26 @@
         }
 
         // --- SCALE TO FIT LOGIC ---
-        // Contain: keep the full 16:9 canvas visible while resizing (editor preview + live).
-        // Preview pins top-left so the navy nav meets the frame; live stays centered.
+        // Contain-fit the 1920×1080 canvas. A sizer matches layout size to the scaled
+        // visual so flex centering isn't based on the unscaled 1920×1080 box.
         function scaleApp() {
             const wrapper = document.getElementById('app-wrapper');
+            const sizer = document.getElementById('scale-sizer');
             const container = document.getElementById('scale-container');
-            if (!wrapper || !container) return;
-            const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
-            const isPreview = document.body.classList.contains('studio-preview');
-            wrapper.style.transformOrigin = isPreview ? 'top left' : 'center center';
+            if (!wrapper || !sizer || !container) return;
+            const availW = container.clientWidth || window.innerWidth;
+            const availH = container.clientHeight || window.innerHeight;
+            const scale = Math.min(availW / 1920, availH / 1080);
+            sizer.style.width = `${Math.max(0, 1920 * scale)}px`;
+            sizer.style.height = `${Math.max(0, 1080 * scale)}px`;
+            wrapper.style.transformOrigin = 'top left';
             wrapper.style.transform = `scale(${scale})`;
-            container.classList.toggle('items-start', isPreview);
-            container.classList.toggle('justify-start', isPreview);
-            container.classList.toggle('items-center', !isPreview);
-            container.classList.toggle('justify-center', !isPreview);
         }
         window.addEventListener('resize', scaleApp);
+        if (typeof ResizeObserver !== 'undefined') {
+            const scaleContainer = document.getElementById('scale-container');
+            if (scaleContainer) new ResizeObserver(() => scaleApp()).observe(scaleContainer);
+        }
         scaleApp(); // Initial scale
 
         // --- INITIALIZATION ---
