@@ -88,6 +88,44 @@ async function listDirectory(path) {
   return Array.isArray(data) ? data : [];
 }
 
+async function listFilesRecursive(path) {
+  const entries = await listDirectory(path);
+  const files = [];
+  for (const entry of entries) {
+    if (entry.type === 'file') {
+      files.push({ path: entry.path, sha: entry.sha });
+    } else if (entry.type === 'dir') {
+      files.push(...await listFilesRecursive(entry.path));
+    }
+  }
+  return files;
+}
+
+async function deleteFile({ path, sha, message }) {
+  const repo = getRepo();
+  return githubRequest(`/repos/${repo}/contents/${encodeURI(path)}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message,
+      sha,
+      branch: 'main'
+    })
+  });
+}
+
+async function deleteDirectory({ path, message }) {
+  const files = await listFilesRecursive(path);
+  for (const file of files) {
+    await deleteFile({
+      path: file.path,
+      sha: file.sha,
+      message: `${message}: ${file.path}`
+    });
+  }
+  return { deleted: files.length, files: files.map(file => file.path) };
+}
+
 function slugify(value) {
   return String(value || '')
     .trim()
@@ -105,5 +143,8 @@ module.exports = {
   getFile,
   upsertFile,
   listDirectory,
+  listFilesRecursive,
+  deleteFile,
+  deleteDirectory,
   slugify
 };
