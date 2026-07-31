@@ -115,11 +115,21 @@
         .capability-body li u { text-decoration: underline; }
 
         /* Spec-imported pricing stage */
-        #html-layer.pricing-mode { padding: 0 !important; background: #f8fafc; }
-        .pricing-stage {
-            min-height: 100%;
-            padding: 1.75rem 2rem 2.25rem;
+        #html-layer.pricing-mode {
+            padding: 0 !important;
             background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+        }
+        .pricing-stage {
+            flex: 1;
+            min-height: 0;
+            height: 100%;
+            padding: 1.25rem 1.5rem;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
         }
         .pricing-stage.is-animated {
             animation: pricingStageIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -129,18 +139,26 @@
             to { opacity: 1; transform: none; }
         }
         .pricing-layout {
+            flex: 1;
+            min-height: 0;
             display: grid;
             grid-template-columns: minmax(0, 1fr) 372px;
             gap: 1.5rem;
-            align-items: start;
+            align-items: stretch;
             max-width: 1480px;
+            width: 100%;
             margin: 0 auto;
         }
         .pricing-layout.is-solo {
             grid-template-columns: minmax(0, 920px);
             justify-content: center;
         }
-        .pricing-main { min-width: 0; }
+        .pricing-main {
+            min-width: 0;
+            min-height: 0;
+            overflow-y: auto;
+            padding-right: 0.25rem;
+        }
         .pricing-shell {
             min-width: 0;
             border-radius: 1rem;
@@ -149,12 +167,11 @@
             box-shadow: 0 12px 28px -18px rgba(15, 23, 42, 0.25);
             background: #ffffff;
         }
-        /* Match one of four condensed agenda hero cards (~372×370). Sticky while table scrolls. */
+        /* Match one of four FULL-height agenda hero cards (~372× content well). Table column scrolls. */
         .pricing-aside {
             width: 372px;
-            height: 370px;
-            position: sticky;
-            top: 0;
+            height: 100%;
+            min-height: 0;
             border-radius: 1.5rem;
             overflow: hidden;
             border: 1px solid #e2e8f0;
@@ -165,9 +182,9 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            object-position: var(--pan-x, 50%) var(--pan-y-condensed, 50%);
-            transform: scale(var(--zoom-condensed, 1));
-            transform-origin: var(--pan-x, 50%) var(--pan-y-condensed, 50%);
+            object-position: var(--pan-x, 50%) var(--pan-y-full, 50%);
+            transform: scale(var(--zoom-full, 1));
+            transform-origin: var(--pan-x, 50%) var(--pan-y-full, 50%);
             display: block;
         }
         .pricing-option-tab {
@@ -243,8 +260,8 @@
     </style>
 </head>
 <body class="bg-black text-slate-800 h-screen w-screen overflow-hidden relative select-none font-sans antialiased" oncontextmenu="return false;">
-    <div id="scale-container" class="fixed inset-0 flex items-center justify-center">
-    <div id="app-wrapper" class="w-[1920px] h-[1080px] bg-slate-100 flex relative overflow-hidden shrink-0 origin-center">
+    <div id="scale-container" class="fixed inset-0 flex items-start justify-center overflow-hidden">
+    <div id="app-wrapper" class="w-[1920px] h-[1080px] bg-slate-100 flex relative overflow-hidden shrink-0 origin-top">
     <div id="screensaver" class="absolute inset-0 z-50 bg-gpc-navy flex flex-col items-center justify-center transition-opacity duration-1000 opacity-0 cursor-pointer overflow-hidden">
         <div class="absolute inset-0 opacity-20 ken-burns" style="background-image: radial-gradient(circle at center, #1E40AF 0%, transparent 70%);"></div>
         <div id="screensaver-grid" class="absolute inset-0 opacity-10" style="background-image: linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px); background-size: 50px 50px; animation: gridMove 20s linear infinite;"></div>
@@ -741,6 +758,7 @@
         function scaleApp() {
             const wrapper = document.getElementById('app-wrapper');
             const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+            wrapper.style.transformOrigin = 'top center';
             wrapper.style.transform = `scale(${scale})`;
         }
         window.addEventListener('resize', scaleApp);
@@ -1055,7 +1073,7 @@
         // --- HTML CONTENT RENDERER ---
         function renderHTMLContent(viewId, container, options = {}) {
             let html = '';
-            const lockOverflow = viewId === 'agenda' || viewId === 'core-capabilities' || viewId === 'rightfiber';
+            const lockOverflow = viewId === 'agenda' || viewId === 'core-capabilities' || viewId === 'rightfiber' || viewId === 'pricing';
             container.classList.toggle('overflow-hidden', lockOverflow);
             container.classList.toggle('overflow-y-auto', !lockOverflow);
             container.classList.toggle('pricing-mode', viewId === 'pricing');
