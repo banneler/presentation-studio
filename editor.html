@@ -217,7 +217,7 @@
             </div>
 
             <div id="publish-panel" class="hidden border-b border-slate-200 bg-white px-4 py-3 space-y-3">
-                <div>
+                <div id="live-url-wrap" class="hidden">
                     <label class="field-label">Live Presentation URL</label>
                     <div class="flex gap-2">
                         <input id="live-url" class="field-input font-mono text-xs" readonly>
@@ -315,6 +315,9 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         let repName = '';
         let publishedUrl = '';
         let followUpUrl = '';
+        let liveUrlHideTimer = null;
+        let followUpUrlHideTimer = null;
+        const URL_ROW_FLASH_MS = 4500;
         let library = [];
 
         const pageList = document.getElementById('page-list');
@@ -628,7 +631,8 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             prepareDraft(saved ? JSON.parse(saved) : baseData);
             if (!draft.settings.repName && repName) draft.settings.repName = repName;
             render();
-            updatePublishPanel();
+            syncPublishPanelValues();
+            hidePublishUrlRows();
             saveLocal(false);
             // Preview iframe defaults to template content.json; point it at the restored draft.
             refreshPreview();
@@ -762,7 +766,8 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 if (presentationSlug === slug) {
                     publishedUrl = '';
                     followUpUrl = '';
-                    updatePublishPanel();
+                    syncPublishPanelValues();
+                    hidePublishUrlRows();
                     persistActive();
                 }
                 closeDeleteModal();
@@ -806,7 +811,8 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 if (repNameInput) repNameInput.value = repName;
                 prepareDraft(content);
                 render();
-                updatePublishPanel();
+                syncPublishPanelValues();
+                hidePublishUrlRows();
                 persistActive();
                 saveLocal(false);
                 refreshPreview();
@@ -1857,21 +1863,55 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             }
         }
 
-        function updatePublishPanel() {
-            const panel = document.getElementById('publish-panel');
-            if (!publishedUrl && !followUpUrl) {
-                panel.classList.add('hidden');
-                return;
-            }
-            panel.classList.remove('hidden');
+        function syncPublishPanelValues() {
             document.getElementById('live-url').value = publishedUrl || '';
-            const wrap = document.getElementById('follow-up-url-wrap');
-            if (followUpUrl) {
-                wrap.classList.remove('hidden');
-                document.getElementById('follow-up-url').value = followUpUrl;
-            } else {
-                wrap.classList.add('hidden');
+            document.getElementById('follow-up-url').value = followUpUrl || '';
+        }
+
+        function updatePublishPanelVisibility() {
+            const panel = document.getElementById('publish-panel');
+            const liveVisible = !document.getElementById('live-url-wrap').classList.contains('hidden');
+            const followUpVisible = !document.getElementById('follow-up-url-wrap').classList.contains('hidden');
+            panel.classList.toggle('hidden', !liveVisible && !followUpVisible);
+        }
+
+        function hideLiveUrlRow() {
+            if (liveUrlHideTimer) {
+                clearTimeout(liveUrlHideTimer);
+                liveUrlHideTimer = null;
             }
+            document.getElementById('live-url-wrap').classList.add('hidden');
+            updatePublishPanelVisibility();
+        }
+
+        function hideFollowUpUrlRow() {
+            if (followUpUrlHideTimer) {
+                clearTimeout(followUpUrlHideTimer);
+                followUpUrlHideTimer = null;
+            }
+            document.getElementById('follow-up-url-wrap').classList.add('hidden');
+            updatePublishPanelVisibility();
+        }
+
+        function hidePublishUrlRows() {
+            hideLiveUrlRow();
+            hideFollowUpUrlRow();
+        }
+
+        function flashLiveUrlRow() {
+            syncPublishPanelValues();
+            document.getElementById('live-url-wrap').classList.remove('hidden');
+            updatePublishPanelVisibility();
+            if (liveUrlHideTimer) clearTimeout(liveUrlHideTimer);
+            liveUrlHideTimer = setTimeout(hideLiveUrlRow, URL_ROW_FLASH_MS);
+        }
+
+        function flashFollowUpUrlRow() {
+            syncPublishPanelValues();
+            document.getElementById('follow-up-url-wrap').classList.remove('hidden');
+            updatePublishPanelVisibility();
+            if (followUpUrlHideTimer) clearTimeout(followUpUrlHideTimer);
+            followUpUrlHideTimer = setTimeout(hideFollowUpUrlRow, URL_ROW_FLASH_MS);
         }
 
         async function publishPresentation() {
@@ -1896,7 +1936,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 if (!response.ok || !data.ok) throw new Error(data.error || 'Publish failed');
                 publishedUrl = `${window.location.origin}${data.url}`;
                 persistActive();
-                updatePublishPanel();
+                flashLiveUrlRow();
                 await refreshLibrary();
                 setStatus(`Published. Live soon at ${data.url}`);
                 flashButton(button, 'Published');
@@ -1951,7 +1991,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 followUpUrl = `${window.location.origin}${data.url}`;
                 if (!publishedUrl) publishedUrl = `${window.location.origin}/presentations/${presentationSlug}/`;
                 persistActive();
-                updatePublishPanel();
+                flashFollowUpUrlRow();
                 await refreshLibrary();
                 closeFollowUpModal();
                 setStatus(`Follow-up published at ${data.url}`);
@@ -2365,7 +2405,8 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             if (repNameInput) repNameInput.value = '';
             prepareDraft(baseData);
             render();
-            updatePublishPanel();
+            syncPublishPanelValues();
+            hidePublishUrlRows();
             persistActive();
             refreshPreview();
             setStatus('New presentation from template.');

@@ -280,34 +280,34 @@
       "heroImages": [
         {
           "src": "hero_1.jpg",
-          "panX": 0.34,
-          "panYFull": 0.5,
-          "panY": 0.52,
-          "zoomFull": 1.85,
+          "panX": 0.39,
+          "panYFull": 0.8,
+          "panY": 0.82,
+          "zoomFull": 2.35,
           "zoomCondensed": 2.5
         },
         {
           "src": "hero_2.jpg",
-          "panX": 0.512,
-          "panYFull": 0.5,
-          "panY": 0.52,
-          "zoomFull": 1.85,
+          "panX": 0.517,
+          "panYFull": 0.8,
+          "panY": 0.82,
+          "zoomFull": 2.35,
           "zoomCondensed": 2.5
         },
         {
           "src": "hero_3.jpg",
-          "panX": 0.685,
-          "panYFull": 0.5,
-          "panY": 0.52,
-          "zoomFull": 1.85,
+          "panX": 0.644,
+          "panYFull": 0.8,
+          "panY": 0.82,
+          "zoomFull": 2.35,
           "zoomCondensed": 2.5
         },
         {
           "src": "hero_4.jpg",
-          "panX": 0.857,
-          "panYFull": 0.5,
-          "panY": 0.52,
-          "zoomFull": 1.85,
+          "panX": 0.771,
+          "panYFull": 0.8,
+          "panY": 0.82,
+          "zoomFull": 2.35,
           "zoomCondensed": 2.5
         }
       ],
@@ -323,35 +323,35 @@
       "heroImages": [
         {
           "src": "hero_1.jpg",
-          "panX": 0.34,
-          "panYFull": 0.5,
-          "panY": 0.5,
-          "zoomFull": 1.85,
-          "zoomCondensed": 1.85
+          "panX": 0.39,
+          "panYFull": 0.8,
+          "panY": 0.8,
+          "zoomFull": 2.35,
+          "zoomCondensed": 2.35
         },
         {
           "src": "hero_2.jpg",
-          "panX": 0.512,
-          "panYFull": 0.5,
-          "panY": 0.5,
-          "zoomFull": 1.85,
-          "zoomCondensed": 1.85
+          "panX": 0.517,
+          "panYFull": 0.8,
+          "panY": 0.8,
+          "zoomFull": 2.35,
+          "zoomCondensed": 2.35
         },
         {
           "src": "hero_3.jpg",
-          "panX": 0.685,
-          "panYFull": 0.5,
-          "panY": 0.5,
-          "zoomFull": 1.85,
-          "zoomCondensed": 1.85
+          "panX": 0.644,
+          "panYFull": 0.8,
+          "panY": 0.8,
+          "zoomFull": 2.35,
+          "zoomCondensed": 2.35
         },
         {
           "src": "hero_4.jpg",
-          "panX": 0.857,
-          "panYFull": 0.5,
-          "panY": 0.5,
-          "zoomFull": 1.85,
-          "zoomCondensed": 1.85
+          "panX": 0.771,
+          "panYFull": 0.8,
+          "panY": 0.8,
+          "zoomFull": 2.35,
+          "zoomCondensed": 2.35
         }
       ],
       "cards": [
