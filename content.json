@@ -278,10 +278,38 @@
     },
     "agenda": {
       "heroImages": [
-        "hero_1.jpg",
-        "hero_2.jpg",
-        "hero_3.jpg",
-        "hero_4.jpg"
+        {
+          "src": "hero_1.jpg",
+          "panX": 0,
+          "panYFull": 0.5,
+          "panY": 0.58,
+          "zoomFull": 1,
+          "zoomCondensed": 2.5
+        },
+        {
+          "src": "hero_2.jpg",
+          "panX": 0.33,
+          "panYFull": 0.5,
+          "panY": 0.58,
+          "zoomFull": 1,
+          "zoomCondensed": 2.5
+        },
+        {
+          "src": "hero_3.jpg",
+          "panX": 0.67,
+          "panYFull": 0.5,
+          "panY": 0.58,
+          "zoomFull": 1,
+          "zoomCondensed": 2.5
+        },
+        {
+          "src": "hero_4.jpg",
+          "panX": 1,
+          "panYFull": 0.5,
+          "panY": 0.58,
+          "zoomFull": 1,
+          "zoomCondensed": 2.5
+        }
       ],
       "headline": "A focused conversation around priorities, fit and next steps.",
       "items": [
@@ -293,10 +321,38 @@
     },
     "core-capabilities": {
       "heroImages": [
-        "hero_1.jpg",
-        "hero_2.jpg",
-        "hero_3.jpg",
-        "hero_4.jpg"
+        {
+          "src": "hero_1.jpg",
+          "panX": 0,
+          "panYFull": 0.5,
+          "panY": 0.5,
+          "zoomFull": 1,
+          "zoomCondensed": 1
+        },
+        {
+          "src": "hero_2.jpg",
+          "panX": 0.33,
+          "panYFull": 0.5,
+          "panY": 0.5,
+          "zoomFull": 1,
+          "zoomCondensed": 1
+        },
+        {
+          "src": "hero_3.jpg",
+          "panX": 0.67,
+          "panYFull": 0.5,
+          "panY": 0.5,
+          "zoomFull": 1,
+          "zoomCondensed": 1
+        },
+        {
+          "src": "hero_4.jpg",
+          "panX": 1,
+          "panYFull": 0.5,
+          "panY": 0.5,
+          "zoomFull": 1,
+          "zoomCondensed": 1
+        }
       ],
       "cards": [
         {
