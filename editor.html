@@ -150,20 +150,16 @@
                             <span class="field-label">Import Pricing</span>
                             <p class="text-[11px] text-slate-500 leading-relaxed">Either an Enterprise Proposals <strong class="font-semibold text-slate-600">.spec</strong> or a Salesforce Details-only <strong class="font-semibold text-slate-600">CSV</strong> (Quick Import report). Specs keep options/promos/NRC; CSV builds one option from locations and line items.</p>
                         </div>
-                        <div class="space-y-1.5">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">.spec file</span>
-                            <input id="spec-pricing-file" type="file" accept=".spec,application/json,text/json" class="block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-500 file:px-3 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-orange-600">
-                        </div>
-                        <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                            <span class="h-px flex-1 bg-slate-200"></span>
-                            <span>or</span>
-                            <span class="h-px flex-1 bg-slate-200"></span>
-                        </div>
-                        <div class="space-y-1.5">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Salesforce CSV</span>
-                            <input id="salesforce-pricing-file" type="file" accept=".csv,text/csv,application/vnd.ms-excel" class="block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-slate-700">
-                            <a href="https://gpcom.lightning.force.com/lightning/r/Report/00OKZ000000HxH42AK/view?queryScope=userFolders" target="_blank" rel="noopener noreferrer" class="inline-flex text-[11px] font-semibold text-orange-600 hover:text-orange-700">Open Quick Import report ↗</a>
-                            <p class="text-[10px] text-slate-500 leading-snug">Export as <strong class="font-semibold text-slate-600">Details Only</strong> · Comma Delimited (.csv). Filter by solution number first.</p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1.5 min-w-0">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">.spec file</span>
+                                <input id="spec-pricing-file" type="file" accept=".spec,application/json,text/json" class="block w-full text-xs text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-orange-500 file:px-2.5 file:py-2 file:text-[11px] file:font-bold file:text-white hover:file:bg-orange-600">
+                            </div>
+                            <div class="space-y-1.5 min-w-0">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Salesforce CSV</span>
+                                <input id="salesforce-pricing-file" type="file" accept=".csv,text/csv,application/vnd.ms-excel" class="block w-full text-xs text-slate-500 file:mr-2 file:rounded-lg file:border-0 file:bg-slate-800 file:px-2.5 file:py-2 file:text-[11px] file:font-bold file:text-white hover:file:bg-slate-700">
+                                <a href="https://gpcom.lightning.force.com/lightning/r/Report/00OKZ000000HxH42AK/view?queryScope=userFolders" target="_blank" rel="noopener noreferrer" class="inline-flex text-[11px] font-semibold text-orange-600 hover:text-orange-700">Open Quick Import report ↗</a>
+                            </div>
                         </div>
                         <div class="flex items-center justify-between gap-2 pt-0.5">
                             <p id="spec-pricing-status" class="text-[11px] text-slate-500 min-w-0 truncate">No pricing imported yet.</p>
