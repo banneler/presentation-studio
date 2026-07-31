@@ -115,40 +115,38 @@
         .capability-body li u { text-decoration: underline; }
 
         /* Spec-imported pricing stage */
-        #html-layer.pricing-mode { padding: 0 !important; background: #0b1524; }
+        #html-layer.pricing-mode { padding: 0 !important; background: #f8fafc; }
         .pricing-stage {
             min-height: 100%;
-            padding: 2rem 2.25rem 2.5rem;
-            background:
-                radial-gradient(ellipse 80% 50% at 10% 0%, rgba(var(--hero-color-rgb), 0.22), transparent 55%),
-                radial-gradient(ellipse 60% 40% at 90% 100%, rgba(30, 64, 175, 0.18), transparent 50%),
-                linear-gradient(160deg, #0b1524 0%, #12243d 48%, #0f1a2e 100%);
-            animation: pricingStageIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+            padding: 1.75rem 2rem 2.25rem;
+            background: #f8fafc;
+            animation: pricingStageIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
         @keyframes pricingStageIn {
-            from { opacity: 0; transform: translateY(14px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: none; }
         }
         .pricing-shell {
             max-width: 920px;
             margin: 0 auto;
-            border-radius: 1.25rem;
+            border-radius: 1rem;
             overflow: hidden;
-            box-shadow: 0 28px 60px -24px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
-            background: #f8fafc;
-            animation: pricingShellIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 12px 28px -18px rgba(15, 23, 42, 0.25);
+            background: #ffffff;
+            animation: pricingShellIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
         }
         @keyframes pricingShellIn {
-            from { opacity: 0; transform: scale(0.985) translateY(10px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: none; }
         }
         .pricing-option-tab {
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            background: rgba(255, 255, 255, 0.06);
-            color: rgba(255, 255, 255, 0.75);
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #475569;
             transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
         }
-        .pricing-option-tab:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+        .pricing-option-tab:hover { border-color: var(--hero-color); color: #0f172a; }
         .pricing-option-tab.is-active {
             background: var(--hero-color);
             border-color: transparent;
@@ -510,13 +508,13 @@
         function renderPricingPage(content) {
             const options = Array.isArray(content?.options) ? content.options : [];
             if (!options.length) {
-                return `<div class="pricing-stage flex items-center justify-center text-white/70">No pricing data imported.</div>`;
+                return `<div class="pricing-stage flex items-center justify-center text-slate-500">No pricing data imported.</div>`;
             }
             if (pricingOptionIndex >= options.length) pricingOptionIndex = 0;
             const active = options[pricingOptionIndex];
             const multi = options.length > 1;
             const tabs = multi ? `
-                <div class="flex flex-wrap gap-2 mb-5">
+                <div class="flex flex-wrap gap-2 mb-4">
                     ${options.map((opt, index) => {
                         const label = opt.solutionId
                             ? `Option ${index + 1} · ${opt.solutionId}`
@@ -525,12 +523,12 @@
                     }).join('')}
                 </div>
             ` : '';
-            const biz = content.businessName ? `<p class="text-white/60 text-sm mb-4">${escapeHtml(content.businessName)}</p>` : '';
+            const biz = content.businessName ? `<p class="text-slate-500 text-sm mb-3">${escapeHtml(content.businessName)}</p>` : '';
             const headerLabel = multi
                 ? `Proposed Pricing · Option ${pricingOptionIndex + 1}`
                 : 'Proposed Pricing';
             const solution = active.solutionId
-                ? `<span class="ml-2 text-sm font-semibold text-orange-300/90">(${escapeHtml(active.solutionId)})</span>`
+                ? `<span class="ml-2 text-sm font-semibold text-gpc-orange">(${escapeHtml(active.solutionId)})</span>`
                 : '';
 
             return `
@@ -882,7 +880,9 @@
 
             const pageLogo = resolvePageLogo(data);
             const stats = document.getElementById('stats-container');
-            const pageStats = Array.isArray(data.stats) ? data.stats : [];
+            // Pricing defaults stats off so the monthly number isn't spoiled before the walkthrough.
+            const statsEnabled = data.type === 'pricing' ? data.showStats === true : data.showStats !== false;
+            const pageStats = statsEnabled && Array.isArray(data.stats) ? data.stats : [];
             stats.innerHTML = '';
             pageStats.forEach(s => {
                 stats.innerHTML += `<div class="flex flex-col items-start border-l border-slate-200 pl-6"><span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">${s.label}</span><span class="text-2xl font-bold ${s.color}">${s.value}</span></div>`;

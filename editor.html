@@ -871,6 +871,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             selectedHeading.textContent = page.navLabel || page.title || selectedPageId;
 
             const logoToggleId = `use-logo-${Math.random().toString(36).slice(2)}`;
+            const statsToggleId = `show-stats-${Math.random().toString(36).slice(2)}`;
             setTimeout(() => {
                 const toggle = document.getElementById(logoToggleId);
                 if (!toggle) return;
@@ -879,6 +880,13 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     if (toggle.checked && draft.settings.customerLogo) page.logo = draft.settings.customerLogo;
                     if (!toggle.checked) delete page.logo;
                 });
+                const statsToggle = document.getElementById(statsToggleId);
+                if (statsToggle) {
+                    statsToggle.addEventListener('change', () => {
+                        page.showStats = statsToggle.checked;
+                        refreshPreview();
+                    });
+                }
             });
 
             let html = `
@@ -893,6 +901,18 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     </span>
                 </label>
             `;
+
+            if (page.type === 'pricing') {
+                html += `
+                    <label class="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700 cursor-pointer">
+                        <input id="${statsToggleId}" type="checkbox" ${page.showStats === true ? 'checked' : ''} class="h-4 w-4 accent-orange-500">
+                        <span>
+                            Show header stats
+                            <span class="block text-[11px] font-normal text-slate-500 mt-0.5">Locations and monthly total in the top-right. Off by default so you can walk the table first.</span>
+                        </span>
+                    </label>
+                `;
+            }
 
             if (page.type === 'map') {
                 html += imageField('Static Map Image', page.file || '', value => page.file = value);
@@ -1799,6 +1819,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
             draft.mapData = draft.mapData || {};
             draft.pageContent = draft.pageContent || {};
+            const priorShowStats = draft.mapData.pricing?.showStats === true;
             draft.mapData.pricing = {
                 id: 'pricing',
                 title: 'Proposed Pricing',
@@ -1806,6 +1827,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 subtitle: subtitleBits.join(' · '),
                 type: 'pricing',
                 useCustomerLogo: true,
+                showStats: priorShowStats,
                 stats: [
                     { label: 'Locations', value: String(locationCount), color: 'text-gpc-blue' },
                     { label: 'Monthly', value: formatStudioMoney(firstTotal, useDecimals), color: 'text-gpc-orange' }
