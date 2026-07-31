@@ -569,6 +569,8 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             render();
             updatePublishPanel();
             saveLocal(false);
+            // Preview iframe defaults to template content.json; point it at the restored draft.
+            refreshPreview();
             await refreshLibrary();
             setStatus(presentationSlug ? `Editing ${presentationName || presentationSlug}` : 'Name this presentation to begin publishing.');
         }
