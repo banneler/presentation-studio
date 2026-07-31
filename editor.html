@@ -510,9 +510,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 customerLogoPath.value = logo.startsWith('data:') ? '(uploaded image)' : logo;
             }
             if (screensaverTimeoutInput) {
-                screensaverTimeoutInput.value = String(
-                    normalizeScreensaverTimeout(draft?.settings?.screensaverTimeoutSeconds, 300)
-                );
+                screensaverTimeoutInput.value = String(resolveScreensaverTimeoutMinutes(draft?.settings || {}));
             }
             updateCustomerLogoPreview();
         }
@@ -1753,8 +1751,9 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         });
         screensaverTimeoutInput.addEventListener('change', () => {
             draft.settings = draft.settings || {};
-            const normalized = normalizeScreensaverTimeout(screensaverTimeoutInput.value, 300);
-            draft.settings.screensaverTimeoutSeconds = normalized;
+            const normalized = normalizeScreensaverTimeoutMinutes(screensaverTimeoutInput.value, 5);
+            draft.settings.screensaverTimeoutMinutes = normalized;
+            delete draft.settings.screensaverTimeoutSeconds;
             screensaverTimeoutInput.value = String(normalized);
         });
 
