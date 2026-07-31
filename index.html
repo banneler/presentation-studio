@@ -755,9 +755,11 @@
         }
 
         // --- SCALE TO FIT LOGIC ---
+        // Scale to viewport height so the navy nav always runs top-to-bottom.
+        // Wider-than-16:9 screens letterbox on the sides; narrower screens clip left/right.
         function scaleApp() {
             const wrapper = document.getElementById('app-wrapper');
-            const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+            const scale = window.innerHeight / 1080;
             wrapper.style.transformOrigin = 'top center';
             wrapper.style.transform = `scale(${scale})`;
         }
