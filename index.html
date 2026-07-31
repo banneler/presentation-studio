@@ -52,20 +52,20 @@
         /* Zoom + pan via scale/origin; object-position covers zoom=1 crop framing. */
         .agenda-card img.agenda-hero-img {
             object-fit: cover;
-            object-position: var(--pan-x, 50%) var(--pan-y-full, 50%);
+            object-position: var(--pan-x-full, 50%) var(--pan-y-full, 50%);
             transform: scale(var(--zoom-full, 1));
-            transform-origin: var(--pan-x, 50%) var(--pan-y-full, 50%);
+            transform-origin: var(--pan-x-full, 50%) var(--pan-y-full, 50%);
         }
         .agenda-hero.is-revealed .agenda-card img.agenda-hero-img {
-            object-position: var(--pan-x, 50%) var(--pan-y-condensed, 50%);
+            object-position: var(--pan-x-condensed, var(--pan-x, 50%)) var(--pan-y-condensed, 50%);
             transform: scale(var(--zoom-condensed, 1));
-            transform-origin: var(--pan-x, 50%) var(--pan-y-condensed, 50%);
+            transform-origin: var(--pan-x-condensed, var(--pan-x, 50%)) var(--pan-y-condensed, 50%);
         }
         .capability-front img.capability-hero-img {
             object-fit: cover;
-            object-position: var(--pan-x, 50%) var(--pan-y-condensed, 50%);
+            object-position: var(--pan-x-condensed, var(--pan-x, 50%)) var(--pan-y-condensed, 50%);
             transform: scale(var(--zoom-condensed, 1));
-            transform-origin: var(--pan-x, 50%) var(--pan-y-condensed, 50%);
+            transform-origin: var(--pan-x-condensed, var(--pan-x, 50%)) var(--pan-y-condensed, 50%);
         }
         .capability-card { perspective: 1200px; transition: box-shadow 0.2s ease, transform 0.2s ease; }
         .capability-card-inner { transform-style: preserve-3d; transition: transform 0.65s ease-in-out; }
@@ -184,9 +184,9 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            object-position: var(--pan-x, 50%) var(--pan-y-full, 50%);
+            object-position: var(--pan-x-full, var(--pan-x, 50%)) var(--pan-y-full, 50%);
             transform: scale(var(--zoom-full, 1));
-            transform-origin: var(--pan-x, 50%) var(--pan-y-full, 50%);
+            transform-origin: var(--pan-x-full, var(--pan-x, 50%)) var(--pan-y-full, 50%);
             display: block;
         }
         .pricing-option-tab {
@@ -660,24 +660,46 @@
             const defaultPanY = index === 3 ? 0.2 : 0.5;
             const defaults = {
                 src: '',
-                panX: 0.5,
+                panXFull: 0.5,
+                panX: 0.5, // condensed horizontal pan
                 panYFull: 0.5,
                 panY: defaultPanY,
                 zoomFull: 1,
                 zoomCondensed: 1,
+                panXLinked: true,
                 enabled: true
             };
             if (!entry) return { ...defaults };
             if (typeof entry === 'string') return { ...defaults, src: migrateHeroSrc(entry) };
             const zoomFallback = entry.zoom != null ? entry.zoom : 1;
             const legacyPanY = entry.panY != null ? entry.panY : defaultPanY;
+            // Legacy single panX → both full + condensed. panXCondensed aliases condensed panX.
+            const hasPanXFull = entry.panXFull != null;
+            const hasPanXCondensed = entry.panXCondensed != null;
+            const legacyPanX = entry.panX ?? entry.pan;
+            let panXFull;
+            let panX;
+            if (!hasPanXFull && !hasPanXCondensed) {
+                const shared = clamp01(legacyPanX, 0.5);
+                panXFull = shared;
+                panX = shared;
+            } else {
+                panXFull = clamp01(entry.panXFull ?? legacyPanX, 0.5);
+                panX = clamp01(entry.panXCondensed ?? legacyPanX ?? entry.panXFull, 0.5);
+            }
+            // Linked by default when equal / on legacy migrate; explicit panXLinked wins.
+            const panXLinked = entry.panXLinked != null
+                ? entry.panXLinked !== false
+                : Math.abs(panXFull - panX) < 0.001;
             return {
                 src: migrateHeroSrc(entry.src || entry.url || entry.file || ''),
-                panX: clamp01(entry.panX ?? entry.pan, 0.5),
+                panXFull,
+                panX,
                 panYFull: clamp01(entry.panYFull ?? 0.5, 0.5),
                 panY: clamp01(entry.panYCondensed ?? legacyPanY, defaultPanY),
                 zoomFull: clampZoom(entry.zoomFull ?? zoomFallback, 1),
                 zoomCondensed: clampZoom(entry.zoomCondensed ?? zoomFallback, 1),
+                panXLinked,
                 enabled: entry.enabled !== false
             };
         }
@@ -691,8 +713,12 @@
 
         function heroFrameVars(hero = {}) {
             const normalized = normalizeHeroImage(hero);
+            const panXFull = `${(normalized.panXFull * 100).toFixed(0)}%`;
+            const panXCondensed = `${(normalized.panX * 100).toFixed(0)}%`;
             return [
-                `--pan-x: ${(normalized.panX * 100).toFixed(0)}%`,
+                `--pan-x-full: ${panXFull}`,
+                `--pan-x-condensed: ${panXCondensed}`,
+                `--pan-x: ${panXCondensed}`, // condensed alias for older CSS
                 `--pan-y-full: ${(normalized.panYFull * 100).toFixed(0)}%`,
                 `--pan-y-condensed: ${(normalized.panY * 100).toFixed(0)}%`,
                 `--zoom-full: ${normalized.zoomFull}`,

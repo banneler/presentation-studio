@@ -396,24 +396,46 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             const defaultPanY = index === 3 ? 0.2 : 0.5;
             const defaults = {
                 src: '',
-                panX: 0.5,
+                panXFull: 0.5,
+                panX: 0.5, // condensed horizontal pan
                 panYFull: 0.5,
                 panY: defaultPanY,
                 zoomFull: 1,
                 zoomCondensed: 1,
+                panXLinked: true,
                 enabled: true
             };
             if (!entry) return { ...defaults };
             if (typeof entry === 'string') return { ...defaults, src: migrateHeroSrc(entry) };
             const zoomFallback = entry.zoom != null ? entry.zoom : 1;
             const legacyPanY = entry.panY != null ? entry.panY : defaultPanY;
+            // Legacy single panX → both full + condensed. panXCondensed aliases condensed panX.
+            const hasPanXFull = entry.panXFull != null;
+            const hasPanXCondensed = entry.panXCondensed != null;
+            const legacyPanX = entry.panX ?? entry.pan;
+            let panXFull;
+            let panX;
+            if (!hasPanXFull && !hasPanXCondensed) {
+                const shared = clamp01(legacyPanX, 0.5);
+                panXFull = shared;
+                panX = shared;
+            } else {
+                panXFull = clamp01(entry.panXFull ?? legacyPanX, 0.5);
+                panX = clamp01(entry.panXCondensed ?? legacyPanX ?? entry.panXFull, 0.5);
+            }
+            // Linked by default when equal / on legacy migrate; explicit panXLinked wins.
+            const panXLinked = entry.panXLinked != null
+                ? entry.panXLinked !== false
+                : Math.abs(panXFull - panX) < 0.001;
             return {
                 src: migrateHeroSrc(entry.src || entry.url || entry.file || ''),
-                panX: clamp01(entry.panX ?? entry.pan, 0.5),
+                panXFull,
+                panX,
                 panYFull: clamp01(entry.panYFull ?? 0.5, 0.5),
                 panY: clamp01(entry.panYCondensed ?? legacyPanY, defaultPanY),
                 zoomFull: clampZoom(entry.zoomFull ?? zoomFallback, 1),
                 zoomCondensed: clampZoom(entry.zoomCondensed ?? zoomFallback, 1),
+                panXLinked,
                 enabled: entry.enabled !== false
             };
         }
@@ -1333,11 +1355,36 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 const root = document.getElementById(id);
                 if (!root) return;
 
+                const syncPanXInputs = (index) => {
+                    const hero = heroes[index];
+                    if (!hero) return;
+                    const fullInput = root.querySelector(`[data-hero-pan-x-full="${index}"]`);
+                    const condensedInput = root.querySelector(`[data-hero-pan-x="${index}"]`);
+                    if (fullInput) fullInput.value = String(hero.panXFull);
+                    if (condensedInput) condensedInput.value = String(hero.panX);
+                    const linkBtn = root.querySelector(`[data-hero-pan-x-link="${index}"]`);
+                    if (linkBtn) {
+                        const linked = hero.panXLinked !== false;
+                        linkBtn.setAttribute('aria-pressed', linked ? 'true' : 'false');
+                        linkBtn.title = linked ? 'Unlink horizontal pan' : 'Link horizontal pan';
+                        linkBtn.classList.toggle('text-orange-600', linked);
+                        linkBtn.classList.toggle('border-orange-300', linked);
+                        linkBtn.classList.toggle('bg-orange-50', linked);
+                        linkBtn.classList.toggle('text-slate-500', !linked);
+                        linkBtn.classList.toggle('border-slate-200', !linked);
+                        linkBtn.classList.toggle('bg-white', !linked);
+                        linkBtn.innerHTML = linked
+                            ? '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'
+                            : '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 7h2a5 5 0 0 1 0 10h-2"/><path d="M9 17H7A5 5 0 0 1 7 7h2"/><line x1="8" y1="12" x2="16" y2="12" stroke-dasharray="2 2"/></svg>';
+                    }
+                };
+
                 const applyPanPreview = (index) => {
                     const hero = heroes[index];
                     if (!hero) return;
                     const src = resolveEditorAsset(hero.src);
                     const bg = src ? `url("${src.replace(/"/g, '\\"')}")` : '';
+                    const panXFull = `${(hero.panXFull * 100).toFixed(0)}%`;
                     const panX = `${(hero.panX * 100).toFixed(0)}%`;
                     const panYFull = `${(hero.panYFull * 100).toFixed(0)}%`;
                     const panY = `${(hero.panY * 100).toFixed(0)}%`;
@@ -1350,9 +1397,9 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         fill.style.backgroundImage = bg;
                         fill.style.backgroundSize = 'cover';
                         if (mode === 'full' && dualCrop) {
-                            fill.style.backgroundPosition = `${panX} ${panYFull}`;
+                            fill.style.backgroundPosition = `${panXFull} ${panYFull}`;
                             fill.style.transform = `scale(${hero.zoomFull})`;
-                            fill.style.transformOrigin = `${panX} ${panYFull}`;
+                            fill.style.transformOrigin = `${panXFull} ${panYFull}`;
                         } else {
                             fill.style.backgroundPosition = `${panX} ${panY}`;
                             fill.style.transform = `scale(${hero.zoomCondensed})`;
@@ -1366,6 +1413,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     };
                     zoomLabel('full', hero.zoomFull);
                     zoomLabel('condensed', hero.zoomCondensed);
+                    syncPanXInputs(index);
                 };
 
                 root.querySelectorAll('[data-hero-enabled]').forEach(input => {
@@ -1385,10 +1433,49 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     });
                 });
 
+                // Track last-edited H pan side so re-link copies that value to the other.
+                const lastPanXSide = {};
+
+                const setPanXFromSide = (index, side, value) => {
+                    const next = clamp01(value);
+                    lastPanXSide[index] = side;
+                    if (side === 'full') {
+                        heroes[index].panXFull = next;
+                        if (heroes[index].panXLinked !== false) heroes[index].panX = next;
+                    } else {
+                        heroes[index].panX = next;
+                        if (heroes[index].panXLinked !== false) heroes[index].panXFull = next;
+                    }
+                    applyPanPreview(index);
+                    commit(heroes);
+                };
+
+                root.querySelectorAll('[data-hero-pan-x-full]').forEach(input => {
+                    input.addEventListener('input', () => {
+                        setPanXFromSide(Number(input.dataset.heroPanXFull), 'full', input.value);
+                    });
+                });
+
                 root.querySelectorAll('[data-hero-pan-x]').forEach(input => {
                     input.addEventListener('input', () => {
-                        const index = Number(input.dataset.heroPanX);
-                        heroes[index].panX = clamp01(input.value);
+                        setPanXFromSide(Number(input.dataset.heroPanX), 'condensed', input.value);
+                    });
+                });
+
+                root.querySelectorAll('[data-hero-pan-x-link]').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const index = Number(button.dataset.heroPanXLink);
+                        const hero = heroes[index];
+                        if (!hero) return;
+                        if (hero.panXLinked !== false) {
+                            hero.panXLinked = false;
+                        } else {
+                            // Re-link: copy last-edited side (default full) onto the other.
+                            const side = lastPanXSide[index] || 'full';
+                            if (side === 'condensed') hero.panXFull = hero.panX;
+                            else hero.panX = hero.panXFull;
+                            hero.panXLinked = true;
+                        }
                         applyPanPreview(index);
                         commit(heroes);
                     });
@@ -1490,8 +1577,12 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
             const help = options.help
                 || (dualCrop
-                    ? 'Full left, condensed right. Preview aspect tracks visible image count. Each crop has its own zoom + vertical pan; horizontal pan is shared.'
+                    ? 'Full left, condensed right. Preview aspect tracks visible image count. Each crop has its own zoom + vertical pan; horizontal pan can be linked or independent.'
                     : 'Toggle slots on/off. Preview aspect tracks visible image count. Zoom in for more pan room on wide photos.');
+
+            const panXLinkIcon = (linked) => linked
+                ? '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'
+                : '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 7h2a5 5 0 0 1 0 10h-2"/><path d="M9 17H7A5 5 0 0 1 7 7h2"/><line x1="8" y1="12" x2="16" y2="12" stroke-dasharray="2 2"/></svg>';
 
             return `
                 <div id="${id}" class="space-y-3">
@@ -1505,12 +1596,14 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     ${heroes.map((hero, index) => {
                         const previewSrc = resolveEditorAsset(hero.src);
                         const bg = previewSrc ? `background-image: url('${previewSrc.replace(/'/g, "\\'")}');` : '';
-                        const panX = `${(hero.panX * 100).toFixed(0)}%`;
+                        const panXFullPct = `${(hero.panXFull * 100).toFixed(0)}%`;
+                        const panXPct = `${(hero.panX * 100).toFixed(0)}%`;
                         const panYFull = `${(hero.panYFull * 100).toFixed(0)}%`;
                         const panY = `${(hero.panY * 100).toFixed(0)}%`;
+                        const panXLinked = hero.panXLinked !== false;
                         const empty = '<div class="pointer-events-none absolute inset-0 flex items-center justify-center text-[9px] font-bold uppercase tracking-wider text-slate-400 text-center px-1 z-10">Drop</div>';
-                        const fillFull = `<div data-hero-fill class="absolute inset-0" style="background-size: cover; background-position: ${panX} ${panYFull}; transform: scale(${hero.zoomFull}); transform-origin: ${panX} ${panYFull}; ${bg}"></div>`;
-                        const fillCondensed = `<div data-hero-fill class="absolute inset-0" style="background-size: cover; background-position: ${panX} ${panY}; transform: scale(${hero.zoomCondensed}); transform-origin: ${panX} ${panY}; ${bg}"></div>`;
+                        const fillFull = `<div data-hero-fill class="absolute inset-0" style="background-size: cover; background-position: ${panXFullPct} ${panYFull}; transform: scale(${hero.zoomFull}); transform-origin: ${panXFullPct} ${panYFull}; ${bg}"></div>`;
+                        const fillCondensed = `<div data-hero-fill class="absolute inset-0" style="background-size: cover; background-position: ${panXPct} ${panY}; transform: scale(${hero.zoomCondensed}); transform-origin: ${panXPct} ${panY}; ${bg}"></div>`;
 
                         const fullColumn = `
                             <div class="min-w-0">
@@ -1595,10 +1688,31 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                                 <input data-hero-src="${index}" class="field-input font-mono text-xs mb-3" value="${escapeAttr(hero.src)}" placeholder="hero_1.jpg or https://...">
                                 <input data-hero-file="${index}" type="file" accept="image/*" class="hidden">
                                 ${columnsHtml}
-                                <label class="block mt-3">
-                                    <span class="field-label-micro mb-1">Pan horizontal</span>
-                                    <input data-hero-pan-x="${index}" type="range" min="0" max="1" step="0.01" value="${hero.panX}" class="w-full h-2 accent-orange-500">
-                                </label>
+                                ${(dualCrop && showCondensed) ? `
+                                    <div class="mt-3 flex items-end gap-2">
+                                        <label class="block flex-1 min-w-0">
+                                            <span class="field-label-micro mb-1">Pan H (full)</span>
+                                            <input data-hero-pan-x-full="${index}" type="range" min="0" max="1" step="0.01" value="${hero.panXFull}" class="w-full h-2 accent-orange-500">
+                                        </label>
+                                        <button type="button" data-hero-pan-x-link="${index}" aria-pressed="${panXLinked ? 'true' : 'false'}" title="${panXLinked ? 'Unlink horizontal pan' : 'Link horizontal pan'}" class="mb-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition ${panXLinked ? 'text-orange-600 border-orange-300 bg-orange-50' : 'text-slate-500 border-slate-200 bg-white hover:bg-slate-50'}">
+                                            ${panXLinkIcon(panXLinked)}
+                                        </button>
+                                        <label class="block flex-1 min-w-0">
+                                            <span class="field-label-micro mb-1">Pan H (condensed)</span>
+                                            <input data-hero-pan-x="${index}" type="range" min="0" max="1" step="0.01" value="${hero.panX}" class="w-full h-2 accent-orange-500">
+                                        </label>
+                                    </div>
+                                ` : (dualCrop && !showCondensed) ? `
+                                    <label class="block mt-3">
+                                        <span class="field-label-micro mb-1">Pan horizontal</span>
+                                        <input data-hero-pan-x-full="${index}" type="range" min="0" max="1" step="0.01" value="${hero.panXFull}" class="w-full h-2 accent-orange-500">
+                                    </label>
+                                ` : `
+                                    <label class="block mt-3">
+                                        <span class="field-label-micro mb-1">Pan horizontal</span>
+                                        <input data-hero-pan-x="${index}" type="range" min="0" max="1" step="0.01" value="${hero.panX}" class="w-full h-2 accent-orange-500">
+                                    </label>
+                                `}
                             </div>
                         `;
                     }).join('')}

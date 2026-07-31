@@ -280,7 +280,9 @@
       "heroImages": [
         {
           "src": "hero_1.jpg",
+          "panXFull": 0.31,
           "panX": 0.31,
+          "panXLinked": false,
           "panYFull": 0.76,
           "panY": 0.78,
           "zoomFull": 2.35,
@@ -288,7 +290,9 @@
         },
         {
           "src": "hero_2.jpg",
+          "panXFull": 0.45,
           "panX": 0.45,
+          "panXLinked": false,
           "panYFull": 0.76,
           "panY": 0.78,
           "zoomFull": 2.35,
@@ -296,7 +300,9 @@
         },
         {
           "src": "hero_3.jpg",
+          "panXFull": 0.59,
           "panX": 0.59,
+          "panXLinked": false,
           "panYFull": 0.76,
           "panY": 0.78,
           "zoomFull": 2.35,
@@ -304,7 +310,9 @@
         },
         {
           "src": "hero_4.jpg",
+          "panXFull": 0.73,
           "panX": 0.73,
+          "panXLinked": false,
           "panYFull": 0.76,
           "panY": 0.78,
           "zoomFull": 2.35,
@@ -323,7 +331,9 @@
       "heroImages": [
         {
           "src": "hero_1.jpg",
+          "panXFull": 0.31,
           "panX": 0.31,
+          "panXLinked": false,
           "panYFull": 0.76,
           "panY": 0.76,
           "zoomFull": 2.35,
@@ -331,7 +341,9 @@
         },
         {
           "src": "hero_2.jpg",
+          "panXFull": 0.45,
           "panX": 0.45,
+          "panXLinked": false,
           "panYFull": 0.76,
           "panY": 0.76,
           "zoomFull": 2.35,
@@ -339,7 +351,9 @@
         },
         {
           "src": "hero_3.jpg",
+          "panXFull": 0.59,
           "panX": 0.59,
+          "panXLinked": false,
           "panYFull": 0.76,
           "panY": 0.76,
           "zoomFull": 2.35,
@@ -347,7 +361,9 @@
         },
         {
           "src": "hero_4.jpg",
+          "panXFull": 0.73,
           "panX": 0.73,
+          "panXLinked": false,
           "panYFull": 0.76,
           "panY": 0.76,
           "zoomFull": 2.35,
