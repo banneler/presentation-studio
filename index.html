@@ -800,7 +800,11 @@
             const order = getFilteredNavOrder();
             const requestedView = new URLSearchParams(window.location.search).get('view');
             const startView = requestedView && mapData[requestedView] ? requestedView : order[0];
-            if (startView) updateView(startView);
+            if (startView) {
+                // Deep-link / editor refresh can target Extended-only pages while still in Key mode.
+                ensureNavModeForView(startView);
+                updateView(startView);
+            }
         }
 
         function dismissScreensaverForStudio() {
@@ -810,6 +814,25 @@
             setTimeout(() => ss.classList.add('screensaver-dismissed'), 300);
         }
 
+        /** Switch Key→Extended when the target page isn't in the Key Concepts list (without jumping to nav[0]). */
+        function ensureNavModeForView(viewId) {
+            if (!viewId || !mapData[viewId]) return;
+            const keyNav = getVisibleNavList('keyConceptsNav', KEY_CONCEPTS_NAV);
+            const extNav = getVisibleNavList('extendedNav', navOrder);
+            if (versionMode === 'key' && !keyNav.includes(viewId) && extNav.includes(viewId)) {
+                versionMode = 'extended';
+                const keyButton = document.getElementById('version-key');
+                const extendedButton = document.getElementById('version-extended');
+                if (keyButton && extendedButton) {
+                    extendedButton.classList.add('text-slate-200', 'bg-gpc-blue');
+                    extendedButton.classList.remove('text-slate-400');
+                    keyButton.classList.remove('text-slate-200', 'bg-gpc-blue');
+                    keyButton.classList.add('text-slate-400');
+                }
+                buildNavigation();
+            }
+        }
+
         function setupStudioPreviewBridge() {
             window.addEventListener('message', event => {
                 if (event.origin !== window.location.origin) return;
@@ -817,11 +840,7 @@
                 if (data.type !== 'presentation-studio-goto' || !data.viewId) return;
                 if (!mapData[data.viewId]) return;
                 dismissScreensaverForStudio();
-                const keyNav = getVisibleNavList('keyConceptsNav', KEY_CONCEPTS_NAV);
-                const extNav = getVisibleNavList('extendedNav', navOrder);
-                if (versionMode === 'key' && !keyNav.includes(data.viewId) && extNav.includes(data.viewId)) {
-                    setVersionMode('extended');
-                }
+                ensureNavModeForView(data.viewId);
                 updateView(data.viewId);
             });
         }
