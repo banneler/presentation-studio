@@ -921,7 +921,6 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
             if (page.type === 'map') {
                 html += imageField('Static Map Image', page.file || '', value => page.file = value);
-                html += textarea('Insight Copy', page.insight || '', value => page.insight = value, 5);
             }
 
             if (selectedPageId === 'agenda' && content) {
