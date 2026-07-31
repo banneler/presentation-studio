@@ -26,18 +26,42 @@
         .nav-row.dragging { opacity: 0.45; }
         .nav-dot { appearance: none; width: 1rem; height: 1rem; border-radius: 9999px; border: 1px solid rgba(148, 163, 184, 0.65); cursor: pointer; background: transparent; }
         .nav-dot:checked { background: var(--hero-color); border-color: var(--hero-color); box-shadow: inset 0 0 0 3px rgb(30 41 59); }
+        .modal-backdrop { background: rgba(7, 22, 45, 0.72); }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-900">
     <div id="studio-shell" class="h-screen grid overflow-hidden" style="grid-template-columns: 440px 8px minmax(0, 1fr);">
         <aside class="bg-ink text-white overflow-y-auto border-r border-slate-900">
-            <div class="sticky top-0 z-10 bg-ink/95 backdrop-blur border-b border-white/10 p-6">
-                <p class="text-maroon text-xs font-black uppercase tracking-[0.35em] mb-2">Presentation Studio</p>
-                <h1 class="text-3xl font-black tracking-tight">Template Editor</h1>
-                <p class="text-slate-300 text-sm mt-2 leading-relaxed">Customize content, logos, page visibility, nav order, and image references without touching the template code.</p>
+            <div class="sticky top-0 z-10 bg-ink/95 backdrop-blur border-b border-white/10 p-6 space-y-4">
+                <div>
+                    <p class="text-maroon text-xs font-black uppercase tracking-[0.35em] mb-2">Presentation Studio</p>
+                    <h1 class="text-3xl font-black tracking-tight">Template Editor</h1>
+                    <p class="text-slate-300 text-sm mt-2 leading-relaxed">Name a presentation, publish it to a live directory, then create a tracked follow-up after the meeting.</p>
+                </div>
+
+                <div class="rounded-2xl bg-white/5 border border-white/10 p-4 space-y-3">
+                    <label>
+                        <span class="field-label text-slate-400">Presentation Name</span>
+                        <input id="presentation-name" class="field-input" placeholder="Tenaska">
+                    </label>
+                    <label>
+                        <span class="field-label text-slate-400">Directory Slug</span>
+                        <input id="presentation-slug" class="field-input font-mono text-xs" placeholder="tenaska">
+                    </label>
+                    <p id="status-line" class="text-xs text-slate-400">Draft not saved yet.</p>
+                </div>
             </div>
 
             <div class="p-6 space-y-6">
+                <section class="rounded-2xl bg-white/5 border border-white/10 p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-sm font-black uppercase tracking-widest text-slate-200">Library</h2>
+                        <button id="refresh-library" type="button" class="text-[10px] uppercase tracking-widest text-slate-400 hover:text-white">Refresh</button>
+                    </div>
+                    <button id="new-presentation" type="button" class="mb-3 w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-left text-sm font-bold text-white hover:bg-white/10">+ New from template</button>
+                    <div id="library-list" class="space-y-2 text-sm text-slate-300">Loading...</div>
+                </section>
+
                 <section class="rounded-2xl bg-white/5 border border-white/10 p-4">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-sm font-black uppercase tracking-widest text-slate-200">Pages</h2>
@@ -51,7 +75,6 @@
                         <p class="text-maroon text-xs font-black uppercase tracking-[0.28em] mb-2">Selected Page</p>
                         <h2 id="selected-heading" class="text-2xl font-black">Loading...</h2>
                     </div>
-
                     <div id="editor-fields" class="space-y-4"></div>
                 </section>
             </div>
@@ -60,10 +83,12 @@
         <div id="splitter" class="bg-slate-300 hover:bg-maroon cursor-col-resize transition-colors" title="Drag to resize editor and preview"></div>
 
         <main class="flex flex-col min-w-0">
-            <div class="bg-white border-b border-slate-200 p-4 flex items-center gap-3">
+            <div class="bg-white border-b border-slate-200 p-4 flex flex-wrap items-center gap-3">
                 <button id="save-local" class="rounded-xl bg-ink px-4 py-2 text-sm font-black text-white hover:bg-slate-800">Save Draft</button>
                 <button id="refresh-preview" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-800 hover:bg-slate-50">Refresh Preview</button>
-                <button id="make-link" class="rounded-xl bg-maroon px-4 py-2 text-sm font-black text-white hover:bg-maroon/90">Create Share Link</button>
+                <button id="publish-btn" class="rounded-xl bg-maroon px-4 py-2 text-sm font-black text-white hover:bg-maroon/90">Publish</button>
+                <button id="follow-up-btn" class="rounded-xl border border-maroon/40 bg-white px-4 py-2 text-sm font-black text-maroon hover:bg-maroon/5">Create Follow-Up</button>
+                <button id="make-link" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-600 hover:bg-slate-50">Copy Draft Link</button>
                 <button id="reset-draft" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-600 hover:bg-slate-50">Reset</button>
                 <div class="ml-auto flex items-center gap-2">
                     <label class="field-label mb-0">Hero Color</label>
@@ -71,13 +96,31 @@
                 </div>
             </div>
 
+            <div id="publish-panel" class="hidden border-b border-slate-200 bg-white p-4 space-y-3">
+                <div>
+                    <label class="field-label">Live Presentation URL</label>
+                    <div class="flex gap-3">
+                        <input id="live-url" class="field-input font-mono text-xs" readonly>
+                        <button id="copy-live-url" class="rounded-xl bg-ink px-4 py-2 text-sm font-black text-white">Copy</button>
+                    </div>
+                </div>
+                <div id="follow-up-url-wrap" class="hidden">
+                    <label class="field-label">Follow-Up URL</label>
+                    <div class="flex gap-3">
+                        <input id="follow-up-url" class="field-input font-mono text-xs" readonly>
+                        <button id="copy-follow-up-url" class="rounded-xl bg-ink px-4 py-2 text-sm font-black text-white">Copy</button>
+                    </div>
+                </div>
+                <p id="publish-note" class="text-xs text-slate-500">Publishing writes `presentations/{slug}/` to GitHub and goes live after Vercel deploys.</p>
+            </div>
+
             <div id="share-panel" class="hidden border-b border-slate-200 bg-white p-4">
-                <label class="field-label">Shareable Presentation Link</label>
+                <label class="field-label">Local Draft Link (escape hatch)</label>
                 <div class="flex gap-3">
                     <input id="share-url" class="field-input font-mono text-xs" readonly>
                     <button id="copy-link" class="rounded-xl bg-ink px-4 py-2 text-sm font-black text-white">Copy</button>
                 </div>
-                <p id="share-note" class="mt-2 text-xs text-slate-500">This link stores the edited configuration in the URL. Large uploaded images will create large URLs.</p>
+                <p class="mt-2 text-xs text-slate-500">Encoded draft config for quick local sharing. Prefer Publish for customer links.</p>
             </div>
 
             <div class="flex-1 min-h-0 p-4">
@@ -86,15 +129,56 @@
         </main>
     </div>
 
+    <div id="follow-up-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop p-6">
+        <div class="w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl">
+            <div class="mb-6 flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-maroon text-xs font-black uppercase tracking-[0.28em] mb-2">Follow-Up</p>
+                    <h2 class="text-3xl font-black text-slate-950">Create Meeting Recap</h2>
+                    <p class="mt-2 text-slate-600">Clone this deck into a tracked follow-up directory with concise next steps.</p>
+                </div>
+                <button id="close-follow-up" type="button" class="text-slate-400 hover:text-slate-700 text-xl font-black">✕</button>
+            </div>
+            <div class="space-y-4">
+                <label>
+                    <span class="field-label">Recap Headline</span>
+                    <textarea id="recap-headline" rows="2" class="field-input resize-y">Thank you for the conversation. Here are the next steps.</textarea>
+                </label>
+                <label>
+                    <span class="field-label">Recap Bullets</span>
+                    <textarea id="recap-items" rows="8" class="field-input resize-y">Discussed strategic priorities and current environment.
+Follow up on site requirements and connectivity options.
+Schedule time with key technical stakeholders.
+Share Rightfiber / Ritter Communications merger update and expanded fiber footprint.</textarea>
+                </label>
+                <label class="flex items-center gap-3 text-sm font-semibold text-slate-700">
+                    <input id="recap-rightfiber" type="checkbox" checked class="h-4 w-4 accent-[color:var(--hero-color)]">
+                    Include Rightfiber in Key Concepts and Extended
+                </label>
+            </div>
+            <div class="mt-8 flex justify-end gap-3">
+                <button id="cancel-follow-up" type="button" class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-black text-slate-600">Cancel</button>
+                <button id="confirm-follow-up" type="button" class="rounded-xl bg-maroon px-4 py-2 text-sm font-black text-white">Publish Follow-Up</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const STORAGE_KEY = 'presentation-studio-draft';
+        const LEGACY_STORAGE_KEY = 'presentation-studio-draft';
+        const ACTIVE_KEY = 'presentation-studio-active';
         const EDITOR_WIDTH_KEY = 'presentation-studio-editor-width';
         const DEFAULT_KEY_CONCEPTS_NAV = ['agenda', 'core-capabilities', 'national', 'layer2', 'ip-network', 'key-routes', 'why-gpc'];
+
         let baseData = null;
         let draft = null;
         let selectedPageId = null;
         let pageOrder = [];
         let draggedPageId = null;
+        let presentationName = '';
+        let presentationSlug = '';
+        let publishedUrl = '';
+        let followUpUrl = '';
+        let library = [];
 
         const pageList = document.getElementById('page-list');
         const editorFields = document.getElementById('editor-fields');
@@ -103,9 +187,28 @@
         const studioShell = document.getElementById('studio-shell');
         const splitter = document.getElementById('splitter');
         const heroColorInput = document.getElementById('hero-color');
+        const nameInput = document.getElementById('presentation-name');
+        const slugInput = document.getElementById('presentation-slug');
+        const statusLine = document.getElementById('status-line');
+        const libraryList = document.getElementById('library-list');
+        const followUpModal = document.getElementById('follow-up-modal');
 
         function clone(value) {
             return JSON.parse(JSON.stringify(value));
+        }
+
+        function slugify(value) {
+            return String(value || '')
+                .trim()
+                .toLowerCase()
+                .replace(/['"]/g, '')
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '')
+                .slice(0, 64);
+        }
+
+        function draftKey(slug = presentationSlug) {
+            return slug ? `presentation-studio-draft:${slug}` : LEGACY_STORAGE_KEY;
         }
 
         function encodeConfig(value) {
@@ -121,14 +224,8 @@
             const match = normalized.match(/^#?([a-f\d]{3}|[a-f\d]{6})$/i);
             if (!match) return [153, 26, 56];
             let hex = match[1];
-            if (hex.length === 3) {
-                hex = hex.split('').map(char => char + char).join('');
-            }
-            return [
-                parseInt(hex.slice(0, 2), 16),
-                parseInt(hex.slice(2, 4), 16),
-                parseInt(hex.slice(4, 6), 16)
-            ];
+            if (hex.length === 3) hex = hex.split('').map(char => char + char).join('');
+            return [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
         }
 
         function normalizeHeroColor(color) {
@@ -168,7 +265,6 @@
         function setupResizableSplit() {
             const savedWidth = Number(localStorage.getItem(EDITOR_WIDTH_KEY));
             if (savedWidth) setEditorWidth(savedWidth);
-
             let isResizing = false;
             splitter.addEventListener('pointerdown', event => {
                 isResizing = true;
@@ -190,12 +286,27 @@
             });
         }
 
-        async function init() {
-            registerServiceWorker();
-            const response = await fetch('content.json');
-            baseData = await response.json();
-            const saved = localStorage.getItem(STORAGE_KEY);
-            draft = saved ? JSON.parse(saved) : clone(baseData);
+        function setStatus(message) {
+            statusLine.textContent = message;
+        }
+
+        function syncNameFields(fromName = false) {
+            if (fromName) {
+                presentationName = nameInput.value.trim();
+                if (!slugInput.dataset.manual || slugInput.dataset.manual === '0') {
+                    presentationSlug = slugify(presentationName);
+                    slugInput.value = presentationSlug;
+                }
+            } else {
+                presentationSlug = slugify(slugInput.value);
+                slugInput.value = presentationSlug;
+                slugInput.dataset.manual = presentationSlug ? '1' : '0';
+            }
+            presentationName = nameInput.value.trim();
+        }
+
+        function prepareDraft(data) {
+            draft = clone(data);
             draft.settings = draft.settings || {};
             const hadExtendedNav = Array.isArray(draft.settings.extendedNav);
             if (!hadExtendedNav && sameList(draft.settings.keyConceptsNav || [], draft.navOrder || [])) {
@@ -207,8 +318,38 @@
             applyHeroColor(draft.settings.heroColor);
             pageOrder = draft.settings.editorPageOrder || buildDefaultPageOrder();
             selectedPageId = pageOrder[0];
+        }
+
+        function persistActive() {
+            localStorage.setItem(ACTIVE_KEY, JSON.stringify({
+                name: presentationName,
+                slug: presentationSlug,
+                publishedUrl,
+                followUpUrl
+            }));
+        }
+
+        async function init() {
+            registerServiceWorker();
+            const response = await fetch('content.json');
+            baseData = await response.json();
+
+            const active = JSON.parse(localStorage.getItem(ACTIVE_KEY) || 'null');
+            presentationName = active?.name || '';
+            presentationSlug = active?.slug || '';
+            publishedUrl = active?.publishedUrl || '';
+            followUpUrl = active?.followUpUrl || '';
+            nameInput.value = presentationName;
+            slugInput.value = presentationSlug;
+            if (presentationSlug) slugInput.dataset.manual = '1';
+
+            const saved = localStorage.getItem(draftKey()) || (!presentationSlug ? localStorage.getItem(LEGACY_STORAGE_KEY) : null);
+            prepareDraft(saved ? JSON.parse(saved) : baseData);
             render();
+            updatePublishPanel();
             saveLocal(false);
+            await refreshLibrary();
+            setStatus(presentationSlug ? `Editing ${presentationName || presentationSlug}` : 'Name this presentation to begin publishing.');
         }
 
         function registerServiceWorker() {
@@ -231,6 +372,8 @@
             draft.settings.extendedNav = pageOrder.filter(id => extendedVisible.has(id));
             draft.settings.keyConceptsNav = pageOrder.filter(id => keyVisible.has(id));
             draft.navOrder = draft.settings.extendedNav.slice();
+            draft.settings.presentationName = presentationName;
+            draft.settings.presentationSlug = presentationSlug;
         }
 
         function render() {
@@ -239,15 +382,70 @@
             renderEditorFields();
         }
 
+        function renderLibrary() {
+            if (!library.length) {
+                libraryList.innerHTML = '<p class="text-slate-500 text-xs">No published presentations yet.</p>';
+                return;
+            }
+            libraryList.innerHTML = library.map(item => `
+                <button type="button" data-open-slug="${item.slug}" class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left hover:bg-white/10">
+                    <p class="font-black text-white truncate">${escapeHtml(item.name)}</p>
+                    <p class="text-[11px] text-slate-400 font-mono">/${escapeHtml(item.slug)}/${item.hasFollowUp ? ' · follow-up' : ''}</p>
+                </button>
+            `).join('');
+            libraryList.querySelectorAll('[data-open-slug]').forEach(button => {
+                button.addEventListener('click', () => openPublished(button.dataset.openSlug));
+            });
+        }
+
+        async function refreshLibrary() {
+            libraryList.textContent = 'Loading...';
+            try {
+                const response = await fetch('/api/list-presentations');
+                const data = await response.json();
+                if (!response.ok || !data.ok) throw new Error(data.error || 'Failed to load library');
+                library = data.presentations || [];
+                renderLibrary();
+            } catch (error) {
+                library = [];
+                libraryList.innerHTML = `<p class="text-slate-500 text-xs">${escapeHtml(error.message || 'Library unavailable until GitHub env is configured.')}</p>`;
+            }
+        }
+
+        async function openPublished(slug) {
+            try {
+                const response = await fetch(`/presentations/${slug}/content.json?t=${Date.now()}`);
+                if (!response.ok) throw new Error('Could not load published content');
+                const content = await response.json();
+                presentationName = content.settings?.presentationName || content.meta?.name || slug;
+                presentationSlug = slug;
+                publishedUrl = `${window.location.origin}/presentations/${slug}/`;
+                followUpUrl = '';
+                try {
+                    const followResponse = await fetch(`/presentations/${slug}/follow-up/content.json?t=${Date.now()}`);
+                    if (followResponse.ok) followUpUrl = `${window.location.origin}/presentations/${slug}/follow-up/`;
+                } catch (error) {}
+                nameInput.value = presentationName;
+                slugInput.value = presentationSlug;
+                slugInput.dataset.manual = '1';
+                prepareDraft(content);
+                render();
+                updatePublishPanel();
+                persistActive();
+                saveLocal(false);
+                refreshPreview();
+                setStatus(`Opened published deck: ${presentationName}`);
+            } catch (error) {
+                alert(error.message || 'Failed to open presentation');
+            }
+        }
+
         function renderPageList() {
             const keyVisible = new Set(draft.settings.keyConceptsNav || []);
             const extendedVisible = new Set(draft.settings.extendedNav || draft.navOrder || []);
             pageList.innerHTML = `
                 <div class="grid grid-cols-[1.5rem_minmax(0,1fr)_3rem_3rem] gap-3 px-3 pb-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                    <span></span>
-                    <span></span>
-                    <span class="text-center">Key</span>
-                    <span class="text-center">Ext</span>
+                    <span></span><span></span><span class="text-center">Key</span><span class="text-center">Ext</span>
                 </div>
             ` + pageOrder.map((id, index) => {
                 const page = draft.mapData[id];
@@ -284,11 +482,8 @@
                     const settingKey = input.dataset.navMode === 'key' ? 'keyConceptsNav' : 'extendedNav';
                     const pageId = input.dataset.navId;
                     const current = new Set(draft.settings[settingKey] || []);
-                    if (input.checked) {
-                        current.add(pageId);
-                    } else {
-                        current.delete(pageId);
-                    }
+                    if (input.checked) current.add(pageId);
+                    else current.delete(pageId);
                     draft.settings[settingKey] = pageOrder.filter(id => current.has(id));
                     render();
                 });
@@ -322,12 +517,7 @@
                 const el = document.getElementById(id);
                 if (el) el.addEventListener('input', event => onChange(event.target.value));
             });
-            return `
-                <label>
-                    <span class="field-label">${label}</span>
-                    <input id="${id}" type="${type}" class="field-input" value="${escapeAttr(value || '')}">
-                </label>
-            `;
+            return `<label><span class="field-label">${label}</span><input id="${id}" type="${type}" class="field-input" value="${escapeAttr(value || '')}"></label>`;
         }
 
         function textarea(label, value, onChange, rows = 4) {
@@ -336,12 +526,7 @@
                 const el = document.getElementById(id);
                 if (el) el.addEventListener('input', event => onChange(event.target.value));
             });
-            return `
-                <label>
-                    <span class="field-label">${label}</span>
-                    <textarea id="${id}" rows="${rows}" class="field-input resize-y">${escapeHtml(value || '')}</textarea>
-                </label>
-            `;
+            return `<label><span class="field-label">${label}</span><textarea id="${id}" rows="${rows}" class="field-input resize-y">${escapeHtml(value || '')}</textarea></label>`;
         }
 
         function imageField(label, value, onChange) {
@@ -355,8 +540,7 @@
                     file.addEventListener('change', async event => {
                         const selected = event.target.files && event.target.files[0];
                         if (!selected) return;
-                        const dataUrl = await readFileAsDataUrl(selected);
-                        onChange(dataUrl);
+                        onChange(await readFileAsDataUrl(selected));
                         renderEditorFields();
                     });
                 }
@@ -374,7 +558,6 @@
             const page = draft.mapData[selectedPageId];
             const content = draft.pageContent[selectedPageId];
             if (!page) return;
-
             selectedHeading.textContent = page.navLabel || page.title || selectedPageId;
 
             let html = `
@@ -419,11 +602,7 @@
             if (content && !['agenda', 'core-capabilities', 'rightfiber', 'why-gpc'].includes(selectedPageId)) {
                 html += `<hr class="border-slate-200 my-5">`;
                 html += textarea('Raw Content JSON', JSON.stringify(content, null, 2), value => {
-                    try {
-                        draft.pageContent[selectedPageId] = JSON.parse(value);
-                    } catch (error) {
-                        // Keep typing fluid; invalid JSON simply waits for the next valid edit.
-                    }
+                    try { draft.pageContent[selectedPageId] = JSON.parse(value); } catch (error) {}
                 }, 12);
             }
 
@@ -563,24 +742,152 @@
             `;
         }
 
+        function requireIdentity() {
+            syncNameFields(true);
+            if (!presentationName) {
+                alert('Give this presentation a name first.');
+                nameInput.focus();
+                return false;
+            }
+            if (!presentationSlug) {
+                alert('A valid directory slug is required.');
+                slugInput.focus();
+                return false;
+            }
+            return true;
+        }
+
         function saveLocal(showNotice = true) {
+            if (presentationName || presentationSlug) syncNameFields(!slugInput.dataset.manual || slugInput.dataset.manual === '0');
             syncVisibleNavFromOrder();
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
-            if (showNotice) flashButton(document.getElementById('save-local'), 'Saved');
+            localStorage.setItem(draftKey(), JSON.stringify(draft));
+            persistActive();
+            if (showNotice) {
+                flashButton(document.getElementById('save-local'), 'Saved');
+                setStatus(`Draft saved for ${presentationName || presentationSlug || 'untitled'}`);
+            }
         }
 
         function refreshPreview() {
             saveLocal(false);
-            preview.src = `index.html?draft=local&preview=1&t=${Date.now()}`;
+            const slugQuery = presentationSlug ? `&slug=${encodeURIComponent(presentationSlug)}` : '';
+            preview.src = `index.html?draft=local${slugQuery}&preview=1&t=${Date.now()}`;
         }
 
         function makeShareLink() {
-            syncVisibleNavFromOrder();
+            if (!requireIdentity()) return;
+            saveLocal(false);
             const encoded = encodeConfig(draft);
             const target = new URL('index.html', window.location.href);
             target.searchParams.set('config', encoded);
             document.getElementById('share-url').value = target.toString();
             document.getElementById('share-panel').classList.remove('hidden');
+        }
+
+        function updatePublishPanel() {
+            const panel = document.getElementById('publish-panel');
+            if (!publishedUrl && !followUpUrl) {
+                panel.classList.add('hidden');
+                return;
+            }
+            panel.classList.remove('hidden');
+            document.getElementById('live-url').value = publishedUrl || '';
+            const wrap = document.getElementById('follow-up-url-wrap');
+            if (followUpUrl) {
+                wrap.classList.remove('hidden');
+                document.getElementById('follow-up-url').value = followUpUrl;
+            } else {
+                wrap.classList.add('hidden');
+            }
+        }
+
+        async function publishPresentation() {
+            if (!requireIdentity()) return;
+            saveLocal(false);
+            const button = document.getElementById('publish-btn');
+            const previous = button.textContent;
+            button.textContent = 'Publishing...';
+            button.disabled = true;
+            setStatus('Publishing to GitHub...');
+            try {
+                const response = await fetch('/api/publish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: presentationName,
+                        slug: presentationSlug,
+                        content: draft
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.ok) throw new Error(data.error || 'Publish failed');
+                publishedUrl = `${window.location.origin}${data.url}`;
+                persistActive();
+                updatePublishPanel();
+                await refreshLibrary();
+                setStatus(`Published. Live soon at ${data.url}`);
+                flashButton(button, 'Published');
+            } catch (error) {
+                alert(error.message || 'Publish failed. Confirm GITHUB_TOKEN is set in Vercel.');
+                setStatus(error.message || 'Publish failed');
+            } finally {
+                button.textContent = previous;
+                button.disabled = false;
+            }
+        }
+
+        function openFollowUpModal() {
+            if (!requireIdentity()) return;
+            followUpModal.classList.remove('hidden');
+            followUpModal.classList.add('flex');
+        }
+
+        function closeFollowUpModal() {
+            followUpModal.classList.add('hidden');
+            followUpModal.classList.remove('flex');
+        }
+
+        async function publishFollowUp() {
+            if (!requireIdentity()) return;
+            saveLocal(false);
+            const button = document.getElementById('confirm-follow-up');
+            const previous = button.textContent;
+            button.textContent = 'Publishing...';
+            button.disabled = true;
+            try {
+                const items = document.getElementById('recap-items').value
+                    .split('\n')
+                    .map(item => item.trim())
+                    .filter(Boolean);
+                const response = await fetch('/api/publish-follow-up', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: presentationName,
+                        slug: presentationSlug,
+                        content: draft,
+                        recap: {
+                            headline: document.getElementById('recap-headline').value.trim(),
+                            items,
+                            includeRightfiber: document.getElementById('recap-rightfiber').checked
+                        }
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.ok) throw new Error(data.error || 'Follow-up publish failed');
+                followUpUrl = `${window.location.origin}${data.url}`;
+                if (!publishedUrl) publishedUrl = `${window.location.origin}/presentations/${presentationSlug}/`;
+                persistActive();
+                updatePublishPanel();
+                await refreshLibrary();
+                closeFollowUpModal();
+                setStatus(`Follow-up published at ${data.url}`);
+            } catch (error) {
+                alert(error.message || 'Follow-up publish failed');
+            } finally {
+                button.textContent = previous;
+                button.disabled = false;
+            }
         }
 
         function flashButton(button, label) {
@@ -591,11 +898,7 @@
 
         function escapeHtml(value) {
             return String(value || '').replace(/[&<>"']/g, char => ({
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#39;'
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
             }[char]));
         }
 
@@ -605,24 +908,58 @@
 
         document.getElementById('save-local').addEventListener('click', () => saveLocal(true));
         document.getElementById('refresh-preview').addEventListener('click', refreshPreview);
+        document.getElementById('publish-btn').addEventListener('click', publishPresentation);
+        document.getElementById('follow-up-btn').addEventListener('click', openFollowUpModal);
         document.getElementById('make-link').addEventListener('click', makeShareLink);
         document.getElementById('copy-link').addEventListener('click', async () => {
             await navigator.clipboard.writeText(document.getElementById('share-url').value);
             flashButton(document.getElementById('copy-link'), 'Copied');
         });
+        document.getElementById('copy-live-url').addEventListener('click', async () => {
+            await navigator.clipboard.writeText(document.getElementById('live-url').value);
+            flashButton(document.getElementById('copy-live-url'), 'Copied');
+        });
+        document.getElementById('copy-follow-up-url').addEventListener('click', async () => {
+            await navigator.clipboard.writeText(document.getElementById('follow-up-url').value);
+            flashButton(document.getElementById('copy-follow-up-url'), 'Copied');
+        });
+        document.getElementById('refresh-library').addEventListener('click', refreshLibrary);
+        document.getElementById('new-presentation').addEventListener('click', () => {
+            if (!confirm('Start a new presentation from the template? Unsaved draft changes for the current slug may be overwritten when you save.')) return;
+            presentationName = '';
+            presentationSlug = '';
+            publishedUrl = '';
+            followUpUrl = '';
+            nameInput.value = '';
+            slugInput.value = '';
+            slugInput.dataset.manual = '0';
+            prepareDraft(baseData);
+            render();
+            updatePublishPanel();
+            persistActive();
+            refreshPreview();
+            setStatus('New presentation from template.');
+        });
         document.getElementById('reset-draft').addEventListener('click', () => {
-            if (!confirm('Reset the editor draft to content.json?')) return;
-            localStorage.removeItem(STORAGE_KEY);
-            draft = clone(baseData);
-            draft.settings = draft.settings || {};
-            draft.settings.extendedNav = draft.settings.extendedNav || (draft.navOrder || []).slice();
-            draft.settings.keyConceptsNav = draft.settings.keyConceptsNav || DEFAULT_KEY_CONCEPTS_NAV.filter(id => draft.mapData[id]);
-            draft.settings.heroColor = normalizeHeroColor(draft.settings.heroColor);
-            applyHeroColor(draft.settings.heroColor);
-            pageOrder = buildDefaultPageOrder();
-            selectedPageId = pageOrder[0];
+            if (!confirm('Reset the current draft to content.json?')) return;
+            if (presentationSlug) localStorage.removeItem(draftKey());
+            else localStorage.removeItem(LEGACY_STORAGE_KEY);
+            prepareDraft(baseData);
             render();
             refreshPreview();
+            setStatus('Draft reset to template.');
+        });
+        document.getElementById('close-follow-up').addEventListener('click', closeFollowUpModal);
+        document.getElementById('cancel-follow-up').addEventListener('click', closeFollowUpModal);
+        document.getElementById('confirm-follow-up').addEventListener('click', publishFollowUp);
+        nameInput.addEventListener('input', () => {
+            syncNameFields(true);
+            persistActive();
+        });
+        slugInput.addEventListener('input', () => {
+            slugInput.dataset.manual = '1';
+            syncNameFields(false);
+            persistActive();
         });
         heroColorInput.addEventListener('input', event => {
             draft.settings = draft.settings || {};

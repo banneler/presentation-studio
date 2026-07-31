@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'presentation-studio-v20260727-1';
+const CACHE_VERSION = 'presentation-studio-v20260731-1';
 const APP_SHELL = [
   './',
   './index.html',
