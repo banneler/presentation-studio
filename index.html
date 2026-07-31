@@ -260,8 +260,8 @@
     </style>
 </head>
 <body class="bg-black text-slate-800 h-screen w-screen overflow-hidden relative select-none font-sans antialiased" oncontextmenu="return false;">
-    <div id="scale-container" class="fixed inset-0 flex items-start justify-center overflow-hidden bg-black">
-    <div id="app-wrapper" class="w-[1920px] h-[1080px] bg-slate-100 flex relative overflow-hidden shrink-0 origin-top">
+    <div id="scale-container" class="fixed inset-0 flex items-center justify-center overflow-hidden bg-black">
+    <div id="app-wrapper" class="w-[1920px] h-[1080px] bg-slate-100 flex relative overflow-hidden shrink-0 origin-center">
     <div id="screensaver" class="absolute inset-0 z-50 bg-gpc-navy flex flex-col items-center justify-center transition-opacity duration-1000 opacity-0 cursor-pointer overflow-hidden">
         <div class="absolute inset-0 opacity-20 ken-burns" style="background-image: radial-gradient(circle at center, #1E40AF 0%, transparent 70%);"></div>
         <div id="screensaver-grid" class="absolute inset-0 opacity-10" style="background-image: linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px); background-size: 50px 50px; animation: gridMove 20s linear infinite;"></div>
@@ -755,12 +755,11 @@
         }
 
         // --- SCALE TO FIT LOGIC ---
-        // Scale to viewport height so the navy nav always runs top-to-bottom.
-        // Wider-than-16:9 screens letterbox on the sides; narrower screens clip left/right.
+        // Cover the viewport (no letterbox bars). May crop a sliver on the long edge.
         function scaleApp() {
             const wrapper = document.getElementById('app-wrapper');
-            const scale = window.innerHeight / 1080;
-            wrapper.style.transformOrigin = 'top center';
+            const scale = Math.max(window.innerWidth / 1920, window.innerHeight / 1080);
+            wrapper.style.transformOrigin = 'center center';
             wrapper.style.transform = `scale(${scale})`;
         }
         window.addEventListener('resize', scaleApp);
