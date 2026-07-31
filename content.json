@@ -4,8 +4,28 @@
     "customerLogo": "tenaska_logo.png",
     "repName": "",
     "screensaverTimeoutMinutes": 5,
-    "keyConceptsNav": ["agenda", "core-capabilities", "national", "layer2", "ip-network", "key-routes", "why-gpc"],
-    "extendedNav": ["agenda", "core-capabilities", "national", "layer2", "ip-network", "nebraska", "omaha-metro", "key-routes", "data-centers", "products", "why-gpc"]
+    "keyConceptsNav": [
+      "agenda",
+      "core-capabilities",
+      "national",
+      "layer2",
+      "ip-network",
+      "key-routes",
+      "why-gpc"
+    ],
+    "extendedNav": [
+      "agenda",
+      "core-capabilities",
+      "national",
+      "layer2",
+      "ip-network",
+      "nebraska",
+      "omaha-metro",
+      "key-routes",
+      "data-centers",
+      "products",
+      "why-gpc"
+    ]
   },
   "navOrder": [
     "agenda",
@@ -47,10 +67,23 @@
       "subtitle": "Stronger Together. Right For What's Next.",
       "type": "html",
       "stats": [
-        { "label": "Fiber Network", "value": "28K+ Miles", "color": "text-gpc-green" },
-        { "label": "State Footprint", "value": "20 States", "color": "text-gpc-blue" },
-        { "label": "Communities", "value": "400+", "color": "text-gpc-orange" }
-      ]
+        {
+          "label": "Fiber Network",
+          "value": "28K+ Miles",
+          "color": "text-gpc-green"
+        },
+        {
+          "label": "State Footprint",
+          "value": "20 States",
+          "color": "text-gpc-blue"
+        },
+        {
+          "label": "Communities",
+          "value": "400+",
+          "color": "text-gpc-orange"
+        }
+      ],
+      "navLabel": "Rightfiber"
     },
     "national": {
       "id": "national",
@@ -60,10 +93,23 @@
       "file": "backbone.png",
       "type": "map",
       "stats": [
-        { "label": "Fiber Miles", "value": "20,000+", "color": "text-gpc-green" },
-        { "label": "Markets Served", "value": "200+", "color": "text-slate-900" },
-        { "label": "Data Centers", "value": "25+", "color": "text-gpc-blue" }
-      ]
+        {
+          "label": "Fiber Miles",
+          "value": "20,000+",
+          "color": "text-gpc-green"
+        },
+        {
+          "label": "Markets Served",
+          "value": "200+",
+          "color": "text-slate-900"
+        },
+        {
+          "label": "Data Centers",
+          "value": "25+",
+          "color": "text-gpc-blue"
+        }
+      ],
+      "navLabel": "The Network"
     },
     "layer2": {
       "id": "layer2",
@@ -74,9 +120,18 @@
       "type": "map",
       "insight": "Our high-availability network is engineered to meet the mission-critical demands of enterprises, wholesale clients, and FTTT customers, offering 200G and 400G city-to-city routes, a redundant ring architecture and seamless scalability across 1G, 10G, and 100G services.",
       "stats": [
-        { "label": "Core Capacity", "value": "400G Standard", "color": "text-gpc-orange" },
-        { "label": "Scalability", "value": "1G to 100G", "color": "text-gpc-green" }
-      ]
+        {
+          "label": "Core Capacity",
+          "value": "400G Standard",
+          "color": "text-gpc-orange"
+        },
+        {
+          "label": "Scalability",
+          "value": "1G to 100G",
+          "color": "text-gpc-green"
+        }
+      ],
+      "navLabel": "Core Transport"
     },
     "ip-network": {
       "id": "ip-network",
@@ -86,9 +141,18 @@
       "file": "ip.png",
       "type": "map",
       "stats": [
-        { "label": "Traffic Routing", "value": "Localized", "color": "text-gpc-blue" },
-        { "label": "Latency", "value": "Ultra-Low", "color": "text-gpc-green" }
-      ]
+        {
+          "label": "Traffic Routing",
+          "value": "Localized",
+          "color": "text-gpc-blue"
+        },
+        {
+          "label": "Latency",
+          "value": "Ultra-Low",
+          "color": "text-gpc-green"
+        }
+      ],
+      "navLabel": "IP Network"
     },
     "nebraska": {
       "id": "nebraska",
@@ -98,9 +162,18 @@
       "file": "nebraska.png",
       "type": "map",
       "stats": [
-        { "label": "State Fiber Miles", "value": "10,000+", "color": "text-gpc-green" },
-        { "label": "Communities", "value": "163", "color": "text-slate-900" }
-      ]
+        {
+          "label": "State Fiber Miles",
+          "value": "10,000+",
+          "color": "text-gpc-green"
+        },
+        {
+          "label": "Communities",
+          "value": "163",
+          "color": "text-slate-900"
+        }
+      ],
+      "navLabel": "Nebraska"
     },
     "omaha-metro": {
       "id": "omaha-metro",
@@ -110,8 +183,13 @@
       "file": "omaha.png",
       "type": "map",
       "stats": [
-        { "label": "Metro Fiber Miles", "value": "800+", "color": "text-gpc-green" }
-      ]
+        {
+          "label": "Metro Fiber Miles",
+          "value": "800+",
+          "color": "text-gpc-green"
+        }
+      ],
+      "navLabel": "Omaha Metro"
     },
     "key-routes": {
       "id": "key-routes",
@@ -121,9 +199,18 @@
       "file": "routes.png",
       "type": "map",
       "stats": [
-        { "label": "Network Routing", "value": "Unique & Exclusive", "color": "text-gpc-blue" },
-        { "label": "Capacity", "value": "200G/400G", "color": "text-gpc-green" }
-      ]
+        {
+          "label": "Network Routing",
+          "value": "Unique & Exclusive",
+          "color": "text-gpc-blue"
+        },
+        {
+          "label": "Capacity",
+          "value": "200G/400G",
+          "color": "text-gpc-green"
+        }
+      ],
+      "navLabel": "Key Routes"
     },
     "data-centers": {
       "id": "data-centers",
@@ -131,16 +218,26 @@
       "subtitle": "Colocation & Interconnection Facilities",
       "type": "html",
       "stats": [
-        { "label": "Total Facilities", "value": "25+", "color": "text-gpc-blue" },
-        { "label": "Network Integration", "value": "100% Fiber", "color": "text-gpc-green" }
-      ]
+        {
+          "label": "Total Facilities",
+          "value": "25+",
+          "color": "text-gpc-blue"
+        },
+        {
+          "label": "Network Integration",
+          "value": "100% Fiber",
+          "color": "text-gpc-green"
+        }
+      ],
+      "navLabel": "Data Centers"
     },
     "products": {
       "id": "products",
       "title": "Product Portfolio",
       "subtitle": "Fiber-Driven Enterprise Services",
       "type": "html",
-      "stats": []
+      "stats": [],
+      "navLabel": "Products"
     },
     "why-gpc": {
       "id": "why-gpc",
@@ -148,10 +245,23 @@
       "subtitle": "Partner with Experience",
       "type": "html",
       "stats": [
-        { "label": "Dedicated Team", "value": "400+ Employees", "color": "text-slate-900" },
-        { "label": "Support", "value": "Unmatched Local", "color": "text-gpc-blue" },
-        { "label": "Reliability", "value": "24/7 Monitoring", "color": "text-gpc-green" }
-      ]
+        {
+          "label": "Dedicated Team",
+          "value": "400+ Employees",
+          "color": "text-slate-900"
+        },
+        {
+          "label": "Support",
+          "value": "Unmatched Local",
+          "color": "text-gpc-blue"
+        },
+        {
+          "label": "Reliability",
+          "value": "24/7 Monitoring",
+          "color": "text-gpc-green"
+        }
+      ],
+      "navLabel": "GPC Advantage"
     }
   },
   "pageContent": {
@@ -167,7 +277,12 @@
       ]
     },
     "agenda": {
-      "heroImages": ["hero_1.png", "hero_2.png", "hero_3.png", "hero_4.png"],
+      "heroImages": [
+        "hero_1.png",
+        "hero_2.png",
+        "hero_3.png",
+        "hero_4.png"
+      ],
       "headline": "A focused conversation around priorities, fit and next steps.",
       "items": [
         "Brief introductions and alignment on executive stakeholders.",
@@ -177,7 +292,12 @@
       ]
     },
     "core-capabilities": {
-      "heroImages": ["hero_1.png", "hero_2.png", "hero_3.png", "hero_4.png"],
+      "heroImages": [
+        "hero_1.png",
+        "hero_2.png",
+        "hero_3.png",
+        "hero_4.png"
+      ],
       "cards": [
         {
           "title": "Enterprise Lifecycle Management",
@@ -214,34 +334,118 @@
       ]
     },
     "data-centers": [
-      { "city": "Denver, CO", "name": "910 Telecom" },
-      { "city": "Denver, CO", "name": "Coresite" },
-      { "city": "Denver, CO", "name": "Champa" },
-      { "city": "Des Moines, IA", "name": "Connect Des Moines" },
-      { "city": "Sioux City, IA", "name": "Long Lines WIT" },
-      { "city": "Sioux City, IA", "name": "FiberComm" },
-      { "city": "Davenport, IA", "name": "South Front" },
-      { "city": "Chicago, IL", "name": "Digital Realty Federal" },
-      { "city": "Chicago, IL", "name": "Digital Realty Cermak" },
-      { "city": "Chicago, IL", "name": "Equinix Cermak" },
-      { "city": "Chicago, IL", "name": "Coresite" },
-      { "city": "Chicago, IL", "name": "QTS" },
-      { "city": "Minneapolis, MN", "name": "Cologix Minneapolis" },
-      { "city": "Kansas City, MO", "name": "Netrality KC" },
-      { "city": "St. Louis, MO", "name": "Netrality St. Louis" },
-      { "city": "Bellevue, NE", "name": "TierPoint-Bellevue" },
-      { "city": "Bellevue, NE", "name": "Offutt AFB" },
-      { "city": "Papillion, NE", "name": "TierPoint-Midlands" },
-      { "city": "Papillion, NE", "name": "Light Edge Solutions" },
-      { "city": "Lincoln, NE", "name": "Lincoln Edge Facility" },
-      { "city": "Omaha, NE", "name": "1623 Farnam" },
-      { "city": "Omaha, NE", "name": "Scott Tech" },
-      { "city": "Cincinnati, OH", "name": "CyrusOne" },
-      { "city": "Yankton, SD", "name": "Dataware Green" },
-      { "city": "South Bend, IN", "name": "Union Station Tech" },
-      { "city": "Indianapolis, IN", "name": "GPC Suite-Indy Telecom" },
-      { "city": "Indianapolis, IN", "name": "Lifeline" },
-      { "city": "Cheyenne, WY", "name": "ACT" }
+      {
+        "city": "Denver, CO",
+        "name": "910 Telecom"
+      },
+      {
+        "city": "Denver, CO",
+        "name": "Coresite"
+      },
+      {
+        "city": "Denver, CO",
+        "name": "Champa"
+      },
+      {
+        "city": "Des Moines, IA",
+        "name": "Connect Des Moines"
+      },
+      {
+        "city": "Sioux City, IA",
+        "name": "Long Lines WIT"
+      },
+      {
+        "city": "Sioux City, IA",
+        "name": "FiberComm"
+      },
+      {
+        "city": "Davenport, IA",
+        "name": "South Front"
+      },
+      {
+        "city": "Chicago, IL",
+        "name": "Digital Realty Federal"
+      },
+      {
+        "city": "Chicago, IL",
+        "name": "Digital Realty Cermak"
+      },
+      {
+        "city": "Chicago, IL",
+        "name": "Equinix Cermak"
+      },
+      {
+        "city": "Chicago, IL",
+        "name": "Coresite"
+      },
+      {
+        "city": "Chicago, IL",
+        "name": "QTS"
+      },
+      {
+        "city": "Minneapolis, MN",
+        "name": "Cologix Minneapolis"
+      },
+      {
+        "city": "Kansas City, MO",
+        "name": "Netrality KC"
+      },
+      {
+        "city": "St. Louis, MO",
+        "name": "Netrality St. Louis"
+      },
+      {
+        "city": "Bellevue, NE",
+        "name": "TierPoint-Bellevue"
+      },
+      {
+        "city": "Bellevue, NE",
+        "name": "Offutt AFB"
+      },
+      {
+        "city": "Papillion, NE",
+        "name": "TierPoint-Midlands"
+      },
+      {
+        "city": "Papillion, NE",
+        "name": "Light Edge Solutions"
+      },
+      {
+        "city": "Lincoln, NE",
+        "name": "Lincoln Edge Facility"
+      },
+      {
+        "city": "Omaha, NE",
+        "name": "1623 Farnam"
+      },
+      {
+        "city": "Omaha, NE",
+        "name": "Scott Tech"
+      },
+      {
+        "city": "Cincinnati, OH",
+        "name": "CyrusOne"
+      },
+      {
+        "city": "Yankton, SD",
+        "name": "Dataware Green"
+      },
+      {
+        "city": "South Bend, IN",
+        "name": "Union Station Tech"
+      },
+      {
+        "city": "Indianapolis, IN",
+        "name": "GPC Suite-Indy Telecom"
+      },
+      {
+        "city": "Indianapolis, IN",
+        "name": "Lifeline"
+      },
+      {
+        "city": "Cheyenne, WY",
+        "name": "ACT"
+      }
     ],
     "products": [
       {

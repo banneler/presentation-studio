@@ -1199,8 +1199,9 @@
                 html += '</div>';
             }
             else if (viewId === 'products' && pageContent.products) {
+                const products = (pageContent.products || []).filter(p => p && p.enabled !== false);
                 html += '<div class="grid grid-cols-3 gap-8 w-full h-full content-center items-start fade-in max-w-6xl mx-auto py-8">';
-                pageContent.products.forEach(p => {
+                products.forEach(p => {
                     html += `
                         <div class="group relative p-6 border border-slate-200 rounded-xl bg-white hover:bg-gpc-navy transition-colors duration-300 shadow-sm hover:shadow-xl overflow-hidden cursor-default flex flex-col min-h-[220px]">
                             <div class="absolute inset-0 bg-gpc-blue opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>

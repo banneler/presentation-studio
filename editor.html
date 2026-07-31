@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -499,6 +500,9 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 if (!draft.settings.customerLogo && page.logo) {
                     draft.settings.customerLogo = page.logo;
                 }
+                if (!String(page.navLabel || '').trim()) {
+                    page.navLabel = page.title || page.id || '';
+                }
             });
 
             ['agenda', 'core-capabilities'].forEach(pageId => {
@@ -508,6 +512,22 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             });
             if (draft.pageContent?.pricing) {
                 draft.pageContent.pricing.sideImage = normalizeHeroImage(draft.pageContent.pricing.sideImage);
+            }
+            if (Array.isArray(draft.pageContent?.['data-centers'])) {
+                draft.pageContent['data-centers'] = draft.pageContent['data-centers'].map(dc => ({
+                    city: dc?.city || '',
+                    name: dc?.name || '',
+                    nameNormal: dc?.nameNormal || '',
+                    highlight: dc?.highlight === true
+                }));
+            }
+            if (Array.isArray(draft.pageContent?.products)) {
+                draft.pageContent.products = draft.pageContent.products.map(product => ({
+                    title: product?.title || '',
+                    desc: product?.desc || '',
+                    icon: product?.icon || '',
+                    enabled: product?.enabled !== false
+                }));
             }
             pageOrder = draft.settings.editorPageOrder || buildDefaultPageOrder();
             selectedPageId = pageOrder[0];
@@ -956,6 +976,20 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 html += editPillars(content.pillars || [], value => content.pillars = value);
             }
 
+            if (selectedPageId === 'data-centers' && Array.isArray(content)) {
+                html += `<hr class="border-slate-200 my-5">`;
+                html += editDataCenters(content, value => {
+                    draft.pageContent['data-centers'] = value;
+                });
+            }
+
+            if (selectedPageId === 'products' && Array.isArray(content)) {
+                html += `<hr class="border-slate-200 my-5">`;
+                html += editProducts(content, value => {
+                    draft.pageContent.products = value;
+                });
+            }
+
             if (page.type === 'pricing' && content) {
                 const optionCount = Array.isArray(content.options) ? content.options.length : 0;
                 const locationCount = (content.options || []).reduce((sum, opt) => sum + ((opt.locations || []).length), 0);
@@ -983,7 +1017,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         <p class="text-[11px] text-slate-500 pt-1">Re-upload a .spec above to replace pricing data. Side image crop settings are kept.</p>
                     </div>
                 `;
-            } else if (content && !['agenda', 'core-capabilities', 'rightfiber', 'why-gpc'].includes(selectedPageId)) {
+            } else if (content && !['agenda', 'core-capabilities', 'rightfiber', 'why-gpc', 'data-centers', 'products'].includes(selectedPageId)) {
                 html += `<hr class="border-slate-200 my-5">`;
                 html += textarea('Raw Content JSON', JSON.stringify(content, null, 2), value => {
                     try { draft.pageContent[selectedPageId] = JSON.parse(value); } catch (error) {}
@@ -991,6 +1025,162 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             }
 
             editorFields.innerHTML = html;
+        }
+
+        function editDataCenters(centers, onChange) {
+            const items = clone(centers || []);
+            const id = `dcs-${Math.random().toString(36).slice(2)}`;
+            const commit = () => onChange(items.map(dc => ({
+                city: dc.city || '',
+                name: dc.name || '',
+                nameNormal: dc.nameNormal || '',
+                highlight: dc.highlight === true
+            })));
+
+            setTimeout(() => {
+                const root = document.getElementById(id);
+                if (!root) return;
+                root.querySelectorAll('[data-dc-highlight]').forEach(input => {
+                    input.addEventListener('change', () => {
+                        const index = Number(input.value);
+                        items.forEach((dc, i) => { dc.highlight = i === index; });
+                        commit();
+                        root.querySelectorAll('[data-dc-row]').forEach((row, i) => {
+                            row.classList.toggle('border-orange-400', items[i]?.highlight);
+                            row.classList.toggle('bg-orange-50/70', items[i]?.highlight);
+                        });
+                    });
+                });
+                root.querySelector('[data-dc-clear]')?.addEventListener('click', () => {
+                    items.forEach(dc => { dc.highlight = false; });
+                    commit();
+                    root.querySelectorAll('[data-dc-highlight]').forEach(input => { input.checked = false; });
+                    root.querySelectorAll('[data-dc-row]').forEach(row => {
+                        row.classList.remove('border-orange-400', 'bg-orange-50/70');
+                    });
+                });
+                root.querySelectorAll('[data-dc-city]').forEach(input => {
+                    input.addEventListener('input', () => {
+                        items[Number(input.dataset.dcCity)].city = input.value;
+                        commit();
+                    });
+                });
+                root.querySelectorAll('[data-dc-name]').forEach(input => {
+                    input.addEventListener('input', () => {
+                        items[Number(input.dataset.dcName)].name = input.value;
+                        commit();
+                    });
+                });
+            });
+
+            const selectedIndex = items.findIndex(dc => dc.highlight === true);
+            return `
+                <div id="${id}" class="space-y-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <div>
+                            <span class="field-label mb-0">Data Centers</span>
+                            <p class="text-[11px] text-slate-500 mt-1">Choose one to highlight on the slide (inverted navy card). Clear to show none highlighted.</p>
+                        </div>
+                        <button type="button" data-dc-clear class="text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-orange-500">Clear highlight</button>
+                    </div>
+                    <div class="space-y-2 max-h-[28rem] overflow-y-auto pr-1">
+                        ${items.map((dc, index) => `
+                            <div data-dc-row="${index}" class="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 hover:border-orange-300 transition ${dc.highlight ? 'border-orange-400 bg-orange-50/70' : ''}">
+                                <input data-dc-highlight type="radio" name="dc-highlight-${id}" value="${index}" ${selectedIndex === index ? 'checked' : ''} class="mt-1 h-4 w-4 accent-orange-500 cursor-pointer" title="Highlight on slide">
+                                <div class="min-w-0 flex-1 space-y-2">
+                                    <input data-dc-city="${index}" class="field-input text-xs" value="${escapeAttr(dc.city || '')}" placeholder="City, ST">
+                                    <input data-dc-name="${index}" class="field-input text-sm font-semibold" value="${escapeAttr(dc.name || '')}" placeholder="Facility name">
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function editProducts(products, onChange) {
+            const items = clone(products || []);
+            const id = `products-${Math.random().toString(36).slice(2)}`;
+            const commit = (rerender = false) => {
+                onChange(items.map(product => ({
+                    title: product.title || '',
+                    desc: product.desc || '',
+                    icon: product.icon || '',
+                    enabled: product.enabled !== false
+                })));
+                if (rerender) renderEditorFields();
+            };
+
+            setTimeout(() => {
+                const root = document.getElementById(id);
+                if (!root) return;
+                const list = root.querySelector('[data-product-list]');
+                if (list && typeof Sortable !== 'undefined') {
+                    Sortable.create(list, {
+                        animation: 150,
+                        handle: '.handle',
+                        ghostClass: 'bg-orange-50',
+                        onEnd: () => {
+                            const next = [...list.querySelectorAll('[data-product-index]')].map(row => {
+                                const index = Number(row.dataset.productIndex);
+                                return items[index];
+                            }).filter(Boolean);
+                            items.splice(0, items.length, ...next);
+                            // Reindex dataset after reorder without full editor rerender.
+                            list.querySelectorAll('[data-product-index]').forEach((row, index) => {
+                                row.dataset.productIndex = String(index);
+                                row.querySelectorAll('[data-product-enabled], [data-product-title], [data-product-desc]').forEach(el => {
+                                    if (el.dataset.productEnabled != null) el.dataset.productEnabled = String(index);
+                                    if (el.dataset.productTitle != null) el.dataset.productTitle = String(index);
+                                    if (el.dataset.productDesc != null) el.dataset.productDesc = String(index);
+                                });
+                            });
+                            commit(false);
+                        }
+                    });
+                }
+                root.querySelectorAll('[data-product-enabled]').forEach(input => {
+                    input.addEventListener('change', () => {
+                        items[Number(input.dataset.productEnabled)].enabled = input.checked;
+                        commit(false);
+                    });
+                });
+                root.querySelectorAll('[data-product-title]').forEach(input => {
+                    input.addEventListener('input', () => {
+                        items[Number(input.dataset.productTitle)].title = input.value;
+                        commit(false);
+                    });
+                });
+                root.querySelectorAll('[data-product-desc]').forEach(input => {
+                    input.addEventListener('input', () => {
+                        items[Number(input.dataset.productDesc)].desc = input.value;
+                        commit(false);
+                    });
+                });
+            });
+
+            const handleIcon = `<svg class="w-5 h-5 handle text-slate-400 group-hover:text-orange-500 transition cursor-grab active:cursor-grabbing shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01"></path></svg>`;
+
+            return `
+                <div id="${id}" class="space-y-3">
+                    <div>
+                        <span class="field-label mb-0">Product Portfolio</span>
+                        <p class="text-[11px] text-slate-500 mt-1">Toggle products on/off and drag the handle to reorder. Same drag pattern as Enterprise Proposals.</p>
+                    </div>
+                    <ul data-product-list class="space-y-2 pb-1">
+                        ${items.map((product, index) => `
+                            <li data-product-index="${index}" class="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-sm group ${product.enabled === false ? 'opacity-60' : ''}">
+                                ${handleIcon}
+                                <input data-product-enabled="${index}" type="checkbox" ${product.enabled !== false ? 'checked' : ''} class="mt-1 h-4 w-4 accent-orange-500 shrink-0" title="Show on slide">
+                                <div class="min-w-0 flex-1 space-y-2">
+                                    <input data-product-title="${index}" class="field-input font-semibold" value="${escapeAttr(product.title || '')}" placeholder="Product title">
+                                    <textarea data-product-desc="${index}" rows="2" class="field-input resize-y text-sm">${escapeHtml(product.desc || '')}</textarea>
+                                </div>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            `;
         }
 
         function editStringArray(label, values, onChange, images = false) {
