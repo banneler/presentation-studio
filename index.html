@@ -779,8 +779,34 @@
             
             // checkClientGreeting(); // Disabled: hardcoded Tenaska client experience
             buildNavigation();
+            setupStudioPreviewBridge();
             const order = getFilteredNavOrder();
-            if(order.length > 0) updateView(order[0]);
+            const requestedView = new URLSearchParams(window.location.search).get('view');
+            const startView = requestedView && mapData[requestedView] ? requestedView : order[0];
+            if (startView) updateView(startView);
+        }
+
+        function dismissScreensaverForStudio() {
+            const ss = document.getElementById('screensaver');
+            if (!ss || ss.classList.contains('screensaver-dismissed')) return;
+            ss.classList.add('opacity-0');
+            setTimeout(() => ss.classList.add('screensaver-dismissed'), 300);
+        }
+
+        function setupStudioPreviewBridge() {
+            window.addEventListener('message', event => {
+                if (event.origin !== window.location.origin) return;
+                const data = event.data || {};
+                if (data.type !== 'presentation-studio-goto' || !data.viewId) return;
+                if (!mapData[data.viewId]) return;
+                dismissScreensaverForStudio();
+                const keyNav = getVisibleNavList('keyConceptsNav', KEY_CONCEPTS_NAV);
+                const extNav = getVisibleNavList('extendedNav', navOrder);
+                if (versionMode === 'key' && !keyNav.includes(data.viewId) && extNav.includes(data.viewId)) {
+                    setVersionMode('extended');
+                }
+                updateView(data.viewId);
+            });
         }
 
         function decodePresentationPayload(payload) {

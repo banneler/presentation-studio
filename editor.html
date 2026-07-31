@@ -789,6 +789,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 item.addEventListener('click', () => {
                     selectedPageId = item.dataset.selectId;
                     render();
+                    syncPreviewToPage(selectedPageId);
                 });
             });
 
@@ -1594,7 +1595,20 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         function refreshPreview() {
             saveLocal(false);
             const slugQuery = presentationSlug ? `&slug=${encodeURIComponent(presentationSlug)}` : '';
-            preview.src = `index.html?draft=local${slugQuery}&preview=1&t=${Date.now()}`;
+            const viewQuery = selectedPageId ? `&view=${encodeURIComponent(selectedPageId)}` : '';
+            preview.src = `index.html?draft=local${slugQuery}&preview=1${viewQuery}&t=${Date.now()}`;
+        }
+
+        function syncPreviewToPage(viewId) {
+            if (!viewId || !preview?.contentWindow) return;
+            try {
+                preview.contentWindow.postMessage({
+                    type: 'presentation-studio-goto',
+                    viewId
+                }, window.location.origin);
+            } catch (error) {
+                // Preview may still be loading; Refresh Preview will land on the page via ?view=
+            }
         }
 
         async function makeShareLink() {
