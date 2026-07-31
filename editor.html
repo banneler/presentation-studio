@@ -145,11 +145,27 @@
                         <span class="field-label">Screensaver Timeout (minutes)</span>
                         <input id="screensaver-timeout" type="number" min="1" max="60" step="1" class="field-input" value="5" title="Idle minutes before attract mode returns">
                     </label>
-                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
-                        <span class="field-label">Import Pricing (.spec)</span>
-                        <p class="text-[11px] text-slate-500 leading-relaxed">Upload an Enterprise Proposals save file. Only pricing is imported — locations, options, promos, NRC, and totals.</p>
-                        <input id="spec-pricing-file" type="file" accept=".spec,application/json,text/json" class="block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-500 file:px-3 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-orange-600">
-                        <div class="flex items-center justify-between gap-2">
+                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-3">
+                        <div>
+                            <span class="field-label">Import Pricing</span>
+                            <p class="text-[11px] text-slate-500 leading-relaxed">Either an Enterprise Proposals <strong class="font-semibold text-slate-600">.spec</strong> or a Salesforce Details-only <strong class="font-semibold text-slate-600">CSV</strong> (Quick Import report). Specs keep options/promos/NRC; CSV builds one option from locations and line items.</p>
+                        </div>
+                        <div class="space-y-1.5">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">.spec file</span>
+                            <input id="spec-pricing-file" type="file" accept=".spec,application/json,text/json" class="block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-500 file:px-3 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-orange-600">
+                        </div>
+                        <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            <span class="h-px flex-1 bg-slate-200"></span>
+                            <span>or</span>
+                            <span class="h-px flex-1 bg-slate-200"></span>
+                        </div>
+                        <div class="space-y-1.5">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Salesforce CSV</span>
+                            <input id="salesforce-pricing-file" type="file" accept=".csv,text/csv,application/vnd.ms-excel" class="block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-800 file:px-3 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-slate-700">
+                            <a href="https://gpcom.lightning.force.com/lightning/r/Report/00OKZ000000HxH42AK/view?queryScope=userFolders" target="_blank" rel="noopener noreferrer" class="inline-flex text-[11px] font-semibold text-orange-600 hover:text-orange-700">Open Quick Import report ↗</a>
+                            <p class="text-[10px] text-slate-500 leading-snug">Export as <strong class="font-semibold text-slate-600">Details Only</strong> · Comma Delimited (.csv). Filter by solution number first.</p>
+                        </div>
+                        <div class="flex items-center justify-between gap-2 pt-0.5">
                             <p id="spec-pricing-status" class="text-[11px] text-slate-500 min-w-0 truncate">No pricing imported yet.</p>
                             <button id="spec-pricing-remove" type="button" class="hidden shrink-0 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-red-500">Remove</button>
                         </div>
@@ -1007,14 +1023,14 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 });
                 html += `
                     <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2 text-sm text-slate-700 mt-4">
-                        <p class="font-bold text-slate-900">Imported from Enterprise Proposals</p>
-                        <p class="text-xs text-slate-500">${escapeHtml(content.sourceName || 'Unknown .spec')}</p>
+                        <p class="font-bold text-slate-900">${content.importSource === 'salesforce-csv' ? 'Imported from Salesforce CSV' : 'Imported from Enterprise Proposals'}</p>
+                        <p class="text-xs text-slate-500">${escapeHtml(content.sourceName || 'Unknown file')}</p>
                         <dl class="grid grid-cols-2 gap-2 text-xs pt-1">
                             <div><dt class="text-slate-400 uppercase tracking-wider font-bold">Options</dt><dd class="font-semibold text-slate-800">${optionCount}</dd></div>
                             <div><dt class="text-slate-400 uppercase tracking-wider font-bold">Locations</dt><dd class="font-semibold text-slate-800">${locationCount}</dd></div>
                             <div class="col-span-2"><dt class="text-slate-400 uppercase tracking-wider font-bold">First option MRC</dt><dd class="font-semibold text-slate-800">${escapeHtml(firstTotal)}</dd></div>
                         </dl>
-                        <p class="text-[11px] text-slate-500 pt-1">Re-upload a .spec above to replace pricing data. Side image crop settings are kept.</p>
+                        <p class="text-[11px] text-slate-500 pt-1">Re-upload a .spec or Salesforce CSV above to replace pricing data. Side image crop settings are kept.</p>
                     </div>
                 `;
             } else if (content && !['agenda', 'core-capabilities', 'rightfiber', 'why-gpc', 'data-centers', 'products'].includes(selectedPageId)) {
@@ -2018,6 +2034,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             }
 
             return {
+                importSource: 'spec',
                 businessName: String(raw.globalBiz || '').trim(),
                 repName: String(raw.globalRep || '').trim(),
                 enableLocationSubtotals: !!raw.enableLocationSubtotals,
@@ -2026,6 +2043,166 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 quoteExpirationDays: String(raw.quoteExpirationDays || '').trim(),
                 enableTaxesFeesExclusion: !!raw.enableTaxesFeesExclusion,
                 options
+            };
+        }
+
+        function normalizeCsvHeaderCell(header) {
+            return String(header || '').replace(/^\uFEFF/, '').trim().toLowerCase().replace(/\s+/g, ' ');
+        }
+
+        function parseCsvRows(text) {
+            const rows = [];
+            let i = 0;
+            let field = '';
+            let row = [];
+            let inQuotes = false;
+            const source = String(text || '');
+            while (i < source.length) {
+                const char = source[i];
+                if (inQuotes) {
+                    if (char === '"') {
+                        if (source[i + 1] === '"') {
+                            field += '"';
+                            i += 2;
+                            continue;
+                        }
+                        inQuotes = false;
+                        i += 1;
+                        continue;
+                    }
+                    field += char;
+                    i += 1;
+                    continue;
+                }
+                if (char === '"') {
+                    inQuotes = true;
+                    i += 1;
+                    continue;
+                }
+                if (char === ',') {
+                    row.push(field);
+                    field = '';
+                    i += 1;
+                    continue;
+                }
+                if (char === '\r') {
+                    i += 1;
+                    continue;
+                }
+                if (char === '\n') {
+                    row.push(field);
+                    rows.push(row);
+                    row = [];
+                    field = '';
+                    i += 1;
+                    continue;
+                }
+                field += char;
+                i += 1;
+            }
+            row.push(field);
+            rows.push(row);
+            return rows.filter(line => line.some(cell => String(cell).trim() !== ''));
+        }
+
+        function pickCsvColumnIndex(headersNorm, aliases) {
+            for (const alias of aliases) {
+                const want = alias.toLowerCase();
+                const exact = headersNorm.indexOf(want);
+                if (exact >= 0) return exact;
+            }
+            for (const alias of aliases) {
+                const want = alias.toLowerCase();
+                const fuzzy = headersNorm.findIndex(header => header.includes(want));
+                if (fuzzy >= 0) return fuzzy;
+            }
+            return -1;
+        }
+
+        function parseMoneyCell(value) {
+            if (value == null || value === '') return NaN;
+            const trimmed = String(value).replace(/[$,\s]/g, '').trim();
+            if (!trimmed) return NaN;
+            const number = parseFloat(trimmed);
+            return Number.isNaN(number) ? NaN : number;
+        }
+
+        function extractPricingFromSalesforceCsv(csvText) {
+            const rows = parseCsvRows(String(csvText || '').replace(/^\uFEFF/, ''));
+            if (rows.length < 2) {
+                throw new Error('CSV has no data rows.');
+            }
+
+            const headersNorm = rows[0].map(normalizeCsvHeaderCell);
+            const aliasesLoc = ['z location', 'service location', 'location name', 'site name', 'account name', 'ship to street', 'ship to address', 'shipping address', 'location', 'site address', 'customer name', 'detail name', 'quote line city'];
+            const aliasesProd = ['product', 'product name', 'product title', 'product description', 'description'];
+            const aliasesQty = ['quantity', 'qty'];
+            const aliasesUnit = ['customer unit price', 'unit price', 'sales price', 'list price', 'monthly price', 'mrc', 'net unit price'];
+            const aliasesTotal = ['total price', 'extended price', 'line total', 'net total', 'total'];
+
+            const ixLoc = pickCsvColumnIndex(headersNorm, aliasesLoc);
+            const ixProd = pickCsvColumnIndex(headersNorm, aliasesProd);
+            const ixQty = pickCsvColumnIndex(headersNorm, aliasesQty);
+            const ixUnit = pickCsvColumnIndex(headersNorm, aliasesUnit);
+            const ixTotal = pickCsvColumnIndex(headersNorm, aliasesTotal);
+
+            if (ixProd < 0) {
+                throw new Error('Could not find a Product column in the CSV. Export the Quick Import report as Details Only.');
+            }
+
+            const groups = {};
+            const order = [];
+            for (let r = 1; r < rows.length; r += 1) {
+                const line = rows[r];
+                let locKey = ixLoc >= 0 ? String(line[ixLoc] || '').trim() : 'Imported Location';
+                if (!locKey) locKey = 'Imported Location';
+                if (!groups[locKey]) {
+                    groups[locKey] = [];
+                    order.push(locKey);
+                }
+                const prod = String(line[ixProd] || '').trim();
+                const qtyRaw = ixQty >= 0 ? line[ixQty] : '1';
+                let qtyNum = parseFloat(String(qtyRaw).replace(/[^\d.-]/g, ''));
+                if (Number.isNaN(qtyNum) || qtyNum <= 0) qtyNum = 1;
+                const unit = ixUnit >= 0 ? parseMoneyCell(line[ixUnit]) : NaN;
+                const total = ixTotal >= 0 ? parseMoneyCell(line[ixTotal]) : NaN;
+                const priceNum = !Number.isNaN(unit) ? unit : (!Number.isNaN(total) ? total / qtyNum : NaN);
+                const priceStr = !Number.isNaN(priceNum) ? String(priceNum) : '';
+                if (!prod && priceStr === '') continue;
+                groups[locKey].push({
+                    prod,
+                    price: priceStr,
+                    qty: String(qtyNum),
+                    nrcEnabled: false,
+                    nrcDescription: '',
+                    nrcAmount: ''
+                });
+            }
+
+            const locations = order.map(name => ({
+                name,
+                promotions: [],
+                items: groups[name]
+            })).filter(loc => loc.items.length);
+
+            if (!locations.length) {
+                throw new Error('No importable rows found in that CSV.');
+            }
+
+            return {
+                importSource: 'salesforce-csv',
+                businessName: '',
+                repName: '',
+                enableLocationSubtotals: true,
+                enableDecimalPointsAmy: false,
+                enableQuoteExpiration: false,
+                quoteExpirationDays: '',
+                enableTaxesFeesExclusion: false,
+                options: [{
+                    term: '',
+                    solutionId: '',
+                    locations
+                }]
             };
         }
 
@@ -2049,13 +2226,14 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             draft.navOrder = (draft.settings.extendedNav || []).slice();
         }
 
-        function applyPricingFromSpec(extracted, sourceName) {
+        function applyPricingImport(extracted, sourceName) {
             const useDecimals = !!extracted.enableDecimalPointsAmy;
             const firstTotal = computeOptionMonthlyTotal(extracted.options[0], useDecimals);
             const locationCount = extracted.options.reduce((sum, opt) => sum + (opt.locations || []).length, 0);
             const biz = extracted.businessName;
             const subtitleBits = [];
             if (biz) subtitleBits.push(biz);
+            if (extracted.importSource === 'salesforce-csv') subtitleBits.push('Salesforce import');
             subtitleBits.push(extracted.options.length > 1 ? `${extracted.options.length} options` : 'Investment summary');
 
             draft.mapData = draft.mapData || {};
@@ -2079,7 +2257,8 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 draft.mapData.pricing.logo = draft.settings.customerLogo;
             }
             draft.pageContent.pricing = {
-                sourceName: sourceName || 'import.spec',
+                sourceName: sourceName || 'import',
+                importSource: extracted.importSource || 'spec',
                 importedAt: new Date().toISOString(),
                 businessName: extracted.businessName,
                 repName: extracted.repName,
@@ -2096,7 +2275,8 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             updateSpecPricingStatus();
             render();
             refreshPreview();
-            setStatus(`Pricing imported from ${sourceName || 'spec'} — ${extracted.options.length} option(s).`);
+            const sourceLabel = extracted.importSource === 'salesforce-csv' ? 'Salesforce CSV' : 'spec';
+            setStatus(`Pricing imported from ${sourceName || sourceLabel} — ${locationCount} location(s).`);
         }
 
         function removePricingPage() {
@@ -2125,7 +2305,9 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             if (!statusEl || !removeBtn) return;
             if (content) {
                 const optionCount = Array.isArray(content.options) ? content.options.length : 0;
-                statusEl.textContent = `${content.sourceName || 'Pricing'} · ${optionCount} option${optionCount === 1 ? '' : 's'}`;
+                const locationCount = (content.options || []).reduce((sum, opt) => sum + ((opt.locations || []).length), 0);
+                const kind = content.importSource === 'salesforce-csv' ? 'Salesforce CSV' : 'spec';
+                statusEl.textContent = `${content.sourceName || 'Pricing'} · ${kind} · ${locationCount} loc · ${optionCount} opt`;
                 removeBtn.classList.remove('hidden');
             } else {
                 statusEl.textContent = 'No pricing imported yet.';
@@ -2247,11 +2429,31 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 const text = await file.text();
                 const parsed = JSON.parse(text);
                 const extracted = extractPricingFromSpec(parsed);
-                applyPricingFromSpec(extracted, file.name);
+                applyPricingImport(extracted, file.name);
             } catch (error) {
                 console.error(error);
                 alert(error.message || 'Could not import that .spec file.');
                 setStatus(error.message || 'Spec import failed.');
+            }
+        });
+        document.getElementById('salesforce-pricing-file').addEventListener('change', async event => {
+            const file = event.target.files && event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            const nameOk = /\.csv$/i.test(file.name);
+            const typeOk = file.type === 'text/csv' || file.type === 'application/vnd.ms-excel' || file.type === '';
+            if (!nameOk && !typeOk) {
+                alert('Please choose a .csv file.');
+                return;
+            }
+            try {
+                const text = await file.text();
+                const extracted = extractPricingFromSalesforceCsv(text);
+                applyPricingImport(extracted, file.name);
+            } catch (error) {
+                console.error(error);
+                alert(error.message || 'Could not import that Salesforce CSV.');
+                setStatus(error.message || 'Salesforce CSV import failed.');
             }
         });
         document.getElementById('spec-pricing-remove').addEventListener('click', removePricingPage);
