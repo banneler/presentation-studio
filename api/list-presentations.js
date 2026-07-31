@@ -12,25 +12,26 @@ module.exports = async function handler(req, res) {
     const entries = await listDirectory('presentations');
     const dirs = entries.filter(item => item.type === 'dir');
 
-    const presentations = await Promise.all(
+    const presentations = (await Promise.all(
       dirs.map(async dir => {
         const contentFile = await getFile(`presentations/${dir.name}/content.json`);
+        // Skip orphan directories (e.g. follow-up left after a partial delete).
+        if (!contentFile?.content) return null;
+
         let name = dir.name;
         let repName = '';
         let hasFollowUp = false;
-        if (contentFile?.content) {
-          try {
-            const decoded = Buffer.from(contentFile.content, 'base64').toString('utf8');
-            const parsed = JSON.parse(decoded);
-            name = parsed.settings?.presentationName || parsed.meta?.name || dir.name;
-            repName = parsed.settings?.repName || parsed.meta?.repName || '';
-          } catch (error) {
-            // keep slug as name
-          }
+        try {
+          const decoded = Buffer.from(contentFile.content, 'base64').toString('utf8');
+          const parsed = JSON.parse(decoded);
+          name = parsed.settings?.presentationName || parsed.meta?.name || dir.name;
+          repName = parsed.settings?.repName || parsed.meta?.repName || '';
+        } catch (error) {
+          // keep slug as name
         }
         try {
           const followUp = await getFile(`presentations/${dir.name}/follow-up/content.json`);
-          hasFollowUp = Boolean(followUp);
+          hasFollowUp = Boolean(followUp?.content);
         } catch (error) {
           hasFollowUp = false;
         }
@@ -43,7 +44,7 @@ module.exports = async function handler(req, res) {
           hasFollowUp
         };
       })
-    );
+    )).filter(Boolean);
 
     presentations.sort((a, b) => a.name.localeCompare(b.name));
     return res.status(200).json({ ok: true, presentations });

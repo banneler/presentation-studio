@@ -115,15 +115,29 @@ async function deleteFile({ path, sha, message }) {
 }
 
 async function deleteDirectory({ path, message }) {
-  const files = await listFilesRecursive(path);
+  // Deepest paths first so follow-up remnants are less likely to outlive a partial failure.
+  const files = (await listFilesRecursive(path)).sort((a, b) => b.path.length - a.path.length);
+  const deleted = [];
+  const errors = [];
   for (const file of files) {
-    await deleteFile({
-      path: file.path,
-      sha: file.sha,
-      message: `${message}: ${file.path}`
-    });
+    try {
+      await deleteFile({
+        path: file.path,
+        sha: file.sha,
+        message: `${message}: ${file.path}`
+      });
+      deleted.push(file.path);
+    } catch (error) {
+      errors.push({ path: file.path, error: error.message || 'Delete failed' });
+    }
   }
-  return { deleted: files.length, files: files.map(file => file.path) };
+  if (!deleted.length && files.length) {
+    const error = new Error(errors[0]?.error || `Failed to delete ${path}`);
+    error.statusCode = 500;
+    error.details = errors;
+    throw error;
+  }
+  return { deleted: deleted.length, files: deleted, errors };
 }
 
 function slugify(value) {

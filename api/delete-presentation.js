@@ -1,4 +1,10 @@
-const { getFile, deleteDirectory, requireGitHub, slugify } = require('./_lib/github');
+const {
+  getFile,
+  listFilesRecursive,
+  deleteDirectory,
+  requireGitHub,
+  slugify
+} = require('./_lib/github');
 
 function parseBody(req) {
   return typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
@@ -6,6 +12,56 @@ function parseBody(req) {
 
 function normalizeConfirm(value) {
   return String(value || '').trim().replace(/\s+/g, ' ');
+}
+
+async function resolveDeleteTarget(slug) {
+  const basePath = `presentations/${slug}`;
+  const files = await listFilesRecursive(basePath);
+  if (!files.length) return null;
+
+  const contentFile = await getFile(`${basePath}/content.json`);
+  if (contentFile?.content) {
+    const decoded = Buffer.from(contentFile.content, 'base64').toString('utf8');
+    const content = JSON.parse(decoded);
+    const ownerName = normalizeConfirm(content.settings?.repName || content.meta?.repName || '');
+    const presentationName = normalizeConfirm(
+      content.settings?.presentationName || content.meta?.name || slug
+    );
+    return {
+      basePath,
+      presentationName,
+      ownerName,
+      expected: ownerName || presentationName,
+      orphan: false
+    };
+  }
+
+  // Remnants only (e.g. follow-up left after a partial delete) — still purgeable.
+  let presentationName = slug;
+  let ownerName = '';
+  try {
+    const followUpFile = await getFile(`${basePath}/follow-up/content.json`);
+    if (followUpFile?.content) {
+      const decoded = Buffer.from(followUpFile.content, 'base64').toString('utf8');
+      const content = JSON.parse(decoded);
+      presentationName = normalizeConfirm(
+        content.settings?.presentationName || content.meta?.name || slug
+      );
+      ownerName = normalizeConfirm(content.settings?.repName || content.meta?.repName || '');
+    }
+  } catch (error) {
+    // keep slug fallback
+  }
+
+  return {
+    basePath,
+    presentationName,
+    ownerName,
+    // Accept owner, presentation name, or slug so library ghosts stay removable.
+    expected: ownerName || presentationName || slug,
+    alsoAccept: [slug],
+    orphan: true
+  };
 }
 
 module.exports = async function handler(req, res) {
@@ -25,38 +81,37 @@ module.exports = async function handler(req, res) {
     if (!slug) return res.status(400).json({ ok: false, error: 'A valid slug is required' });
     if (!confirmName) return res.status(400).json({ ok: false, error: 'Owner name confirmation is required' });
 
-    const contentFile = await getFile(`presentations/${slug}/content.json`);
-    if (!contentFile?.content) {
+    const target = await resolveDeleteTarget(slug);
+    if (!target) {
       return res.status(404).json({ ok: false, error: 'Published presentation not found' });
     }
 
-    const decoded = Buffer.from(contentFile.content, 'base64').toString('utf8');
-    const content = JSON.parse(decoded);
-    const ownerName = normalizeConfirm(content.settings?.repName || content.meta?.repName || '');
-    const presentationName = normalizeConfirm(
-      content.settings?.presentationName || content.meta?.name || slug
+    const accepted = new Set(
+      [target.expected, ...(target.alsoAccept || [])]
+        .filter(Boolean)
+        .map(value => value.toLowerCase())
     );
-    const expected = ownerName || presentationName;
-
-    if (confirmName.toLowerCase() !== expected.toLowerCase()) {
+    if (!accepted.has(confirmName.toLowerCase())) {
       return res.status(400).json({
         ok: false,
-        error: ownerName
+        error: target.ownerName
           ? 'Owner name does not match. Type the exact owner name to delete.'
           : 'Confirmation does not match. Type the presentation name to delete.'
       });
     }
 
     const result = await deleteDirectory({
-      path: `presentations/${slug}`,
-      message: `Delete ${presentationName || slug} presentation`
+      path: target.basePath,
+      message: `Delete ${target.presentationName || slug} presentation`
     });
 
     return res.status(200).json({
       ok: true,
       slug,
-      name: presentationName,
-      deleted: result.deleted
+      name: target.presentationName,
+      orphan: target.orphan,
+      deleted: result.deleted,
+      errors: result.errors || []
     });
   } catch (error) {
     console.error('delete-presentation failed:', error);
