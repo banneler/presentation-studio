@@ -294,10 +294,24 @@
             return page.logo || '';
         }
 
-        function normalizeScreensaverTimeout(value, fallback = 300) {
+        function normalizeScreensaverTimeoutMinutes(value, fallback = 5) {
             const number = Number(value);
             if (!Number.isFinite(number)) return fallback;
-            return Math.max(15, Math.min(3600, Math.round(number)));
+            return Math.max(1, Math.min(60, Math.round(number)));
+        }
+
+        function resolveScreensaverTimeoutSeconds(settings = {}) {
+            if (settings.screensaverTimeoutMinutes != null) {
+                return normalizeScreensaverTimeoutMinutes(settings.screensaverTimeoutMinutes, 5) * 60;
+            }
+            // Legacy drafts stored seconds
+            if (settings.screensaverTimeoutSeconds != null) {
+                const seconds = Number(settings.screensaverTimeoutSeconds);
+                if (Number.isFinite(seconds)) {
+                    return normalizeScreensaverTimeoutMinutes(seconds / 60, 5) * 60;
+                }
+            }
+            return 300;
         }
 
         function clampZoom(value, fallback = 1) {
@@ -508,7 +522,7 @@
                 pageContent = data.pageContent;
                 presentationSettings = data.settings || {};
                 applyHeroColor(presentationSettings.heroColor);
-                screensaverTimeoutSeconds = normalizeScreensaverTimeout(presentationSettings.screensaverTimeoutSeconds, 300);
+                screensaverTimeoutSeconds = resolveScreensaverTimeoutSeconds(presentationSettings);
                 if (presentationSettings.defaultVersionMode) {
                     versionMode = presentationSettings.defaultVersionMode;
                 }
