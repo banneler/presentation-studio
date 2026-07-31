@@ -140,6 +140,10 @@
                             </div>
                         </div>
                     </div>
+                    <label>
+                        <span class="field-label">Screensaver Timeout (seconds)</span>
+                        <input id="screensaver-timeout" type="number" min="15" max="3600" step="1" class="field-input" value="300" title="Idle seconds before attract mode returns">
+                    </label>
                 </div>
             </div>
 
@@ -288,6 +292,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         const studioShell = document.getElementById('studio-shell');
         const splitter = document.getElementById('splitter');
         const heroColorInput = document.getElementById('hero-color');
+        const screensaverTimeoutInput = document.getElementById('screensaver-timeout');
         const nameInput = document.getElementById('presentation-name');
         const repNameInput = document.getElementById('rep-name');
         const customerLogoPath = document.getElementById('customer-logo-path');
@@ -389,6 +394,12 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             return left.length === right.length && left.every((value, index) => value === right[index]);
         }
 
+        function normalizeScreensaverTimeout(value, fallback = 300) {
+            const number = Number(value);
+            if (!Number.isFinite(number)) return fallback;
+            return Math.max(15, Math.min(3600, Math.round(number)));
+        }
+
         function applyHeroColor(color) {
             const normalized = normalizeHeroColor(color);
             document.documentElement.style.setProperty('--hero-color', normalized);
@@ -457,6 +468,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             draft.settings.heroColor = normalizeHeroColor(draft.settings.heroColor);
             draft.settings.repName = draft.settings.repName || '';
             draft.settings.customerLogo = draft.settings.customerLogo || '';
+            draft.settings.screensaverTimeoutSeconds = normalizeScreensaverTimeout(draft.settings.screensaverTimeoutSeconds, 300);
             applyHeroColor(draft.settings.heroColor);
 
             Object.values(draft.mapData || {}).forEach(page => {
@@ -484,6 +496,11 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             if (customerLogoPath) {
                 const logo = draft?.settings?.customerLogo || '';
                 customerLogoPath.value = logo.startsWith('data:') ? '(uploaded image)' : logo;
+            }
+            if (screensaverTimeoutInput) {
+                screensaverTimeoutInput.value = String(
+                    normalizeScreensaverTimeout(draft?.settings?.screensaverTimeoutSeconds, 300)
+                );
             }
             updateCustomerLogoPreview();
         }
@@ -1721,6 +1738,12 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             draft.settings = draft.settings || {};
             draft.settings.heroColor = event.target.value;
             applyHeroColor(event.target.value);
+        });
+        screensaverTimeoutInput.addEventListener('change', () => {
+            draft.settings = draft.settings || {};
+            const normalized = normalizeScreensaverTimeout(screensaverTimeoutInput.value, 300);
+            draft.settings.screensaverTimeoutSeconds = normalized;
+            screensaverTimeoutInput.value = String(normalized);
         });
 
         setupResizableSplit();

@@ -255,6 +255,7 @@
         let navOrder = [];
         let pageContent = {};
         let presentationSettings = {};
+        let screensaverTimeoutSeconds = 300;
         let versionMode = 'key'; // 'key' | 'extended'
         let briefingCardFlipping = false;
         let agendaRevealTimer = null;
@@ -291,6 +292,12 @@
             }
             // Legacy drafts: explicit page logo still works
             return page.logo || '';
+        }
+
+        function normalizeScreensaverTimeout(value, fallback = 300) {
+            const number = Number(value);
+            if (!Number.isFinite(number)) return fallback;
+            return Math.max(15, Math.min(3600, Math.round(number)));
         }
 
         function clampZoom(value, fallback = 1) {
@@ -501,6 +508,7 @@
                 pageContent = data.pageContent;
                 presentationSettings = data.settings || {};
                 applyHeroColor(presentationSettings.heroColor);
+                screensaverTimeoutSeconds = normalizeScreensaverTimeout(presentationSettings.screensaverTimeoutSeconds, 300);
                 if (presentationSettings.defaultVersionMode) {
                     versionMode = presentationSettings.defaultVersionMode;
                 }
@@ -925,10 +933,9 @@
 
         // --- SCREENSAVER (ATTRACT MODE) ---
         let idleTime = 0;
-        const SCREENSAVER_TIMEOUT_SECONDS = 300;
         function showScreensaver() {
             const ss = document.getElementById('screensaver');
-            idleTime = SCREENSAVER_TIMEOUT_SECONDS;
+            idleTime = screensaverTimeoutSeconds;
             ss.classList.remove('screensaver-dismissed');
             ss.classList.remove('opacity-0');
             setTimeout(() => ss.classList.add('opacity-100'), 50);
@@ -941,7 +948,7 @@
 
             setInterval(() => {
                 idleTime++;
-                if (idleTime >= SCREENSAVER_TIMEOUT_SECONDS) {
+                if (idleTime >= screensaverTimeoutSeconds) {
                     ss.classList.remove('screensaver-dismissed');
                     ss.classList.remove('opacity-0');
                     setTimeout(() => ss.classList.add('opacity-100'), 50);
