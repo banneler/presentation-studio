@@ -1329,7 +1329,12 @@
 
         // --- SCREENSAVER (ATTRACT MODE) ---
         let idleTime = 0;
+        function isStudioPreview() {
+            return document.body.classList.contains('studio-preview');
+        }
+
         function showScreensaver() {
+            if (isStudioPreview()) return;
             const ss = document.getElementById('screensaver');
             idleTime = screensaverTimeoutSeconds;
             ss.classList.remove('screensaver-dismissed');
@@ -1339,6 +1344,13 @@
 
         function setupScreensaver() {
             const ss = document.getElementById('screensaver');
+            // Editor preview: skip attract mode so Refresh lands on the active page.
+            if (isStudioPreview()) {
+                ss.classList.add('opacity-0', 'screensaver-dismissed');
+                scheduleAgendaReveal();
+                return;
+            }
+
             // Show on load (grid stays in layout so animation never stops)
             setTimeout(() => ss.classList.add('opacity-100'), 50);
 
@@ -1372,6 +1384,7 @@
         function setupBrandAttractTrigger() {
             document.getElementById('brand-trigger').addEventListener('click', (event) => {
                 event.stopPropagation();
+                if (isStudioPreview()) return;
                 showScreensaver();
             });
         }
