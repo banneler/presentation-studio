@@ -651,6 +651,11 @@
             return Math.max(1, Math.min(2.5, number));
         }
 
+        function migrateHeroSrc(src) {
+            // Stock heroes moved from cropped PNGs to full-size JPGs.
+            return String(src || '').replace(/^(hero_[1-4])\.png$/i, '$1.jpg');
+        }
+
         function normalizeHeroImage(entry, index = 0) {
             const defaultPanY = index === 3 ? 0.2 : 0.5;
             const defaults = {
@@ -663,11 +668,11 @@
                 enabled: true
             };
             if (!entry) return { ...defaults };
-            if (typeof entry === 'string') return { ...defaults, src: entry };
+            if (typeof entry === 'string') return { ...defaults, src: migrateHeroSrc(entry) };
             const zoomFallback = entry.zoom != null ? entry.zoom : 1;
             const legacyPanY = entry.panY != null ? entry.panY : defaultPanY;
             return {
-                src: entry.src || entry.url || entry.file || '',
+                src: migrateHeroSrc(entry.src || entry.url || entry.file || ''),
                 panX: clamp01(entry.panX ?? entry.pan, 0.5),
                 panYFull: clamp01(entry.panYFull ?? 0.5, 0.5),
                 panY: clamp01(entry.panYCondensed ?? legacyPanY, defaultPanY),
