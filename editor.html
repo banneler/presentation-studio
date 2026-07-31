@@ -144,6 +144,15 @@
                         <span class="field-label">Screensaver Timeout (minutes)</span>
                         <input id="screensaver-timeout" type="number" min="1" max="60" step="1" class="field-input" value="5" title="Idle minutes before attract mode returns">
                     </label>
+                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
+                        <span class="field-label">Import Pricing (.spec)</span>
+                        <p class="text-[11px] text-slate-500 leading-relaxed">Upload an Enterprise Proposals save file. Only pricing is imported — locations, options, promos, NRC, and totals.</p>
+                        <input id="spec-pricing-file" type="file" accept=".spec,application/json,text/json" class="block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-500 file:px-3 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-orange-600">
+                        <div class="flex items-center justify-between gap-2">
+                            <p id="spec-pricing-status" class="text-[11px] text-slate-500 min-w-0 truncate">No pricing imported yet.</p>
+                            <button id="spec-pricing-remove" type="button" class="hidden shrink-0 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-red-500">Remove</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -513,6 +522,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 screensaverTimeoutInput.value = String(resolveScreensaverTimeoutMinutes(draft?.settings || {}));
             }
             updateCustomerLogoPreview();
+            updateSpecPricingStatus();
         }
 
         function updateCustomerLogoPreview() {
@@ -922,7 +932,24 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 html += editPillars(content.pillars || [], value => content.pillars = value);
             }
 
-            if (content && !['agenda', 'core-capabilities', 'rightfiber', 'why-gpc'].includes(selectedPageId)) {
+            if (page.type === 'pricing' && content) {
+                const optionCount = Array.isArray(content.options) ? content.options.length : 0;
+                const locationCount = (content.options || []).reduce((sum, opt) => sum + ((opt.locations || []).length), 0);
+                const firstTotal = optionCount ? formatStudioMoney(computeOptionMonthlyTotal(content.options[0], !!content.enableDecimalPointsAmy), !!content.enableDecimalPointsAmy) : '—';
+                html += `<hr class="border-slate-200 my-5">`;
+                html += `
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2 text-sm text-slate-700">
+                        <p class="font-bold text-slate-900">Imported from Enterprise Proposals</p>
+                        <p class="text-xs text-slate-500">${escapeHtml(content.sourceName || 'Unknown .spec')}</p>
+                        <dl class="grid grid-cols-2 gap-2 text-xs pt-1">
+                            <div><dt class="text-slate-400 uppercase tracking-wider font-bold">Options</dt><dd class="font-semibold text-slate-800">${optionCount}</dd></div>
+                            <div><dt class="text-slate-400 uppercase tracking-wider font-bold">Locations</dt><dd class="font-semibold text-slate-800">${locationCount}</dd></div>
+                            <div class="col-span-2"><dt class="text-slate-400 uppercase tracking-wider font-bold">First option MRC</dt><dd class="font-semibold text-slate-800">${escapeHtml(firstTotal)}</dd></div>
+                        </dl>
+                        <p class="text-[11px] text-slate-500 pt-1">Re-upload a .spec above to replace this pricing page. Edit titles with the fields at the top.</p>
+                    </div>
+                `;
+            } else if (content && !['agenda', 'core-capabilities', 'rightfiber', 'why-gpc'].includes(selectedPageId)) {
                 html += `<hr class="border-slate-200 my-5">`;
                 html += textarea('Raw Content JSON', JSON.stringify(content, null, 2), value => {
                     try { draft.pageContent[selectedPageId] = JSON.parse(value); } catch (error) {}
@@ -1650,6 +1677,197 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             return escapeHtml(value).replace(/`/g, '&#96;');
         }
 
+        function formatStudioMoney(amount, useDecimals) {
+            const n = Number(amount) || 0;
+            if (useDecimals) {
+                return n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+            }
+            return Math.ceil(n).toLocaleString('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+        }
+
+        function lineMonthlyTotal(price, qty, useDecimals) {
+            const raw = (parseFloat(price) || 0) * (parseInt(qty, 10) || 0);
+            return useDecimals ? raw : Math.ceil(raw);
+        }
+
+        function computeOptionMonthlyTotal(option, useDecimals) {
+            return (option?.locations || []).reduce((sum, loc) => {
+                const items = (loc.items || []).reduce((acc, item) => acc + lineMonthlyTotal(item.price, item.qty, useDecimals), 0);
+                return sum + items;
+            }, 0);
+        }
+
+        function normalizeSpecPromotions(promotions) {
+            if (!Array.isArray(promotions)) return [];
+            return promotions.map(promo => ({
+                description: String(promo?.description || '').trim(),
+                amount: promo?.amount != null ? String(promo.amount) : ''
+            })).filter(promo => promo.description || String(promo.amount).trim());
+        }
+
+        function normalizeSpecItems(items) {
+            if (!Array.isArray(items)) return [];
+            return items.map(item => ({
+                prod: String(item?.prod || '').trim(),
+                price: item?.price != null ? String(item.price) : '',
+                qty: item?.qty != null && String(item.qty).trim() !== '' ? String(item.qty) : '1',
+                nrcEnabled: !!item?.nrcEnabled,
+                nrcDescription: String(item?.nrcDescription || '').trim(),
+                nrcAmount: item?.nrcAmount != null ? String(item.nrcAmount) : ''
+            })).filter(item => item.prod || String(item.price).trim());
+        }
+
+        function normalizeSpecLocations(locations) {
+            if (!Array.isArray(locations)) return [];
+            return locations.map(loc => ({
+                name: String(loc?.name || 'Location').trim() || 'Location',
+                promotions: normalizeSpecPromotions(loc?.promotions),
+                items: normalizeSpecItems(loc?.items)
+            })).filter(loc => loc.items.length || loc.promotions.length || loc.name);
+        }
+
+        function extractPricingFromSpec(raw) {
+            if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+                throw new Error('That file is not a valid Enterprise Proposals .spec JSON object.');
+            }
+
+            let options = [];
+            if (Array.isArray(raw.pricingOptions) && raw.pricingOptions.length) {
+                options = raw.pricingOptions.map(opt => ({
+                    term: String(opt?.term || '').trim(),
+                    solutionId: String(opt?.solutionId || '').trim(),
+                    locations: normalizeSpecLocations(opt?.locations)
+                }));
+            } else if (Array.isArray(raw.locations) && raw.locations.length) {
+                options = [{
+                    term: String(raw.contractTerm || raw.term || '').trim(),
+                    solutionId: String(raw.solutionId || '').trim(),
+                    locations: normalizeSpecLocations(raw.locations)
+                }];
+            }
+
+            options = options.filter(opt => (opt.locations || []).length);
+            if (!options.length) {
+                throw new Error('No pricing options or locations found in that .spec file.');
+            }
+
+            return {
+                businessName: String(raw.globalBiz || '').trim(),
+                repName: String(raw.globalRep || '').trim(),
+                enableLocationSubtotals: !!raw.enableLocationSubtotals,
+                enableDecimalPointsAmy: !!raw.enableDecimalPointsAmy,
+                enableQuoteExpiration: !!raw.enableQuoteExpiration,
+                quoteExpirationDays: String(raw.quoteExpirationDays || '').trim(),
+                enableTaxesFeesExclusion: !!raw.enableTaxesFeesExclusion,
+                options
+            };
+        }
+
+        function insertPricingIntoPageOrder() {
+            const without = pageOrder.filter(id => id !== 'pricing');
+            const whyIndex = without.indexOf('why-gpc');
+            if (whyIndex >= 0) {
+                without.splice(whyIndex, 0, 'pricing');
+                pageOrder = without;
+            } else {
+                pageOrder = [...without, 'pricing'];
+            }
+            draft.settings = draft.settings || {};
+            const ensureVisible = (key) => {
+                const current = new Set(draft.settings[key] || []);
+                current.add('pricing');
+                draft.settings[key] = pageOrder.filter(id => current.has(id));
+            };
+            ensureVisible('extendedNav');
+            ensureVisible('keyConceptsNav');
+            draft.navOrder = (draft.settings.extendedNav || []).slice();
+        }
+
+        function applyPricingFromSpec(extracted, sourceName) {
+            const useDecimals = !!extracted.enableDecimalPointsAmy;
+            const firstTotal = computeOptionMonthlyTotal(extracted.options[0], useDecimals);
+            const locationCount = extracted.options.reduce((sum, opt) => sum + (opt.locations || []).length, 0);
+            const biz = extracted.businessName;
+            const subtitleBits = [];
+            if (biz) subtitleBits.push(biz);
+            subtitleBits.push(extracted.options.length > 1 ? `${extracted.options.length} options` : 'Investment summary');
+
+            draft.mapData = draft.mapData || {};
+            draft.pageContent = draft.pageContent || {};
+            draft.mapData.pricing = {
+                id: 'pricing',
+                title: 'Proposed Pricing',
+                navLabel: 'Pricing',
+                subtitle: subtitleBits.join(' · '),
+                type: 'pricing',
+                useCustomerLogo: true,
+                stats: [
+                    { label: 'Locations', value: String(locationCount), color: 'text-gpc-blue' },
+                    { label: 'Monthly', value: formatStudioMoney(firstTotal, useDecimals), color: 'text-gpc-orange' }
+                ]
+            };
+            if (draft.settings.customerLogo) {
+                draft.mapData.pricing.logo = draft.settings.customerLogo;
+            }
+            draft.pageContent.pricing = {
+                sourceName: sourceName || 'import.spec',
+                importedAt: new Date().toISOString(),
+                businessName: extracted.businessName,
+                repName: extracted.repName,
+                enableLocationSubtotals: extracted.enableLocationSubtotals,
+                enableDecimalPointsAmy: extracted.enableDecimalPointsAmy,
+                enableQuoteExpiration: extracted.enableQuoteExpiration,
+                quoteExpirationDays: extracted.quoteExpirationDays,
+                enableTaxesFeesExclusion: extracted.enableTaxesFeesExclusion,
+                options: extracted.options
+            };
+            insertPricingIntoPageOrder();
+            selectedPageId = 'pricing';
+            updateSpecPricingStatus();
+            render();
+            refreshPreview();
+            setStatus(`Pricing imported from ${sourceName || 'spec'} — ${extracted.options.length} option(s).`);
+        }
+
+        function removePricingPage() {
+            if (!draft.mapData?.pricing && !draft.pageContent?.pricing) return;
+            if (!confirm('Remove the imported pricing page from this presentation?')) return;
+            delete draft.mapData.pricing;
+            delete draft.pageContent.pricing;
+            pageOrder = pageOrder.filter(id => id !== 'pricing');
+            draft.settings = draft.settings || {};
+            draft.settings.extendedNav = (draft.settings.extendedNav || []).filter(id => id !== 'pricing');
+            draft.settings.keyConceptsNav = (draft.settings.keyConceptsNav || []).filter(id => id !== 'pricing');
+            draft.navOrder = (draft.settings.extendedNav || []).slice();
+            if (selectedPageId === 'pricing') {
+                selectedPageId = pageOrder[0] || Object.keys(draft.mapData || {})[0];
+            }
+            updateSpecPricingStatus();
+            render();
+            refreshPreview();
+            setStatus('Pricing page removed.');
+        }
+
+        function updateSpecPricingStatus() {
+            const statusEl = document.getElementById('spec-pricing-status');
+            const removeBtn = document.getElementById('spec-pricing-remove');
+            const content = draft?.pageContent?.pricing;
+            if (!statusEl || !removeBtn) return;
+            if (content) {
+                const optionCount = Array.isArray(content.options) ? content.options.length : 0;
+                statusEl.textContent = `${content.sourceName || 'Pricing'} · ${optionCount} option${optionCount === 1 ? '' : 's'}`;
+                removeBtn.classList.remove('hidden');
+            } else {
+                statusEl.textContent = 'No pricing imported yet.';
+                removeBtn.classList.add('hidden');
+            }
+        }
+
         document.getElementById('save-local').addEventListener('click', () => saveLocal(true));
         document.getElementById('refresh-preview').addEventListener('click', refreshPreview);
         document.getElementById('publish-btn').addEventListener('click', publishPresentation);
@@ -1756,6 +1974,22 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             delete draft.settings.screensaverTimeoutSeconds;
             screensaverTimeoutInput.value = String(normalized);
         });
+        document.getElementById('spec-pricing-file').addEventListener('change', async event => {
+            const file = event.target.files && event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const parsed = JSON.parse(text);
+                const extracted = extractPricingFromSpec(parsed);
+                applyPricingFromSpec(extracted, file.name);
+            } catch (error) {
+                console.error(error);
+                alert(error.message || 'Could not import that .spec file.');
+                setStatus(error.message || 'Spec import failed.');
+            }
+        });
+        document.getElementById('spec-pricing-remove').addEventListener('click', removePricingPage);
 
         setupResizableSplit();
         init().catch(error => {
