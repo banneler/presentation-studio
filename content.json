@@ -280,33 +280,33 @@
       "heroImages": [
         {
           "src": "hero_1.jpg",
-          "panX": 0.39,
-          "panYFull": 0.8,
-          "panY": 0.82,
+          "panX": 0.31,
+          "panYFull": 0.76,
+          "panY": 0.78,
           "zoomFull": 2.35,
           "zoomCondensed": 2.5
         },
         {
           "src": "hero_2.jpg",
-          "panX": 0.517,
-          "panYFull": 0.8,
-          "panY": 0.82,
+          "panX": 0.45,
+          "panYFull": 0.76,
+          "panY": 0.78,
           "zoomFull": 2.35,
           "zoomCondensed": 2.5
         },
         {
           "src": "hero_3.jpg",
-          "panX": 0.644,
-          "panYFull": 0.8,
-          "panY": 0.82,
+          "panX": 0.59,
+          "panYFull": 0.76,
+          "panY": 0.78,
           "zoomFull": 2.35,
           "zoomCondensed": 2.5
         },
         {
           "src": "hero_4.jpg",
-          "panX": 0.771,
-          "panYFull": 0.8,
-          "panY": 0.82,
+          "panX": 0.73,
+          "panYFull": 0.76,
+          "panY": 0.78,
           "zoomFull": 2.35,
           "zoomCondensed": 2.5
         }
@@ -324,32 +324,32 @@
         {
           "src": "hero_1.jpg",
           "panX": 0.39,
-          "panYFull": 0.8,
-          "panY": 0.8,
+          "panYFull": 0.76,
+          "panY": 0.76,
           "zoomFull": 2.35,
           "zoomCondensed": 2.35
         },
         {
           "src": "hero_2.jpg",
           "panX": 0.517,
-          "panYFull": 0.8,
-          "panY": 0.8,
+          "panYFull": 0.76,
+          "panY": 0.76,
           "zoomFull": 2.35,
           "zoomCondensed": 2.35
         },
         {
           "src": "hero_3.jpg",
           "panX": 0.644,
-          "panYFull": 0.8,
-          "panY": 0.8,
+          "panYFull": 0.76,
+          "panY": 0.76,
           "zoomFull": 2.35,
           "zoomCondensed": 2.35
         },
         {
           "src": "hero_4.jpg",
           "panX": 0.771,
-          "panYFull": 0.8,
-          "panY": 0.8,
+          "panYFull": 0.76,
+          "panY": 0.76,
           "zoomFull": 2.35,
           "zoomCondensed": 2.35
         }
