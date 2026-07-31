@@ -52,7 +52,7 @@
             width: min(100%, calc(var(--preview-host-h, 100%) * 16 / 9));
             max-height: 100%;
             height: auto;
-            background: #000;
+            background: transparent;
         }
         /* Rotate horizontal ranges — writing-mode is unreliable for range tracks */
         .slider-v-wrap {
@@ -234,7 +234,7 @@
             </div>
 
             <div id="preview-host" class="flex-1 min-h-0 p-4 grid place-items-center">
-                <div id="preview-stage" class="relative overflow-hidden rounded-xl border border-slate-200 bg-black shadow-sm">
+                <div id="preview-stage" class="relative overflow-hidden rounded-xl shadow-sm">
                     <iframe id="preview" title="Presentation preview" class="absolute inset-0 h-full w-full border-0" src="about:blank"></iframe>
                 </div>
             </div>
