@@ -399,9 +399,11 @@
         let briefingCardFlipping = false;
         let agendaRevealTimer = null;
         let agendaRevealCompletionTimer = null;
+        let agendaRevealWaitToken = 0;
         let agendaRevealCompleted = false;
         let pricingOptionIndex = 0;
-        const AGENDA_REVEAL_DELAY_MS = 500;
+        const AGENDA_REVEAL_MIN_DELAY_MS = 400;
+        const AGENDA_REVEAL_IMAGE_TIMEOUT_MS = 2500;
         const AGENDA_REVEAL_ANIMATION_MS = 950;
         const KEY_CONCEPTS_NAV = ['agenda', 'core-capabilities', 'national', 'layer2', 'ip-network', 'key-routes', 'why-gpc'];
         if (new URLSearchParams(window.location.search).get('preview') === '1') {
@@ -711,6 +713,57 @@
                 .slice(0, 4);
         }
 
+        const preloadedHeroUrls = new Set();
+
+        function collectHeroAssetUrls() {
+            const urls = new Set();
+            const sources = [
+                pageContent?.agenda?.heroImages,
+                pageContent?.['core-capabilities']?.heroImages
+            ];
+            sources.forEach((list) => {
+                getActiveHeroImages(list || []).forEach((image) => {
+                    const url = resolveAsset(image.src);
+                    if (url) urls.add(url);
+                });
+            });
+            return [...urls];
+        }
+
+        function preloadHeroImages() {
+            collectHeroAssetUrls().forEach((url) => {
+                if (preloadedHeroUrls.has(url)) return;
+                preloadedHeroUrls.add(url);
+                const link = document.createElement('link');
+                link.rel = 'preload';
+                link.as = 'image';
+                link.href = url;
+                document.head.appendChild(link);
+                const image = new Image();
+                image.decoding = 'async';
+                image.src = url;
+            });
+        }
+
+        function waitForAgendaHeroImages(root, timeoutMs) {
+            const imgs = Array.from(root.querySelectorAll('img.agenda-hero-img'));
+            if (!imgs.length) return Promise.resolve();
+
+            const loadPromises = imgs.map((img) => {
+                const decode = () => (typeof img.decode === 'function' ? img.decode().catch(() => {}) : Promise.resolve());
+                if (img.complete && img.naturalWidth > 0) return decode();
+                return new Promise((resolve) => {
+                    img.addEventListener('load', resolve, { once: true });
+                    img.addEventListener('error', resolve, { once: true });
+                }).then(decode);
+            });
+
+            return Promise.race([
+                Promise.all(loadPromises),
+                new Promise((resolve) => setTimeout(resolve, timeoutMs))
+            ]);
+        }
+
         function heroFrameVars(hero = {}) {
             const normalized = normalizeHeroImage(hero);
             const panXFull = `${(normalized.panXFull * 100).toFixed(0)}%`;
@@ -953,6 +1006,7 @@
                 if (presentationSettings.defaultVersionMode) {
                     versionMode = presentationSettings.defaultVersionMode;
                 }
+                preloadHeroImages();
                 
             } catch (error) {
                 console.error("Failed to load content.json. Ensure you are running a local web server.", error);
@@ -1123,7 +1177,7 @@
         function renderHeroImageCards(images, extraClasses = '') {
             return getActiveHeroImages(images).map((image, index) => `
                 <div class="hero-image-card relative overflow-hidden rounded-2xl shadow-floating bg-slate-200 ${extraClasses}">
-                    <img src="${resolveAsset(image.src)}" alt="Discussion visual ${index + 1}" class="absolute inset-0 w-full h-full object-cover" style="${heroFrameVars(image)}">
+                    <img src="${resolveAsset(image.src)}" alt="Discussion visual ${index + 1}" class="absolute inset-0 w-full h-full object-cover" decoding="async"${index === 0 ? ' fetchpriority="high"' : ''} style="${heroFrameVars(image)}">
                 </div>
             `).join('');
         }
@@ -1137,7 +1191,7 @@
                 const startLeft = index === 0 ? '0px' : `calc(${(index * 100) / imageCount}% + ${(index * gap) / imageCount}px)`;
                 return `
                     <div class="agenda-card hero-image-card absolute overflow-hidden rounded-2xl shadow-floating bg-slate-200" style="--start-left: ${startLeft}; --card-width: ${cardWidth};">
-                        <img src="${resolveAsset(image.src)}" alt="Discussion visual ${index + 1}" class="agenda-hero-img absolute inset-0 w-full h-full object-cover" style="${heroFrameVars(image)}">
+                        <img src="${resolveAsset(image.src)}" alt="Discussion visual ${index + 1}" class="agenda-hero-img absolute inset-0 w-full h-full object-cover" decoding="async"${index === 0 ? ' fetchpriority="high"' : ''} style="${heroFrameVars(image)}">
                     </div>
                 `;
             }).join('');
@@ -1162,14 +1216,26 @@
             if (!agendaHero || !ready) return;
 
             if (agendaRevealTimer) clearTimeout(agendaRevealTimer);
-            agendaRevealTimer = setTimeout(() => {
-                agendaHero.classList.add('is-revealed');
+            const token = ++agendaRevealWaitToken;
+            const minDelay = new Promise((resolve) => {
+                agendaRevealTimer = setTimeout(resolve, AGENDA_REVEAL_MIN_DELAY_MS);
+            });
+
+            // Wait for heroes to load/decode (or timeout), plus a short min delay so condense never races paint.
+            Promise.all([
+                minDelay,
+                waitForAgendaHeroImages(agendaHero, AGENDA_REVEAL_IMAGE_TIMEOUT_MS)
+            ]).then(() => {
+                if (token !== agendaRevealWaitToken || agendaRevealCompleted) return;
+                const hero = document.getElementById('agenda-hero');
+                if (!hero) return;
+                hero.classList.add('is-revealed');
                 agendaRevealCompletionTimer = setTimeout(() => {
                     agendaRevealCompleted = true;
                     agendaRevealCompletionTimer = null;
                 }, AGENDA_REVEAL_ANIMATION_MS);
                 agendaRevealTimer = null;
-            }, AGENDA_REVEAL_DELAY_MS);
+            });
         }
 
         // --- HTML CONTENT RENDERER ---
