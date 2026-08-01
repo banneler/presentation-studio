@@ -280,43 +280,43 @@
       "heroImages": [
         {
           "src": "hero_1.jpg",
-          "panXFull": 0.31,
-          "panX": 0.31,
-          "panXLinked": false,
-          "panYFull": 0.76,
-          "panY": 0.78,
-          "zoomFull": 2.35,
-          "zoomCondensed": 2.5
+          "panXFull": 0.5,
+          "panX": 0.5,
+          "panXLinked": true,
+          "panYFull": 0.5,
+          "panY": 0.5,
+          "zoomFull": 1,
+          "zoomCondensed": 1
         },
         {
           "src": "hero_2.jpg",
-          "panXFull": 0.45,
-          "panX": 0.45,
-          "panXLinked": false,
-          "panYFull": 0.76,
-          "panY": 0.78,
-          "zoomFull": 2.35,
-          "zoomCondensed": 2.5
+          "panXFull": 0.5,
+          "panX": 0.5,
+          "panXLinked": true,
+          "panYFull": 0.5,
+          "panY": 0.5,
+          "zoomFull": 1,
+          "zoomCondensed": 1
         },
         {
           "src": "hero_3.jpg",
-          "panXFull": 0.59,
-          "panX": 0.59,
-          "panXLinked": false,
-          "panYFull": 0.76,
-          "panY": 0.78,
-          "zoomFull": 2.35,
-          "zoomCondensed": 2.5
+          "panXFull": 0.5,
+          "panX": 0.5,
+          "panXLinked": true,
+          "panYFull": 0.5,
+          "panY": 0.5,
+          "zoomFull": 1,
+          "zoomCondensed": 1
         },
         {
           "src": "hero_4.jpg",
-          "panXFull": 0.73,
-          "panX": 0.73,
-          "panXLinked": false,
-          "panYFull": 0.76,
-          "panY": 0.78,
-          "zoomFull": 2.35,
-          "zoomCondensed": 2.5
+          "panXFull": 0.5,
+          "panX": 0.5,
+          "panXLinked": true,
+          "panYFull": 0.5,
+          "panY": 0.5,
+          "zoomFull": 1,
+          "zoomCondensed": 1
         }
       ],
       "headline": "A focused conversation around priorities, fit and next steps.",
@@ -331,43 +331,43 @@
       "heroImages": [
         {
           "src": "hero_1.jpg",
-          "panXFull": 0.31,
-          "panX": 0.31,
-          "panXLinked": false,
-          "panYFull": 0.76,
-          "panY": 0.76,
-          "zoomFull": 2.35,
-          "zoomCondensed": 2.35
+          "panXFull": 0.5,
+          "panX": 0.5,
+          "panXLinked": true,
+          "panYFull": 0.5,
+          "panY": 0.5,
+          "zoomFull": 1,
+          "zoomCondensed": 1
         },
         {
           "src": "hero_2.jpg",
-          "panXFull": 0.45,
-          "panX": 0.45,
-          "panXLinked": false,
-          "panYFull": 0.76,
-          "panY": 0.76,
-          "zoomFull": 2.35,
-          "zoomCondensed": 2.35
+          "panXFull": 0.5,
+          "panX": 0.5,
+          "panXLinked": true,
+          "panYFull": 0.5,
+          "panY": 0.5,
+          "zoomFull": 1,
+          "zoomCondensed": 1
         },
         {
           "src": "hero_3.jpg",
-          "panXFull": 0.59,
-          "panX": 0.59,
-          "panXLinked": false,
-          "panYFull": 0.76,
-          "panY": 0.76,
-          "zoomFull": 2.35,
-          "zoomCondensed": 2.35
+          "panXFull": 0.5,
+          "panX": 0.5,
+          "panXLinked": true,
+          "panYFull": 0.5,
+          "panY": 0.5,
+          "zoomFull": 1,
+          "zoomCondensed": 1
         },
         {
           "src": "hero_4.jpg",
-          "panXFull": 0.73,
-          "panX": 0.73,
-          "panXLinked": false,
-          "panYFull": 0.76,
-          "panY": 0.76,
-          "zoomFull": 2.35,
-          "zoomCondensed": 2.35
+          "panXFull": 0.5,
+          "panX": 0.5,
+          "panXLinked": true,
+          "panYFull": 0.5,
+          "panY": 0.5,
+          "zoomFull": 1,
+          "zoomCondensed": 1
         }
       ],
       "cards": [
