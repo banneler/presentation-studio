@@ -191,6 +191,105 @@
       ],
       "navLabel": "Omaha Metro"
     },
+    "buffalo": {
+      "id": "buffalo",
+      "title": "Buffalo & Surrounding Counties",
+      "navLabel": "Buffalo & Surrounding",
+      "subtitle": "Regional Infrastructure Detail",
+      "placeholder": "Load Buffalo_Map.svg",
+      "file": "buffalo.png",
+      "type": "map",
+      "stats": []
+    },
+    "towers": {
+      "id": "towers",
+      "title": "Fiber to the Tower",
+      "navLabel": "Fiber to the Tower",
+      "subtitle": "Fast & Reliable Wireless Backhaul",
+      "placeholder": "Load Towers_Map.svg",
+      "file": "cell_towers.png",
+      "type": "map",
+      "stats": [
+        {
+          "label": "Total Towers",
+          "value": "650+",
+          "color": "text-gpc-orange"
+        },
+        {
+          "label": "States Served",
+          "value": "13",
+          "color": "text-slate-900"
+        }
+      ]
+    },
+    "indiana": {
+      "id": "indiana",
+      "title": "Indiana Market",
+      "navLabel": "Indiana",
+      "subtitle": "Regional Infrastructure Detail",
+      "placeholder": "Load Indiana_Map.svg",
+      "file": "indiana.png",
+      "type": "map",
+      "stats": [
+        {
+          "label": "State Fiber Miles",
+          "value": "3,500",
+          "color": "text-gpc-green"
+        },
+        {
+          "label": "Communities",
+          "value": "32",
+          "color": "text-slate-900"
+        },
+        {
+          "label": "Data Centers",
+          "value": "3",
+          "color": "text-gpc-blue"
+        }
+      ]
+    },
+    "illinois": {
+      "id": "illinois",
+      "title": "Illinois & Kentucky",
+      "navLabel": "Illinois & Kentucky",
+      "subtitle": "Regional Infrastructure Detail",
+      "placeholder": "Load Illinois_Kentucky_Map.svg",
+      "file": "il-ky.png",
+      "type": "map",
+      "stats": [
+        {
+          "label": "State Fiber Miles",
+          "value": "1,960+",
+          "color": "text-gpc-green"
+        },
+        {
+          "label": "Chicago DCs",
+          "value": "4",
+          "color": "text-gpc-blue"
+        }
+      ]
+    },
+    "minnesota": {
+      "id": "minnesota",
+      "title": "Minnesota, Colorado, & Wyoming",
+      "navLabel": "Minnesota & CO/WY",
+      "subtitle": "Regional Infrastructure Detail",
+      "placeholder": "Load Minnesota_Colorado_Map.svg",
+      "file": "mn-co.png",
+      "type": "map",
+      "stats": [
+        {
+          "label": "State Fiber Miles",
+          "value": "1,900+",
+          "color": "text-gpc-green"
+        },
+        {
+          "label": "Key Hubs",
+          "value": "Minneapolis/Denver/Cheyenne",
+          "color": "text-slate-900"
+        }
+      ]
+    },
     "key-routes": {
       "id": "key-routes",
       "title": "Key Routes",
