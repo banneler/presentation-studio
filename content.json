@@ -280,9 +280,9 @@
       "heroImages": [
         {
           "src": "hero_1.jpg",
-          "panXFull": 0.5,
+          "panXFull": 0,
           "panX": 0.5,
-          "panXLinked": true,
+          "panXLinked": false,
           "panYFull": 0.5,
           "panY": 0.5,
           "zoomFull": 1,
@@ -290,9 +290,9 @@
         },
         {
           "src": "hero_2.jpg",
-          "panXFull": 0.5,
+          "panXFull": 0.33,
           "panX": 0.5,
-          "panXLinked": true,
+          "panXLinked": false,
           "panYFull": 0.5,
           "panY": 0.5,
           "zoomFull": 1,
@@ -300,9 +300,9 @@
         },
         {
           "src": "hero_3.jpg",
-          "panXFull": 0.5,
+          "panXFull": 0.66,
           "panX": 0.5,
-          "panXLinked": true,
+          "panXLinked": false,
           "panYFull": 0.5,
           "panY": 0.5,
           "zoomFull": 1,
@@ -310,9 +310,9 @@
         },
         {
           "src": "hero_4.jpg",
-          "panXFull": 0.5,
+          "panXFull": 0.98,
           "panX": 0.5,
-          "panXLinked": true,
+          "panXLinked": false,
           "panYFull": 0.5,
           "panY": 0.5,
           "zoomFull": 1,
@@ -331,8 +331,8 @@
       "heroImages": [
         {
           "src": "hero_1.jpg",
-          "panXFull": 0.5,
-          "panX": 0.5,
+          "panXFull": 0,
+          "panX": 0,
           "panXLinked": true,
           "panYFull": 0.5,
           "panY": 0.5,
@@ -341,8 +341,8 @@
         },
         {
           "src": "hero_2.jpg",
-          "panXFull": 0.5,
-          "panX": 0.5,
+          "panXFull": 0.33,
+          "panX": 0.33,
           "panXLinked": true,
           "panYFull": 0.5,
           "panY": 0.5,
@@ -351,8 +351,8 @@
         },
         {
           "src": "hero_3.jpg",
-          "panXFull": 0.5,
-          "panX": 0.5,
+          "panXFull": 0.66,
+          "panX": 0.66,
           "panXLinked": true,
           "panYFull": 0.5,
           "panY": 0.5,
@@ -361,8 +361,8 @@
         },
         {
           "src": "hero_4.jpg",
-          "panXFull": 0.5,
-          "panX": 0.5,
+          "panXFull": 0.98,
+          "panX": 0.98,
           "panXLinked": true,
           "panYFull": 0.5,
           "panY": 0.5,
