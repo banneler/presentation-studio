@@ -281,42 +281,42 @@
         {
           "src": "hero_1.jpg",
           "panXFull": 0,
-          "panX": 0.5,
+          "panX": 0.03,
           "panXLinked": false,
           "panYFull": 0.5,
-          "panY": 0.5,
+          "panY": 0.9,
           "zoomFull": 1,
-          "zoomCondensed": 1
+          "zoomCondensed": 2.3
         },
         {
           "src": "hero_2.jpg",
           "panXFull": 0.33,
-          "panX": 0.5,
+          "panX": 0.35,
           "panXLinked": false,
           "panYFull": 0.5,
-          "panY": 0.5,
+          "panY": 0.9,
           "zoomFull": 1,
-          "zoomCondensed": 1
+          "zoomCondensed": 2.3
         },
         {
           "src": "hero_3.jpg",
           "panXFull": 0.66,
-          "panX": 0.5,
-          "panXLinked": false,
+          "panX": 0.66,
+          "panXLinked": true,
           "panYFull": 0.5,
-          "panY": 0.5,
+          "panY": 0.9,
           "zoomFull": 1,
-          "zoomCondensed": 1
+          "zoomCondensed": 2.3
         },
         {
           "src": "hero_4.jpg",
           "panXFull": 0.98,
-          "panX": 0.5,
-          "panXLinked": false,
+          "panX": 0.98,
+          "panXLinked": true,
           "panYFull": 0.5,
-          "panY": 0.5,
+          "panY": 0.9,
           "zoomFull": 1,
-          "zoomCondensed": 1
+          "zoomCondensed": 2.3
         }
       ],
       "headline": "A focused conversation around priorities, fit and next steps.",
