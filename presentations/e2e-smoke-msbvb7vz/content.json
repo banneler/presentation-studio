@@ -1,0 +1,856 @@
+{
+  "settings": {
+    "heroColor": "#0b192f",
+    "customerLogo": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+    "repName": "E2E Bot",
+    "screensaverTimeoutMinutes": 5,
+    "keyConceptsNav": [
+      "agenda",
+      "core-capabilities",
+      "national",
+      "layer2",
+      "ip-network",
+      "key-routes",
+      "why-gpc"
+    ],
+    "extendedNav": [
+      "agenda",
+      "core-capabilities",
+      "national",
+      "layer2",
+      "ip-network",
+      "nebraska",
+      "omaha-metro",
+      "key-routes",
+      "data-centers",
+      "products",
+      "why-gpc"
+    ],
+    "editorPageOrder": [
+      "agenda",
+      "core-capabilities",
+      "national",
+      "layer2",
+      "ip-network",
+      "nebraska",
+      "omaha-metro",
+      "key-routes",
+      "data-centers",
+      "products",
+      "why-gpc",
+      "rightfiber",
+      "buffalo",
+      "towers",
+      "indiana",
+      "illinois",
+      "minnesota"
+    ],
+    "presentationName": "E2E Smoke msbvb7vz",
+    "presentationSlug": "e2e-smoke-msbvb7vz"
+  },
+  "navOrder": [
+    "agenda",
+    "core-capabilities",
+    "national",
+    "layer2",
+    "ip-network",
+    "nebraska",
+    "omaha-metro",
+    "key-routes",
+    "data-centers",
+    "products",
+    "why-gpc"
+  ],
+  "mapData": {
+    "agenda": {
+      "id": "agenda",
+      "title": "Meeting Agenda",
+      "navLabel": "Meeting Agenda",
+      "subtitle": "Executive Conversation Agenda",
+      "useCustomerLogo": true,
+      "logoPosition": "right",
+      "type": "html",
+      "stats": [],
+      "logo": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+    },
+    "core-capabilities": {
+      "id": "core-capabilities",
+      "title": "Core Capabilities",
+      "navLabel": "Core Capabilities",
+      "subtitle": "GPC Network Capabilities for Energy Operations",
+      "useCustomerLogo": true,
+      "logoPosition": "right",
+      "type": "html",
+      "stats": [],
+      "logo": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+    },
+    "rightfiber": {
+      "id": "rightfiber",
+      "title": "Rightfiber",
+      "subtitle": "Stronger Together. Right For What's Next.",
+      "type": "html",
+      "stats": [
+        {
+          "label": "Fiber Network",
+          "value": "28K+ Miles",
+          "color": "text-gpc-green"
+        },
+        {
+          "label": "State Footprint",
+          "value": "20 States",
+          "color": "text-gpc-blue"
+        },
+        {
+          "label": "Communities",
+          "value": "400+",
+          "color": "text-gpc-orange"
+        }
+      ],
+      "navLabel": "Rightfiber",
+      "useCustomerLogo": false
+    },
+    "national": {
+      "id": "national",
+      "title": "The Network",
+      "subtitle": "National Footprint & Coverages",
+      "placeholder": "Load National_Map.svg",
+      "file": "backbone.png",
+      "type": "map",
+      "stats": [
+        {
+          "label": "Fiber Miles",
+          "value": "20,000+",
+          "color": "text-gpc-green"
+        },
+        {
+          "label": "Markets Served",
+          "value": "200+",
+          "color": "text-slate-900"
+        },
+        {
+          "label": "Data Centers",
+          "value": "25+",
+          "color": "text-gpc-blue"
+        }
+      ],
+      "navLabel": "The Network",
+      "useCustomerLogo": false
+    },
+    "layer2": {
+      "id": "layer2",
+      "title": "Core Transport",
+      "subtitle": "High-Capacity Redundant Architecture",
+      "placeholder": "Load Layer_2_Rings.svg",
+      "file": "layer_2.png",
+      "type": "map",
+      "insight": "Our high-availability network is engineered to meet the mission-critical demands of enterprises, wholesale clients, and FTTT customers, offering 200G and 400G city-to-city routes, a redundant ring architecture and seamless scalability across 1G, 10G, and 100G services.",
+      "stats": [
+        {
+          "label": "Core Capacity",
+          "value": "400G Standard",
+          "color": "text-gpc-orange"
+        },
+        {
+          "label": "Scalability",
+          "value": "1G to 100G",
+          "color": "text-gpc-green"
+        }
+      ],
+      "navLabel": "Core Transport",
+      "useCustomerLogo": false
+    },
+    "ip-network": {
+      "id": "ip-network",
+      "title": "IP Network & Peering",
+      "subtitle": "Connected and Resilient Cloud Access",
+      "placeholder": "Load IP_Network_Map.svg",
+      "file": "ip.png",
+      "type": "map",
+      "stats": [
+        {
+          "label": "Traffic Routing",
+          "value": "Localized",
+          "color": "text-gpc-blue"
+        },
+        {
+          "label": "Latency",
+          "value": "Ultra-Low",
+          "color": "text-gpc-green"
+        }
+      ],
+      "navLabel": "IP Network",
+      "useCustomerLogo": false
+    },
+    "nebraska": {
+      "id": "nebraska",
+      "title": "Nebraska Market",
+      "subtitle": "Statewide Infrastructure Detail",
+      "placeholder": "Load Nebraska_Detail.svg",
+      "file": "nebraska.png",
+      "type": "map",
+      "stats": [
+        {
+          "label": "State Fiber Miles",
+          "value": "10,000+",
+          "color": "text-gpc-green"
+        },
+        {
+          "label": "Communities",
+          "value": "163",
+          "color": "text-slate-900"
+        }
+      ],
+      "navLabel": "Nebraska",
+      "useCustomerLogo": false
+    },
+    "omaha-metro": {
+      "id": "omaha-metro",
+      "title": "Omaha / Council Bluffs",
+      "subtitle": "Metro Area Street Level Routing",
+      "placeholder": "Load Omaha_Metro.svg",
+      "file": "omaha.png",
+      "type": "map",
+      "stats": [
+        {
+          "label": "Metro Fiber Miles",
+          "value": "800+",
+          "color": "text-gpc-green"
+        }
+      ],
+      "navLabel": "Omaha Metro",
+      "useCustomerLogo": false
+    },
+    "buffalo": {
+      "id": "buffalo",
+      "title": "Buffalo & Surrounding Counties",
+      "navLabel": "Buffalo & Surrounding",
+      "subtitle": "Regional Infrastructure Detail",
+      "placeholder": "Load Buffalo_Map.svg",
+      "file": "buffalo.png",
+      "type": "map",
+      "stats": [],
+      "useCustomerLogo": false
+    },
+    "towers": {
+      "id": "towers",
+      "title": "Fiber to the Tower",
+      "navLabel": "Fiber to the Tower",
+      "subtitle": "Fast & Reliable Wireless Backhaul",
+      "placeholder": "Load Towers_Map.svg",
+      "file": "cell_towers.png",
+      "type": "map",
+      "stats": [
+        {
+          "label": "Total Towers",
+          "value": "650+",
+          "color": "text-gpc-orange"
+        },
+        {
+          "label": "States Served",
+          "value": "13",
+          "color": "text-slate-900"
+        }
+      ],
+      "useCustomerLogo": false
+    },
+    "indiana": {
+      "id": "indiana",
+      "title": "Indiana Market",
+      "navLabel": "Indiana",
+      "subtitle": "Regional Infrastructure Detail",
+      "placeholder": "Load Indiana_Map.svg",
+      "file": "indiana.png",
+      "type": "map",
+      "stats": [
+        {
+          "label": "State Fiber Miles",
+          "value": "3,500",
+          "color": "text-gpc-green"
+        },
+        {
+          "label": "Communities",
+          "value": "32",
+          "color": "text-slate-900"
+        },
+        {
+          "label": "Data Centers",
+          "value": "3",
+          "color": "text-gpc-blue"
+        }
+      ],
+      "useCustomerLogo": false
+    },
+    "illinois": {
+      "id": "illinois",
+      "title": "Illinois & Kentucky",
+      "navLabel": "Illinois & Kentucky",
+      "subtitle": "Regional Infrastructure Detail",
+      "placeholder": "Load Illinois_Kentucky_Map.svg",
+      "file": "il-ky.png",
+      "type": "map",
+      "stats": [
+        {
+          "label": "State Fiber Miles",
+          "value": "1,960+",
+          "color": "text-gpc-green"
+        },
+        {
+          "label": "Chicago DCs",
+          "value": "4",
+          "color": "text-gpc-blue"
+        }
+      ],
+      "useCustomerLogo": false
+    },
+    "minnesota": {
+      "id": "minnesota",
+      "title": "Minnesota, Colorado, & Wyoming",
+      "navLabel": "Minnesota & CO/WY",
+      "subtitle": "Regional Infrastructure Detail",
+      "placeholder": "Load Minnesota_Colorado_Map.svg",
+      "file": "mn-co.png",
+      "type": "map",
+      "stats": [
+        {
+          "label": "State Fiber Miles",
+          "value": "1,900+",
+          "color": "text-gpc-green"
+        },
+        {
+          "label": "Key Hubs",
+          "value": "Minneapolis/Denver/Cheyenne",
+          "color": "text-slate-900"
+        }
+      ],
+      "useCustomerLogo": false
+    },
+    "key-routes": {
+      "id": "key-routes",
+      "title": "Key Routes",
+      "subtitle": "Critical Network Pathways",
+      "placeholder": "Load routes.png",
+      "file": "routes.png",
+      "type": "map",
+      "stats": [
+        {
+          "label": "Network Routing",
+          "value": "Unique & Exclusive",
+          "color": "text-gpc-blue"
+        },
+        {
+          "label": "Capacity",
+          "value": "200G/400G",
+          "color": "text-gpc-green"
+        }
+      ],
+      "navLabel": "Key Routes",
+      "useCustomerLogo": false
+    },
+    "data-centers": {
+      "id": "data-centers",
+      "title": "Data Centers",
+      "subtitle": "Colocation & Interconnection Facilities",
+      "type": "html",
+      "stats": [
+        {
+          "label": "Total Facilities",
+          "value": "25+",
+          "color": "text-gpc-blue"
+        },
+        {
+          "label": "Network Integration",
+          "value": "100% Fiber",
+          "color": "text-gpc-green"
+        }
+      ],
+      "navLabel": "Data Centers",
+      "useCustomerLogo": false
+    },
+    "products": {
+      "id": "products",
+      "title": "Product Portfolio",
+      "subtitle": "Fiber-Driven Enterprise Services",
+      "type": "html",
+      "stats": [],
+      "navLabel": "Products",
+      "useCustomerLogo": false
+    },
+    "why-gpc": {
+      "id": "why-gpc",
+      "title": "The GPC Advantage",
+      "subtitle": "Partner with Experience",
+      "type": "html",
+      "stats": [
+        {
+          "label": "Dedicated Team",
+          "value": "400+ Employees",
+          "color": "text-slate-900"
+        },
+        {
+          "label": "Support",
+          "value": "Unmatched Local",
+          "color": "text-gpc-blue"
+        },
+        {
+          "label": "Reliability",
+          "value": "24/7 Monitoring",
+          "color": "text-gpc-green"
+        }
+      ],
+      "navLabel": "GPC Advantage",
+      "useCustomerLogo": false
+    }
+  },
+  "pageContent": {
+    "rightfiber": {
+      "background": "rightfiber-01.png",
+      "kicker": "Rightfiber merger overview",
+      "headline": "A larger regional fiber platform built for what comes next.",
+      "points": [
+        "Expands the combined fiber network to more than 28,000 route miles.",
+        "Grows the state footprint from 13 states to 20 states.",
+        "Combines two trusted local providers with shared values and complementary strengths.",
+        "Scales service across more than 400 communities while preserving local relationships and support."
+      ]
+    },
+    "agenda": {
+      "heroImages": [
+        {
+          "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+          "panXFull": 0,
+          "panX": 0.03,
+          "panYFull": 0.5,
+          "panY": 0.9,
+          "zoomFull": 1,
+          "zoomCondensed": 2.3,
+          "panXLinked": false,
+          "enabled": true
+        },
+        {
+          "src": "hero_2.jpg",
+          "panXFull": 0.33,
+          "panX": 0.35,
+          "panYFull": 0.5,
+          "panY": 0.9,
+          "zoomFull": 1,
+          "zoomCondensed": 2.3,
+          "panXLinked": false,
+          "enabled": true
+        },
+        {
+          "src": "hero_3.jpg",
+          "panXFull": 0.66,
+          "panX": 0.66,
+          "panYFull": 0.5,
+          "panY": 0.9,
+          "zoomFull": 1,
+          "zoomCondensed": 2.3,
+          "panXLinked": true,
+          "enabled": true
+        },
+        {
+          "src": "hero_4.jpg",
+          "panXFull": 0.98,
+          "panX": 0.98,
+          "panYFull": 0.5,
+          "panY": 0.9,
+          "zoomFull": 1,
+          "zoomCondensed": 2.3,
+          "panXLinked": true,
+          "enabled": true
+        }
+      ],
+      "headline": "A focused conversation around priorities, fit and next steps.",
+      "items": [
+        "Brief introductions and alignment on executive stakeholders.",
+        "Establish the purpose of the conversation and desired outcomes.",
+        "Understand Tenaska's strategic priorities and current network architecture.",
+        "Share where Great Plains Communications can support resiliency, scalability and operational continuity."
+      ]
+    },
+    "core-capabilities": {
+      "heroImages": [
+        {
+          "src": "hero_1.jpg",
+          "panXFull": 0,
+          "panX": 0,
+          "panYFull": 0.5,
+          "panY": 0.5,
+          "zoomFull": 1,
+          "zoomCondensed": 1,
+          "panXLinked": true,
+          "enabled": true
+        },
+        {
+          "src": "hero_2.jpg",
+          "panXFull": 0.33,
+          "panX": 0.33,
+          "panYFull": 0.5,
+          "panY": 0.5,
+          "zoomFull": 1,
+          "zoomCondensed": 1,
+          "panXLinked": true,
+          "enabled": true
+        },
+        {
+          "src": "hero_3.jpg",
+          "panXFull": 0.66,
+          "panX": 0.66,
+          "panYFull": 0.5,
+          "panY": 0.5,
+          "zoomFull": 1,
+          "zoomCondensed": 1,
+          "panXLinked": true,
+          "enabled": true
+        },
+        {
+          "src": "hero_4.jpg",
+          "panXFull": 0.98,
+          "panX": 0.98,
+          "panYFull": 0.5,
+          "panY": 0.5,
+          "zoomFull": 1,
+          "zoomCondensed": 1,
+          "panXLinked": true,
+          "enabled": true
+        }
+      ],
+      "cards": [
+        {
+          "title": "Enterprise Lifecycle Management",
+          "points": [
+            "Dedicated end-to-end account ownership from discovery through post-install support.",
+            "Solution design and implementation management aligned with long-term business goals.",
+            "Strategic roadmap development for redundancy, scalability and future network evolution."
+          ]
+        },
+        {
+          "title": "24/7/365 Network Operations Center",
+          "points": [
+            "Continuous monitoring, rapid incident response and proactive maintenance.",
+            "Operational continuity support for trading, scheduling, settlement and customer-facing systems.",
+            "Private Layer 2 and wavelength options for resilient critical-workflow transport."
+          ]
+        },
+        {
+          "title": "Local Technical Engagement",
+          "points": [
+            "Omaha and regional engineering engagement for high-touch technical planning.",
+            "Localized field technician support for troubleshooting, maintenance and rapid escalation.",
+            "Responsive account management grounded in GPC's regional operating footprint."
+          ]
+        },
+        {
+          "title": "Strategic Regional Presence",
+          "points": [
+            "Core technical facilities and support hubs positioned across the Midwest.",
+            "Direct data center and cloud connectivity options for sensitive operational traffic.",
+            "400G-ready backbone capacity for large-load customers, project sites and future demand."
+          ]
+        }
+      ]
+    },
+    "data-centers": [
+      {
+        "city": "Denver, CO",
+        "name": "910 Telecom",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Denver, CO",
+        "name": "Coresite",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Denver, CO",
+        "name": "Champa",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Des Moines, IA",
+        "name": "Connect Des Moines",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Sioux City, IA",
+        "name": "Long Lines WIT",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Sioux City, IA",
+        "name": "FiberComm",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Davenport, IA",
+        "name": "South Front",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Chicago, IL",
+        "name": "Digital Realty Federal",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Chicago, IL",
+        "name": "Digital Realty Cermak",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Chicago, IL",
+        "name": "Equinix Cermak",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Chicago, IL",
+        "name": "Coresite",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Chicago, IL",
+        "name": "QTS",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Minneapolis, MN",
+        "name": "Cologix Minneapolis",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Kansas City, MO",
+        "name": "Netrality KC",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "St. Louis, MO",
+        "name": "Netrality St. Louis",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Bellevue, NE",
+        "name": "TierPoint-Bellevue",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Bellevue, NE",
+        "name": "Offutt AFB",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Papillion, NE",
+        "name": "TierPoint-Midlands",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Papillion, NE",
+        "name": "Light Edge Solutions",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Lincoln, NE",
+        "name": "Lincoln Edge Facility",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Omaha, NE",
+        "name": "1623 Farnam",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Omaha, NE",
+        "name": "Scott Tech",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Cincinnati, OH",
+        "name": "CyrusOne",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Yankton, SD",
+        "name": "Dataware Green",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "South Bend, IN",
+        "name": "Union Station Tech",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Indianapolis, IN",
+        "name": "GPC Suite-Indy Telecom",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Indianapolis, IN",
+        "name": "Lifeline",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Cheyenne, WY",
+        "name": "ACT",
+        "nameNormal": "",
+        "highlight": false
+      },
+      {
+        "city": "Coming Soon",
+        "name": "Coming Soon",
+        "nameNormal": "",
+        "highlight": false
+      }
+    ],
+    "products": [
+      {
+        "title": "Fiber Internet",
+        "desc": "Get reliable fiber business internet backed by 24/7 network monitoring and support.",
+        "icon": "M3 9h4v6H3z M7 10l3-1v6l-3-1 M10 10c3-3 5-4 7.5-4 M17.5 6a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0 M10 12h9 M19 12a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0 M10 14c3 3 5 4 7.5 4 M17.5 18a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0",
+        "enabled": true
+      },
+      {
+        "title": "Cloud Connect",
+        "desc": "Ensure high performance with secure, reliable and direct connections to leading Cloud providers.",
+        "icon": "M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z",
+        "enabled": true
+      },
+      {
+        "title": "Wavelength Services",
+        "desc": "Highly reliable, low-jitter Layer 1 optical transport delivering secure, dedicated bandwidth from 10G to 400G.",
+        "icon": "M2 12h4l3-9 5 18 3-9h5",
+        "enabled": true
+      },
+      {
+        "title": "DDoS Protection",
+        "desc": "Avoid network disruptions and block high-volume attacks before they impact your customers.",
+        "icon": "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z",
+        "enabled": true
+      },
+      {
+        "title": "Managed Ethernet",
+        "desc": "Ensure efficiency and cost savings with scalable, secure connectivity across all your locations.",
+        "icon": "M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1",
+        "enabled": true
+      },
+      {
+        "title": "SD-WAN",
+        "desc": "Improve your network performance and lower your costs, no matter the delivery method.",
+        "icon": "M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z",
+        "enabled": true
+      },
+      {
+        "title": "Voice & Unified Communications",
+        "desc": "Keep your team connected no matter their location, with traditional and Cloud-based voice solutions.",
+        "icon": "M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z",
+        "enabled": true
+      },
+      {
+        "title": "Managed Firewall",
+        "desc": "Safeguard sensitive data and secure your connection with round-the-clock network protection.",
+        "icon": "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
+        "enabled": true
+      },
+      {
+        "title": "Managed Wi-Fi",
+        "desc": "Provide seamless Wi-Fi connectivity for your entire team and every customer.",
+        "icon": "M8.288 15.038a5.25 5.25 0 017.424 0M5.106 11.856c3.807-3.808 9.98-3.808 13.788 0M1.924 8.674c5.565-5.565 14.587-5.565 20.152 0M12.53 18.22l-.53.53-.53-.53a.75.75 0 011.06 0z",
+        "enabled": true
+      }
+    ],
+    "key-routes": {
+      "sideImage": {
+        "src": "key-routes-hero.jpg",
+        "panXFull": 0.5,
+        "panX": 0.5,
+        "panYFull": 0.45,
+        "panY": 0.45,
+        "zoomFull": 1,
+        "zoomCondensed": 1,
+        "panXLinked": true,
+        "enabled": true
+      }
+    },
+    "omaha-metro": {
+      "sideImage": {
+        "src": "omaha-metro-hero.jpg",
+        "panXFull": 0.34,
+        "panX": 0.34,
+        "panYFull": 0.45,
+        "panY": 0.45,
+        "zoomFull": 1.32,
+        "zoomCondensed": 1,
+        "panXLinked": true,
+        "enabled": true
+      }
+    },
+    "pricing": {
+      "sideImage": {
+        "src": "pricing-hero.jpg",
+        "panXFull": 0.5,
+        "panX": 0.5,
+        "panYFull": 0.45,
+        "panY": 0.45,
+        "zoomFull": 1,
+        "zoomCondensed": 1,
+        "panXLinked": true,
+        "enabled": true
+      }
+    },
+    "why-gpc": {
+      "intro": "Tenaska needs a communications partner close enough to respond quickly, experienced enough for critical operations and scalable enough to support what comes next.",
+      "pillars": [
+        {
+          "title": "Over a Century of Experience",
+          "desc": "Partner with a proven provider that delivers stable, future-proof solutions built on over 100 years of expertise.",
+          "icon": "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+        },
+        {
+          "title": "Unmatched Local Support",
+          "desc": "Get faster resolutions and minimal downtime by working with a dedicated, local team.",
+          "icon": "M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"
+        },
+        {
+          "title": "24/7 Network Monitoring",
+          "desc": "Get peace of mind that comes from constant monitoring that keeps your business connected and protected.",
+          "icon": "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+        },
+        {
+          "title": "Flexible, Scalable Solutions",
+          "desc": "Grow and customize your services precisely as your business demands evolve.",
+          "icon": "M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+        }
+      ]
+    }
+  },
+  "meta": {
+    "name": "E2E Smoke msbvb7vz",
+    "slug": "e2e-smoke-msbvb7vz",
+    "repName": "E2E Bot",
+    "updatedAt": "2026-08-02T14:00:42.517Z"
+  }
+}
