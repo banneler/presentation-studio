@@ -21,7 +21,7 @@
         };
     </script>
     <style>
-        :root { --hero-color: #991a38; --hero-color-rgb: 153 26 56; --brand-orange: #DE5A24; }
+        :root { --hero-color: #0b192f; --hero-color-rgb: 11 25 47; --brand-orange: #DE5A24; }
         body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -132,7 +132,7 @@
                         <div class="shrink-0">
                             <span class="field-label">Hero Color</span>
                             <label class="block h-14 w-28 rounded-lg border border-slate-200 overflow-hidden cursor-pointer" title="Presentation accent only">
-                                <input id="hero-color" type="color" class="h-full w-full cursor-pointer border-0 p-0 bg-transparent" value="#991a38">
+                                <input id="hero-color" type="color" class="h-full w-full cursor-pointer border-0 p-0 bg-transparent" value="#0b192f">
                             </label>
                         </div>
                         <div class="min-w-0 flex-1">
@@ -457,7 +457,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
 
         function normalizeHeroColor(color) {
-            const fallback = '#991a38';
+            const fallback = '#0b192f';
             const isHex = /^#?[a-f\d]{3}([a-f\d]{3})?$/i.test(String(color || ''));
             const normalized = isHex ? String(color) : fallback;
             return normalized.startsWith('#') ? normalized : `#${normalized}`;
