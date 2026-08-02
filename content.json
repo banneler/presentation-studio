@@ -678,6 +678,19 @@
         "enabled": true
       }
     },
+    "pricing": {
+      "sideImage": {
+        "src": "pricing-hero.jpg",
+        "panXFull": 0.5,
+        "panX": 0.5,
+        "panXLinked": true,
+        "panYFull": 0.45,
+        "panY": 0.45,
+        "zoomFull": 1,
+        "zoomCondensed": 1,
+        "enabled": true
+      }
+    },
     "why-gpc": {
       "intro": "Tenaska needs a communications partner close enough to respond quickly, experienced enough for critical operations and scalable enough to support what comes next.",
       "pillars": [

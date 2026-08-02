@@ -304,6 +304,17 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         const ACTIVE_KEY = 'presentation-studio-active';
         const EDITOR_WIDTH_KEY = 'presentation-studio-editor-width';
         const DEFAULT_KEY_CONCEPTS_NAV = ['agenda', 'core-capabilities', 'national', 'layer2', 'ip-network', 'key-routes', 'why-gpc'];
+        const DEFAULT_PRICING_SIDE_IMAGE = {
+            src: 'pricing-hero.jpg',
+            panXFull: 0.5,
+            panX: 0.5,
+            panXLinked: true,
+            panYFull: 0.45,
+            panY: 0.45,
+            zoomFull: 1,
+            zoomCondensed: 1,
+            enabled: true
+        };
 
         let baseData = null;
         let draft = null;
@@ -2440,6 +2451,10 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             draft.pageContent = draft.pageContent || {};
             const priorShowStats = draft.mapData.pricing?.showStats === true;
             const priorSideImage = normalizeHeroImage(draft.pageContent?.pricing?.sideImage || '');
+            // Fresh imports get the template default side hero; re-imports keep crop/replace choices.
+            const sideImage = priorSideImage.src
+                ? priorSideImage
+                : normalizeHeroImage(DEFAULT_PRICING_SIDE_IMAGE);
             draft.mapData.pricing = {
                 id: 'pricing',
                 title: 'Proposed Pricing',
@@ -2467,7 +2482,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 enableQuoteExpiration: extracted.enableQuoteExpiration,
                 quoteExpirationDays: extracted.quoteExpirationDays,
                 enableTaxesFeesExclusion: extracted.enableTaxesFeesExclusion,
-                sideImage: priorSideImage,
+                sideImage,
                 options: extracted.options
             };
             insertPricingIntoPageOrder();
