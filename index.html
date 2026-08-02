@@ -228,10 +228,29 @@
             object-fit: cover;
             object-position: center;
         }
+        .pricing-shell-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .pricing-shell-header-text {
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+        .pricing-option-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            flex: 0 1 auto;
+            max-width: 52%;
+        }
         .pricing-option-tab {
             border: 1px solid #cbd5e1;
             background: #ffffff;
             color: #475569;
+            white-space: nowrap;
             transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
         }
         .pricing-option-tab:hover { border-color: var(--hero-color); color: #0f172a; }
@@ -610,7 +629,7 @@
             const sideHero = normalizeHeroImage(content.sideImage);
             const hasSideImage = !!(sideHero.enabled && sideHero.src);
             const tabs = multi ? `
-                <div class="flex flex-wrap gap-2 mb-4">
+                <div class="pricing-option-tabs" role="tablist" aria-label="Pricing options">
                     ${options.map((opt, index) => {
                         const label = opt.solutionId
                             ? `Option ${index + 1} · ${opt.solutionId}`
@@ -619,7 +638,6 @@
                     }).join('')}
                 </div>
             ` : '';
-            const biz = content.businessName ? `<p class="text-slate-500 text-sm mb-3">${escapeHtml(content.businessName)}</p>` : '';
             const headerLabel = multi
                 ? `Proposed Pricing · Option ${pricingOptionIndex + 1}`
                 : 'Proposed Pricing';
@@ -634,15 +652,18 @@
                 <div class="pricing-stage${animate ? ' is-animated' : ''}">
                     <div class="pricing-layout${hasSideImage ? '' : ' is-solo'}">
                         <div class="pricing-main">
-                            ${tabs}
-                            ${biz}
                             <div class="pricing-shell">
                                 <div class="px-5 pt-5 pb-3 bg-white border-b border-slate-100">
-                                    <div class="flex items-center gap-3 mb-1">
-                                        <span class="h-px w-10 bg-gpc-orange"></span>
-                                        <p class="text-gpc-orange text-[11px] font-black uppercase tracking-[0.28em]">Investment</p>
+                                    <div class="pricing-shell-header">
+                                        <div class="pricing-shell-header-text">
+                                            <div class="flex items-center gap-3 mb-1">
+                                                <span class="h-px w-10 bg-gpc-orange"></span>
+                                                <p class="text-gpc-orange text-[11px] font-black uppercase tracking-[0.28em]">Investment</p>
+                                            </div>
+                                            <h3 class="text-2xl font-black text-slate-900 tracking-tight">${escapeHtml(headerLabel)}${solution}</h3>
+                                        </div>
+                                        ${tabs}
                                     </div>
-                                    <h3 class="text-2xl font-black text-slate-900 tracking-tight">${escapeHtml(headerLabel)}${solution}</h3>
                                 </div>
                                 ${renderPricingOptionBody(active, content)}
                             </div>

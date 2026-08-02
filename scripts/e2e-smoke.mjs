@@ -237,13 +237,23 @@ async function main() {
 
       const gpcUi = await page.evaluate(() => {
         const doc = document.getElementById('preview').contentDocument;
+        const tabs = [...doc.querySelectorAll('[data-pricing-option]')];
+        const header = doc.querySelector('.pricing-shell-header');
+        const tabsInHeader = tabs.length > 0 && !!header && tabs.every(tab => header.contains(tab));
+        // Business/proposal name must not appear as a caption above the pricing shell.
+        const shell = doc.querySelector('.pricing-shell');
+        const beforeShell = shell?.previousElementSibling;
+        const captionLeak = !!(beforeShell && /GPC Proposal Test/i.test(beforeShell.textContent || ''));
         return {
-          tabs: doc.querySelectorAll('[data-pricing-option]').length,
+          tabs: tabs.length,
+          tabsInHeader,
+          captionLeak,
           termFooter: /36\s*-?\s*month/i.test(doc.body.innerText) || /Pricing based on a\s+36/i.test(doc.body.innerText),
           editorOptions: /Options[\s\S]*?\b2\b/i.test(document.getElementById('editor-fields')?.innerText || '')
         };
       });
-      if (gpcUi.tabs >= 2 && gpcUi.termFooter) pass('gpc-2term-preview-tabs', JSON.stringify(gpcUi));
+      if (gpcUi.tabs >= 2 && gpcUi.tabsInHeader && !gpcUi.captionLeak && gpcUi.termFooter)
+        pass('gpc-2term-preview-tabs', JSON.stringify(gpcUi));
       else fail('gpc-2term-preview-tabs', JSON.stringify(gpcUi));
 
       // Distinct MRC between terms (60-month discounted)
