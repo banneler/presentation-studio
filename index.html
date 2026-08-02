@@ -189,6 +189,39 @@
             transform-origin: var(--pan-x-full, var(--pan-x, 50%)) var(--pan-y-full, 50%);
             display: block;
         }
+        /* Map pages with optional right-side hero (e.g. key-routes) — mirrors pricing proportions */
+        .map-layout {
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+            display: flex;
+            align-items: stretch;
+        }
+        .map-layout.has-side {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 372px;
+            gap: 1.5rem;
+            padding: 1.25rem 1.5rem;
+            box-sizing: border-box;
+        }
+        .map-main {
+            position: relative;
+            min-width: 0;
+            min-height: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .map-layout.has-side .map-main {
+            border-radius: 1rem;
+            overflow: hidden;
+            background: #f8fafc;
+        }
+        .map-layout.has-side #map-image {
+            padding: 0.5rem;
+        }
         .pricing-option-tab {
             border: 1px solid #cbd5e1;
             background: #ffffff;
@@ -345,11 +378,18 @@
         <section class="flex-1 relative overflow-hidden flex items-center justify-center p-8">
             <div class="w-full h-full bg-white border border-gpc-border rounded-2xl shadow-elegant relative overflow-hidden flex">
                 
-                <div id="map-layer" class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-300 bg-slate-50 z-0">
-                    <img id="map-image" src="" alt="Network Map" class="w-full h-full object-contain hidden p-4">
-                    <div id="map-fallback" class="text-center pointer-events-none">
-                        <svg class="w-20 h-20 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
-                        <h3 class="text-xl font-semibold text-slate-600 uppercase tracking-wide" id="placeholder-text">Waiting for Data</h3>
+                <div id="map-layer" class="absolute inset-0 transition-opacity duration-300 bg-slate-50 z-0">
+                    <div id="map-layout" class="map-layout">
+                        <div id="map-main" class="map-main">
+                            <img id="map-image" src="" alt="Network Map" class="w-full h-full object-contain hidden p-4">
+                            <div id="map-fallback" class="text-center pointer-events-none">
+                                <svg class="w-20 h-20 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                                <h3 class="text-xl font-semibold text-slate-600 uppercase tracking-wide" id="placeholder-text">Waiting for Data</h3>
+                            </div>
+                        </div>
+                        <aside id="map-aside" class="pricing-aside hidden">
+                            <img id="map-side-img" class="pricing-side-img" alt="">
+                        </aside>
                     </div>
                 </div>
 
@@ -1118,6 +1158,9 @@
                 // Inject the actual image
                 const mapImg = document.getElementById('map-image');
                 const fallback = document.getElementById('map-fallback');
+                const mapLayout = document.getElementById('map-layout');
+                const mapAside = document.getElementById('map-aside');
+                const mapSideImg = document.getElementById('map-side-img');
                 
                 if (data.file) {
                     mapImg.src = resolveAsset(data.file);
@@ -1127,6 +1170,20 @@
                     mapImg.classList.add('hidden');
                     fallback.classList.remove('hidden');
                     document.getElementById('placeholder-text').innerText = `Missing: ${data.id} asset`;
+                }
+
+                // Optional right-side hero (same pan/zoom machinery as pricing).
+                const sideHero = normalizeHeroImage(pageContent?.[viewId]?.sideImage);
+                const hasSideImage = !!(sideHero.enabled && sideHero.src);
+                if (mapLayout) mapLayout.classList.toggle('has-side', hasSideImage);
+                if (hasSideImage && mapAside && mapSideImg) {
+                    mapAside.classList.remove('hidden');
+                    mapSideImg.src = resolveAsset(sideHero.src);
+                    mapSideImg.style.cssText = heroFrameVars(sideHero);
+                } else if (mapAside && mapSideImg) {
+                    mapAside.classList.add('hidden');
+                    mapSideImg.removeAttribute('src');
+                    mapSideImg.style.cssText = '';
                 }
 
                 // Show briefing card when a map page has agenda or capability content.
