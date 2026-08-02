@@ -681,12 +681,12 @@
     "omaha-metro": {
       "sideImage": {
         "src": "omaha-metro-hero.jpg",
-        "panXFull": 0.5,
-        "panX": 0.5,
+        "panXFull": 0.34,
+        "panX": 0.34,
         "panXLinked": true,
         "panYFull": 0.45,
         "panY": 0.45,
-        "zoomFull": 1,
+        "zoomFull": 1.32,
         "zoomCondensed": 1,
         "enabled": true
       }
