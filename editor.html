@@ -304,6 +304,9 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         const ACTIVE_KEY = 'presentation-studio-active';
         const EDITOR_WIDTH_KEY = 'presentation-studio-editor-width';
         const DEFAULT_KEY_CONCEPTS_NAV = ['agenda', 'core-capabilities', 'national', 'layer2', 'ip-network', 'key-routes', 'why-gpc'];
+        const DEMO_CUSTOMER_LOGO = 'demo-customer-logo.webp';
+        // Current demo asset plus the previous bundled default (mid-flight drafts).
+        const DEMO_CUSTOMER_LOGO_NAMES = new Set([DEMO_CUSTOMER_LOGO, 'tenaska_logo.png']);
         const DEFAULT_PRICING_SIDE_IMAGE = {
             src: 'pricing-hero.jpg',
             panXFull: 0.5,
@@ -1976,6 +1979,41 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             return true;
         }
 
+        function customerLogoBasename(src) {
+            if (!src || typeof src !== 'string') return '';
+            if (src.startsWith('data:')) return '';
+            const cleaned = src.split('?')[0].split('#')[0];
+            const parts = cleaned.split('/');
+            return (parts[parts.length - 1] || '').trim().toLowerCase();
+        }
+
+        function isDemoCustomerLogo(src) {
+            const base = customerLogoBasename(src);
+            return Boolean(base) && DEMO_CUSTOMER_LOGO_NAMES.has(base);
+        }
+
+        function pageUsesCustomerLogo(page = {}) {
+            if (page.useCustomerLogo === true) return true;
+            if (page.useCustomerLogo === false) return false;
+            // Legacy drafts: an explicit page logo still shows on the page
+            return Boolean(page.logo);
+        }
+
+        function anyPageShowsCustomerLogo(data = draft) {
+            return Object.values(data?.mapData || {}).some(pageUsesCustomerLogo);
+        }
+
+        function assertCustomerLogoReadyForPublish() {
+            if (!anyPageShowsCustomerLogo()) return true;
+            const logo = draft?.settings?.customerLogo || '';
+            if (!isDemoCustomerLogo(logo)) return true;
+            const message = 'Replace the demo customer logo before publishing. A customer logo is enabled on one or more pages, but it is still the bundled demo logo.';
+            alert(message);
+            setStatus(message);
+            if (customerLogoFile) customerLogoFile.focus();
+            return false;
+        }
+
         function saveLocal(showNotice = true) {
             if (presentationName || nameInput.value.trim()) syncNameFields();
             syncVisibleNavFromOrder();
@@ -2083,6 +2121,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
         async function publishPresentation() {
             if (!requireIdentity()) return;
+            if (!assertCustomerLogoReadyForPublish()) return;
             saveLocal(false);
             const button = document.getElementById('publish-btn');
             const previous = button.textContent;
@@ -2118,6 +2157,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
         function openFollowUpModal() {
             if (!requireIdentity()) return;
+            if (!assertCustomerLogoReadyForPublish()) return;
             followUpModal.classList.remove('hidden');
             followUpModal.classList.add('flex');
         }
@@ -2129,6 +2169,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
         async function publishFollowUp() {
             if (!requireIdentity()) return;
+            if (!assertCustomerLogoReadyForPublish()) return;
             saveLocal(false);
             const button = document.getElementById('confirm-follow-up');
             const previous = button.textContent;
