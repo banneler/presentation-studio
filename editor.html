@@ -138,11 +138,10 @@
                         <div class="min-w-0 flex-1">
                             <span class="field-label">Customer Logo</span>
                             <div class="flex items-start gap-3">
-                                <div id="customer-logo-preview" class="h-14 w-28 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+                                <div id="customer-logo-preview" class="h-14 w-28 rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer transition-colors hover:border-orange-400" title="Click to replace logo">
                                     <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">None</span>
                                 </div>
                                 <div class="min-w-0 flex-1 space-y-2">
-                                    <input id="customer-logo-path" class="field-input font-mono text-xs" placeholder="logo.png or upload below">
                                     <input id="customer-logo-file" type="file" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-bold file:text-slate-700">
                                     <button id="customer-logo-clear" type="button" class="text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-red-500">Clear logo</button>
                                 </div>
@@ -344,7 +343,6 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         const screensaverTimeoutInput = document.getElementById('screensaver-timeout');
         const nameInput = document.getElementById('presentation-name');
         const repNameInput = document.getElementById('rep-name');
-        const customerLogoPath = document.getElementById('customer-logo-path');
         const customerLogoFile = document.getElementById('customer-logo-file');
         const customerLogoClear = document.getElementById('customer-logo-clear');
         const customerLogoPreview = document.getElementById('customer-logo-preview');
@@ -623,10 +621,6 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         function syncIdentityFieldsFromDraft() {
             repName = draft?.settings?.repName || repName || '';
             if (repNameInput) repNameInput.value = repName;
-            if (customerLogoPath) {
-                const logo = draft?.settings?.customerLogo || '';
-                customerLogoPath.value = logo.startsWith('data:') ? '(uploaded image)' : logo;
-            }
             if (screensaverTimeoutInput) {
                 screensaverTimeoutInput.value = String(resolveScreensaverTimeoutMinutes(draft?.settings || {}));
             }
@@ -638,10 +632,10 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             if (!customerLogoPreview) return;
             const src = resolveEditorAsset(draft?.settings?.customerLogo || '');
             if (!src) {
-                customerLogoPreview.innerHTML = '<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">None</span>';
+                customerLogoPreview.innerHTML = '<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 pointer-events-none">Click or drop</span>';
                 return;
             }
-            customerLogoPreview.innerHTML = `<img src="${src.replace(/"/g, '&quot;')}" alt="Customer logo" class="max-h-full max-w-full object-contain p-1">`;
+            customerLogoPreview.innerHTML = `<img src="${src.replace(/"/g, '&quot;')}" alt="Customer logo" class="max-h-full max-w-full object-contain p-1 pointer-events-none">`;
         }
 
         function persistActive() {
@@ -955,26 +949,51 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         }
 
         function imageField(label, value, onChange) {
-            const textId = `field-${Math.random().toString(36).slice(2)}`;
+            const previewId = `field-${Math.random().toString(36).slice(2)}`;
             const fileId = `field-${Math.random().toString(36).slice(2)}`;
+            const previewSrc = resolveEditorAsset(value || '');
             setTimeout(() => {
-                const text = document.getElementById(textId);
+                const preview = document.getElementById(previewId);
                 const file = document.getElementById(fileId);
-                if (text) text.addEventListener('input', event => onChange(event.target.value));
+                const openPicker = () => file?.click();
+                const applyFile = async (selected) => {
+                    if (!selected || !selected.type.startsWith('image/')) return;
+                    onChange(await readFileAsDataUrl(selected));
+                    renderEditorFields();
+                };
+                preview?.addEventListener('click', openPicker);
+                preview?.addEventListener('dragover', event => {
+                    event.preventDefault();
+                    preview.classList.add('border-orange-400', 'bg-orange-50');
+                });
+                preview?.addEventListener('dragleave', () => {
+                    preview.classList.remove('border-orange-400', 'bg-orange-50');
+                });
+                preview?.addEventListener('drop', async event => {
+                    event.preventDefault();
+                    preview.classList.remove('border-orange-400', 'bg-orange-50');
+                    await applyFile(event.dataTransfer?.files?.[0]);
+                });
                 if (file) {
                     file.addEventListener('change', async event => {
                         const selected = event.target.files && event.target.files[0];
                         if (!selected) return;
-                        onChange(await readFileAsDataUrl(selected));
-                        renderEditorFields();
+                        await applyFile(selected);
+                        file.value = '';
                     });
                 }
             });
             return `
                 <div>
                     <span class="field-label">${label}</span>
-                    <input id="${textId}" type="text" class="field-input mb-2" value="${escapeAttr(value || '')}" placeholder="asset.png or https://...">
-                    <input id="${fileId}" type="file" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-bold file:text-slate-700">
+                    <div class="flex items-start gap-3">
+                        <div id="${previewId}" class="h-20 w-36 rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0 cursor-pointer transition-colors hover:border-orange-400" title="Click to replace image">
+                            ${previewSrc
+                                ? `<img src="${previewSrc.replace(/"/g, '&quot;')}" alt="" class="max-h-full max-w-full object-cover pointer-events-none">`
+                                : '<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 pointer-events-none">Click or drop</span>'}
+                        </div>
+                        <input id="${fileId}" type="file" accept="image/*" class="hidden">
+                    </div>
                 </div>
             `;
         }
@@ -1480,15 +1499,6 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     });
                 });
 
-                root.querySelectorAll('[data-hero-src]').forEach(input => {
-                    input.addEventListener('input', () => {
-                        const index = Number(input.dataset.heroSrc);
-                        heroes[index].src = input.value;
-                        applyPanPreview(index);
-                        commit(heroes);
-                    });
-                });
-
                 // Track last-edited H pan side so re-link copies that value to the other.
                 const lastPanXSide = {};
 
@@ -1657,7 +1667,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         const panYFull = `${(hero.panYFull * 100).toFixed(0)}%`;
                         const panY = `${(hero.panY * 100).toFixed(0)}%`;
                         const panXLinked = hero.panXLinked !== false;
-                        const empty = '<div class="pointer-events-none absolute inset-0 flex items-center justify-center text-[9px] font-bold uppercase tracking-wider text-slate-400 text-center px-1 z-10">Drop</div>';
+                        const empty = '<div class="pointer-events-none absolute inset-0 flex items-center justify-center text-[9px] font-bold uppercase tracking-wider text-slate-400 text-center px-1 z-10">Click or drop</div>';
                         const fillFull = `<div data-hero-fill class="absolute inset-0" style="background-size: cover; background-position: ${panXFullPct} ${panYFull}; transform: scale(${hero.zoomFull}); transform-origin: ${panXFullPct} ${panYFull}; ${bg}"></div>`;
                         const fillCondensed = `<div data-hero-fill class="absolute inset-0" style="background-size: cover; background-position: ${panXPct} ${panY}; transform: scale(${hero.zoomCondensed}); transform-origin: ${panXPct} ${panY}; ${bg}"></div>`;
 
@@ -1741,7 +1751,6 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                                         ? `<button type="button" data-remove-hero="${index}" class="text-xs font-bold text-slate-500 hover:text-red-500 transition">Remove</button>`
                                         : (maxSlots === 1 ? `<button type="button" data-clear-hero class="text-xs font-bold text-slate-500 hover:text-red-500 transition">Clear</button>` : '')}
                                 </div>
-                                <input data-hero-src="${index}" class="field-input font-mono text-xs mb-3" value="${escapeAttr(hero.src)}" placeholder="hero_1.jpg or https://...">
                                 <input data-hero-file="${index}" type="file" accept="image/*" class="hidden">
                                 ${columnsHtml}
                                 ${(dualCrop && showCondensed) ? `
@@ -2655,37 +2664,47 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             draft.settings.repName = repName;
             persistActive();
         });
-        customerLogoPath.addEventListener('input', () => {
-            const value = customerLogoPath.value.trim();
-            if (value === '(uploaded image)') return;
-            draft.settings = draft.settings || {};
-            draft.settings.customerLogo = value;
-            updateCustomerLogoPreview();
-            Object.values(draft.mapData || {}).forEach(page => {
-                if (page.useCustomerLogo) page.logo = draft.settings.customerLogo;
-            });
-        });
-        customerLogoFile.addEventListener('change', async event => {
-            const selected = event.target.files && event.target.files[0];
-            if (!selected) return;
-            const dataUrl = await readFileAsDataUrl(selected);
+        async function applyCustomerLogoFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            const dataUrl = await readFileAsDataUrl(file);
             draft.settings = draft.settings || {};
             draft.settings.customerLogo = dataUrl;
-            customerLogoPath.value = dataUrl.startsWith('data:') ? '(uploaded image)' : dataUrl;
             updateCustomerLogoPreview();
             Object.values(draft.mapData || {}).forEach(page => {
                 if (page.useCustomerLogo) page.logo = dataUrl;
             });
+            persistActive();
+        }
+
+        customerLogoPreview?.addEventListener('click', () => {
+            customerLogoFile?.click();
+        });
+        customerLogoPreview?.addEventListener('dragover', event => {
+            event.preventDefault();
+            customerLogoPreview.classList.add('border-orange-400', 'bg-orange-50');
+        });
+        customerLogoPreview?.addEventListener('dragleave', () => {
+            customerLogoPreview.classList.remove('border-orange-400', 'bg-orange-50');
+        });
+        customerLogoPreview?.addEventListener('drop', async event => {
+            event.preventDefault();
+            customerLogoPreview.classList.remove('border-orange-400', 'bg-orange-50');
+            await applyCustomerLogoFile(event.dataTransfer?.files?.[0]);
+        });
+        customerLogoFile.addEventListener('change', async event => {
+            const selected = event.target.files && event.target.files[0];
+            if (!selected) return;
+            await applyCustomerLogoFile(selected);
             customerLogoFile.value = '';
         });
         customerLogoClear.addEventListener('click', () => {
             draft.settings = draft.settings || {};
             draft.settings.customerLogo = '';
-            customerLogoPath.value = '';
             updateCustomerLogoPreview();
             Object.values(draft.mapData || {}).forEach(page => {
                 if (page.useCustomerLogo) delete page.logo;
             });
+            persistActive();
         });
         heroColorInput.addEventListener('input', event => {
             draft.settings = draft.settings || {};
