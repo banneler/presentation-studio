@@ -678,6 +678,19 @@
         "enabled": true
       }
     },
+    "omaha-metro": {
+      "sideImage": {
+        "src": "omaha-metro-hero.jpg",
+        "panXFull": 0.5,
+        "panX": 0.5,
+        "panXLinked": true,
+        "panYFull": 0.45,
+        "panY": 0.45,
+        "zoomFull": 1,
+        "zoomCondensed": 1,
+        "enabled": true
+      }
+    },
     "pricing": {
       "sideImage": {
         "src": "pricing-hero.jpg",

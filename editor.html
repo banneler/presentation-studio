@@ -593,6 +593,9 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             if (draft.pageContent?.['key-routes']) {
                 draft.pageContent['key-routes'].sideImage = normalizeHeroImage(draft.pageContent['key-routes'].sideImage);
             }
+            if (draft.pageContent?.['omaha-metro']) {
+                draft.pageContent['omaha-metro'].sideImage = normalizeHeroImage(draft.pageContent['omaha-metro'].sideImage);
+            }
             if (Array.isArray(draft.pageContent?.['data-centers'])) {
                 draft.pageContent['data-centers'] = draft.pageContent['data-centers'].map(dc => ({
                     city: dc?.city || '',
@@ -1091,6 +1094,24 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 });
             }
 
+            if (selectedPageId === 'omaha-metro') {
+                if (!draft.pageContent['omaha-metro'] || typeof draft.pageContent['omaha-metro'] !== 'object') {
+                    draft.pageContent['omaha-metro'] = {};
+                }
+                const omahaMetroContent = draft.pageContent['omaha-metro'];
+                omahaMetroContent.sideImage = normalizeHeroImage(omahaMetroContent.sideImage);
+                html += `<hr class="border-slate-200 my-5">`;
+                html += editHeroImages('Side Image', [omahaMetroContent.sideImage], value => {
+                    omahaMetroContent.sideImage = normalizeHeroImage((value && value[0]) || '');
+                }, {
+                    dualCrop: true,
+                    showCondensed: false,
+                    maxSlots: 1,
+                    previewCount: 4,
+                    help: 'Full-height crop beside the Omaha Metro map (same controls as key routes). Map column narrows to make room. Refresh Preview to review.'
+                });
+            }
+
             if (page.type === 'pricing' && content) {
                 const optionCount = Array.isArray(content.options) ? content.options.length : 0;
                 const locationCount = (content.options || []).reduce((sum, opt) => sum + ((opt.locations || []).length), 0);
@@ -1118,7 +1139,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         <p class="text-[11px] text-slate-500 pt-1">Re-upload a .spec or Salesforce CSV above to replace pricing data. Side image crop settings are kept.</p>
                     </div>
                 `;
-            } else if (content && !['agenda', 'core-capabilities', 'rightfiber', 'why-gpc', 'data-centers', 'products', 'key-routes'].includes(selectedPageId)) {
+            } else if (content && !['agenda', 'core-capabilities', 'rightfiber', 'why-gpc', 'data-centers', 'products', 'key-routes', 'omaha-metro'].includes(selectedPageId)) {
                 html += `<hr class="border-slate-200 my-5">`;
                 html += textarea('Raw Content JSON', JSON.stringify(content, null, 2), value => {
                     try { draft.pageContent[selectedPageId] = JSON.parse(value); } catch (error) {}
