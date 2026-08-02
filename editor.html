@@ -594,12 +594,21 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 draft.pageContent['omaha-metro'].sideImage = normalizeHeroImage(draft.pageContent['omaha-metro'].sideImage);
             }
             if (Array.isArray(draft.pageContent?.['data-centers'])) {
-                draft.pageContent['data-centers'] = draft.pageContent['data-centers'].map(dc => ({
-                    city: dc?.city || '',
-                    name: dc?.name || '',
-                    nameNormal: dc?.nameNormal || '',
-                    highlight: dc?.highlight === true
-                }));
+                let seenCustom = false;
+                draft.pageContent['data-centers'] = draft.pageContent['data-centers']
+                    .filter(dc => {
+                        if (dc?.custom !== true) return true;
+                        if (seenCustom) return false;
+                        seenCustom = true;
+                        return true;
+                    })
+                    .map(dc => ({
+                        city: dc?.city || '',
+                        name: dc?.name || '',
+                        nameNormal: dc?.nameNormal || '',
+                        highlight: dc?.highlight === true,
+                        ...(dc?.custom === true ? { custom: true } : {})
+                    }));
             }
             if (Array.isArray(draft.pageContent?.products)) {
                 draft.pageContent.products = draft.pageContent.products.map(product => ({
@@ -1170,12 +1179,17 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         function editDataCenters(centers, onChange) {
             const items = clone(centers || []);
             const id = `dcs-${Math.random().toString(36).slice(2)}`;
-            const commit = () => onChange(items.map(dc => ({
-                city: dc.city || '',
-                name: dc.name || '',
-                nameNormal: dc.nameNormal || '',
-                highlight: dc.highlight === true
-            })));
+            const hasCustom = items.some(dc => dc.custom === true);
+            const commit = (rerender = false) => {
+                onChange(items.map(dc => ({
+                    city: dc.city || '',
+                    name: dc.name || '',
+                    nameNormal: dc.nameNormal || '',
+                    highlight: dc.highlight === true,
+                    ...(dc.custom === true ? { custom: true } : {})
+                })));
+                if (rerender) renderEditorFields();
+            };
 
             setTimeout(() => {
                 const root = document.getElementById(id);
@@ -1201,14 +1215,31 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 });
                 root.querySelectorAll('[data-dc-city]').forEach(input => {
                     input.addEventListener('input', () => {
-                        items[Number(input.dataset.dcCity)].city = input.value;
+                        const index = Number(input.dataset.dcCity);
+                        if (items[index]?.custom !== true) return;
+                        items[index].city = input.value;
                         commit();
                     });
                 });
                 root.querySelectorAll('[data-dc-name]').forEach(input => {
                     input.addEventListener('input', () => {
-                        items[Number(input.dataset.dcName)].name = input.value;
+                        const index = Number(input.dataset.dcName);
+                        if (items[index]?.custom !== true) return;
+                        items[index].name = input.value;
                         commit();
+                    });
+                });
+                root.querySelector('[data-dc-add]')?.addEventListener('click', () => {
+                    if (items.some(dc => dc.custom === true)) return;
+                    items.push({ city: '', name: '', custom: true, highlight: false });
+                    commit(true);
+                });
+                root.querySelectorAll('[data-dc-remove]').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const index = Number(button.dataset.dcRemove);
+                        if (items[index]?.custom !== true) return;
+                        items.splice(index, 1);
+                        commit(true);
                     });
                 });
             });
@@ -1219,20 +1250,32 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     <div class="flex items-center justify-between gap-2">
                         <div>
                             <span class="field-label mb-0">Data Centers</span>
-                            <p class="text-[11px] text-slate-500 mt-1">Choose one to highlight on the slide (inverted navy card). Clear to show none highlighted.</p>
+                            <p class="text-[11px] text-slate-500 mt-1">Highlight one site on the slide (inverted navy card). Stock names are fixed — add one custom site if needed.</p>
                         </div>
-                        <button type="button" data-dc-clear class="text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-orange-500">Clear highlight</button>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <button type="button" data-dc-add class="text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-orange-500 transition ${hasCustom ? 'opacity-40 pointer-events-none' : ''}">Add custom</button>
+                            <button type="button" data-dc-clear class="text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-orange-500">Clear highlight</button>
+                        </div>
                     </div>
                     <div class="space-y-2 max-h-[28rem] overflow-y-auto pr-1">
-                        ${items.map((dc, index) => `
+                        ${items.map((dc, index) => {
+                            const isCustom = dc.custom === true;
+                            return `
                             <div data-dc-row="${index}" class="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 hover:border-orange-300 transition ${dc.highlight ? 'border-orange-400 bg-orange-50/70' : ''}">
                                 <input data-dc-highlight type="radio" name="dc-highlight-${id}" value="${index}" ${selectedIndex === index ? 'checked' : ''} class="mt-1 h-4 w-4 accent-orange-500 cursor-pointer" title="Highlight on slide">
                                 <div class="min-w-0 flex-1 space-y-2">
-                                    <input data-dc-city="${index}" class="field-input text-xs" value="${escapeAttr(dc.city || '')}" placeholder="City, ST">
-                                    <input data-dc-name="${index}" class="field-input text-sm font-semibold" value="${escapeAttr(dc.name || '')}" placeholder="Facility name">
+                                    ${isCustom ? `
+                                        <input data-dc-city="${index}" class="field-input text-xs" value="${escapeAttr(dc.city || '')}" placeholder="City, ST">
+                                        <input data-dc-name="${index}" class="field-input text-sm font-semibold" value="${escapeAttr(dc.name || '')}" placeholder="Facility name">
+                                    ` : `
+                                        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">${escapeHtml(dc.city || '')}</div>
+                                        <div class="text-sm font-semibold text-slate-800">${escapeHtml(dc.name || '')}${dc.nameNormal ? `<span class="block text-[10px] font-normal text-slate-500 mt-0.5">${escapeHtml(dc.nameNormal)}</span>` : ''}</div>
+                                    `}
                                 </div>
+                                ${isCustom ? `<button type="button" data-dc-remove="${index}" class="mt-1 rounded-lg border border-slate-200 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-red-500 hover:bg-red-50 transition shrink-0">Remove</button>` : ''}
                             </div>
-                        `).join('')}
+                        `;
+                        }).join('')}
                     </div>
                 </div>
             `;
