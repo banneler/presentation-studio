@@ -1393,10 +1393,10 @@
                 pageContent['data-centers'].forEach(dc => {
                     const hi = dc.highlight === true;
                     html += `
-                        <div class="group relative p-4 border border-slate-200 rounded-xl transition-colors duration-300 overflow-hidden cursor-default flex flex-col justify-center min-h-[90px] ${hi ? 'bg-gpc-navy shadow-xl' : 'bg-white hover:bg-gpc-navy shadow-sm hover:shadow-xl'}">
-                            <div class="absolute inset-0 bg-gpc-blue transition-opacity duration-300 ${hi ? 'opacity-10' : 'opacity-0 group-hover:opacity-10'}"></div>
-                            <span class="text-[9px] font-bold uppercase tracking-widest block mb-1 z-10 relative ${hi ? 'text-gpc-orange' : 'text-slate-400 group-hover:text-gpc-orange'} transition-colors">${dc.city}</span>
-                            <h3 class="text-sm font-bold transform origin-left transition-all duration-300 z-10 relative leading-tight ${hi ? 'text-white scale-105' : 'text-slate-800 group-hover:text-white group-hover:scale-105'} min-h-0 flex flex-col justify-center"><span class="block truncate" title="${dc.name}">${dc.name}</span>${dc.nameNormal ? `<span class="block font-normal truncate text-[10px] leading-tight mt-0.5" title="${dc.nameNormal}">${dc.nameNormal}</span>` : ''}</h3>
+                        <div class="group relative p-4 rounded-xl transition-colors duration-300 overflow-hidden cursor-default flex flex-col justify-center min-h-[90px] ${hi ? 'bg-white border-[3px] shadow-lg' : 'bg-white border border-slate-200 hover:bg-gpc-navy shadow-sm hover:shadow-xl'}"${hi ? ' style="border-color: var(--hero-color)"' : ''}>
+                            <div class="absolute inset-0 bg-gpc-blue transition-opacity duration-300 opacity-0 ${hi ? '' : 'group-hover:opacity-10'}"></div>
+                            <span class="text-[9px] font-bold uppercase tracking-widest block mb-1 z-10 relative text-slate-400 ${hi ? '' : 'group-hover:text-gpc-orange'} transition-colors">${dc.city}</span>
+                            <h3 class="text-sm font-bold transform origin-left transition-all duration-300 z-10 relative leading-tight text-slate-800 min-h-0 flex flex-col justify-center ${hi ? '' : 'group-hover:text-white group-hover:scale-105'}"><span class="block truncate" title="${dc.name}">${dc.name}</span>${dc.nameNormal ? `<span class="block font-normal truncate text-[10px] leading-tight mt-0.5" title="${dc.nameNormal}">${dc.nameNormal}</span>` : ''}</h3>
                         </div>
                     `;
                 });

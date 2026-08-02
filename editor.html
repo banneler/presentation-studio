@@ -1197,7 +1197,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 root.querySelectorAll('[data-dc-highlight]').forEach(input => {
                     input.addEventListener('change', () => {
                         const index = Number(input.value);
-                        items.forEach((dc, i) => { dc.highlight = i === index; });
+                        if (items[index]) items[index].highlight = input.checked;
                         commit();
                         root.querySelectorAll('[data-dc-row]').forEach((row, i) => {
                             row.classList.toggle('border-orange-400', items[i]?.highlight);
@@ -1244,17 +1244,16 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 });
             });
 
-            const selectedIndex = items.findIndex(dc => dc.highlight === true);
             return `
                 <div id="${id}" class="space-y-3">
                     <div class="flex items-center justify-between gap-2">
                         <div>
                             <span class="field-label mb-0">Data Centers</span>
-                            <p class="text-[11px] text-slate-500 mt-1">Highlight one site on the slide (inverted navy card). Stock names are fixed — add one custom site if needed.</p>
+                            <p class="text-[11px] text-slate-500 mt-1">Highlight sites on the slide (hero-color border). Stock names are fixed — add one custom site if needed.</p>
                         </div>
                         <div class="flex items-center gap-3 shrink-0">
                             <button type="button" data-dc-add class="text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-orange-500 transition ${hasCustom ? 'opacity-40 pointer-events-none' : ''}">Add custom</button>
-                            <button type="button" data-dc-clear class="text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-orange-500">Clear highlight</button>
+                            <button type="button" data-dc-clear class="text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-orange-500">Clear highlights</button>
                         </div>
                     </div>
                     <div class="space-y-2 max-h-[28rem] overflow-y-auto pr-1">
@@ -1262,7 +1261,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                             const isCustom = dc.custom === true;
                             return `
                             <div data-dc-row="${index}" class="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 hover:border-orange-300 transition ${dc.highlight ? 'border-orange-400 bg-orange-50/70' : ''}">
-                                <input data-dc-highlight type="radio" name="dc-highlight-${id}" value="${index}" ${selectedIndex === index ? 'checked' : ''} class="mt-1 h-4 w-4 accent-orange-500 cursor-pointer" title="Highlight on slide">
+                                <input data-dc-highlight type="checkbox" value="${index}" ${dc.highlight ? 'checked' : ''} class="mt-1 h-4 w-4 accent-orange-500 cursor-pointer" title="Highlight on slide">
                                 <div class="min-w-0 flex-1 space-y-2">
                                     ${isCustom ? `
                                         <input data-dc-city="${index}" class="field-input text-xs" value="${escapeAttr(dc.city || '')}" placeholder="City, ST">

@@ -189,23 +189,25 @@ async function main() {
     await page.setInputFiles('#spec-pricing-file', specPath);
     await sleep(800);
 
-    // 7) Data centers highlight radios
+    // 7) Data centers highlight checkboxes (multi-select)
     await page.click('[data-select-id="data-centers"]');
     await sleep(500);
     const dc = await page.evaluate(() => {
-      const radios = [...document.querySelectorAll('[data-dc-highlight]')];
-      if (radios[1]) {
-        radios[1].checked = true;
-        radios[1].dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      return { radioCount: radios.length };
+      const checks = [...document.querySelectorAll('[data-dc-highlight]')];
+      [1, 2].forEach(i => {
+        if (checks[i]) {
+          checks[i].checked = true;
+          checks[i].dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+      return { checkCount: checks.length };
     });
     await page.click('#save-local');
     await sleep(300);
     const dDc = await readDraft(page);
     const dcDraft = (dDc?.pageContent?.['data-centers'] || []).map(x => ({ name: x.name, highlight: !!x.highlight }));
     const highlightCount = dcDraft.filter(x => x.highlight).length;
-    if (dc.radioCount >= 2 && highlightCount === 1) pass('data-centers-highlight', dcDraft.find(x => x.highlight)?.name || '');
+    if (dc.checkCount >= 3 && highlightCount >= 2) pass('data-centers-highlight', `${highlightCount} highlighted`);
     else fail('data-centers-highlight', JSON.stringify({ dc, dcDraft }));
 
     await page.click('#refresh-preview');
