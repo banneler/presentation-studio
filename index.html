@@ -160,6 +160,22 @@
             min-height: 0;
             overflow-y: auto;
             padding-right: 0.25rem;
+            scrollbar-width: thin;
+            scrollbar-color: var(--hero-color) rgba(var(--hero-color-rgb), 0.12);
+        }
+        .pricing-main::-webkit-scrollbar {
+            width: 6px;
+        }
+        .pricing-main::-webkit-scrollbar-track {
+            background: rgba(var(--hero-color-rgb), 0.12);
+            border-radius: 10px;
+        }
+        .pricing-main::-webkit-scrollbar-thumb {
+            background: var(--hero-color);
+            border-radius: 10px;
+        }
+        .pricing-main::-webkit-scrollbar-thumb:hover {
+            background: rgba(var(--hero-color-rgb), 0.85);
         }
         .pricing-shell {
             min-width: 0;
