@@ -31,16 +31,20 @@
         .field-label-micro { display: block; margin-bottom: 0.35rem; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgb(100 116 139); }
         .field-input { width: 100%; border-radius: 0.375rem; border: 1px solid rgb(203 213 225); background: rgb(248 250 252); padding: 0.5rem 0.75rem; font-size: 0.875rem; color: rgb(30 41 59); outline: none; transition: border-color 0.15s ease, background 0.15s ease; }
         .field-input:focus { border-color: #f97316; background: white; }
-        .btn-primary { background: #f97316; color: white; font-weight: 700; padding: 0.5rem 1.25rem; border-radius: 0.375rem; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); transition: background 0.15s ease; }
+        .btn-primary { background: #f97316; color: white; font-weight: 700; padding: 0.5rem 1.25rem; border-radius: 0.375rem; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); transition: background 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease; }
         .btn-primary:hover { background: #ea580c; }
         .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
         .btn-secondary { background: rgb(241 245 249); color: rgb(51 65 85); font-weight: 700; padding: 0.5rem 0.85rem; border-radius: 0.5rem; border: 1px solid rgb(203 213 225); box-shadow: 0 1px 2px rgb(0 0 0 / 0.05); transition: background 0.15s ease; }
         .btn-secondary:hover { background: rgb(226 232 240); }
-        .btn-dark { background: rgb(30 41 59); color: white; font-weight: 700; padding: 0.5rem 0.85rem; border-radius: 0.5rem; transition: background 0.15s ease; }
+        .btn-dark { background: rgb(30 41 59); color: white; font-weight: 700; padding: 0.5rem 0.85rem; border-radius: 0.5rem; transition: background 0.15s ease, box-shadow 0.15s ease; }
         .btn-dark:hover { background: rgb(15 23 42); }
         .btn-danger { background: #dc2626; color: white; font-weight: 700; padding: 0.5rem 1.25rem; border-radius: 0.375rem; transition: background 0.15s ease; }
         .btn-danger:hover { background: #b91c1c; }
         .btn-danger:disabled { opacity: 0.7; cursor: not-allowed; }
+        #main-header.is-dirty { border-bottom-color: #fb923c; }
+        #save-local.btn-dirty { background: #c2410c; box-shadow: 0 0 0 2px #fdba74; }
+        #save-local.btn-dirty:hover { background: #9a3412; }
+        #publish-btn.btn-dirty { box-shadow: 0 0 0 2px #fed7aa, 0 10px 15px -3px rgb(0 0 0 / 0.15); filter: brightness(1.06); }
         .panel { background: white; border: 1px solid rgb(226 232 240); border-radius: 0.75rem; box-shadow: 0 1px 2px rgb(0 0 0 / 0.05); }
         .nav-row.dragging { opacity: 0.55; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15); }
         .nav-dot { appearance: none; width: 1rem; height: 1rem; border-radius: 9999px; border: 1px solid rgb(203 213 225); cursor: pointer; background: white; }
@@ -100,10 +104,11 @@
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 h-screen flex flex-col overflow-hidden">
-    <header class="bg-slate-900 text-white px-4 py-3 shadow-md flex justify-between items-center z-20 border-b-4 border-orange-500 shrink-0">
+    <header id="main-header" class="bg-slate-900 text-white px-4 py-3 shadow-md flex justify-between items-center z-20 border-b-4 border-orange-500 shrink-0">
         <div class="flex items-center gap-4 min-w-0">
             <img src="GPC-White-1-1.webp" alt="Great Plains Communications" class="h-8 flex-shrink-0">
             <h1 class="text-xl font-bold tracking-wide border-l border-slate-700 pl-4 flex-shrink-0">Presentation Studio</h1>
+            <p id="header-unsaved-msg" class="hidden text-sm font-medium text-orange-300 ml-1 truncate">Unsaved changes</p>
             <p id="status-line" class="hidden sm:block text-sm font-medium text-slate-300 ml-1 truncate">Draft not saved yet.</p>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">
@@ -358,6 +363,8 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         const deleteConfirmInput = document.getElementById('delete-confirm-input');
         const confirmDeleteBtn = document.getElementById('confirm-delete');
         let pendingDelete = null;
+        let isDirty = false;
+        let suppressDirty = false;
 
         function clone(value) {
             return JSON.parse(JSON.stringify(value));
@@ -686,6 +693,53 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
         function setStatus(message) {
             statusLine.textContent = message;
+        }
+
+        function syncDirtyUi() {
+            const header = document.getElementById('main-header');
+            const unsavedMsg = document.getElementById('header-unsaved-msg');
+            const saveBtn = document.getElementById('save-local');
+            const publishBtn = document.getElementById('publish-btn');
+            header?.classList.toggle('is-dirty', isDirty);
+            unsavedMsg?.classList.toggle('hidden', !isDirty);
+            saveBtn?.classList.toggle('btn-dirty', isDirty);
+            // Emphasize Publish/Republish when local draft has unsaved edits (label logic unchanged).
+            publishBtn?.classList.toggle('btn-dirty', isDirty);
+        }
+
+        function setDirty(value) {
+            isDirty = !!value;
+            syncDirtyUi();
+        }
+
+        function markDirty() {
+            if (suppressDirty) return;
+            setDirty(true);
+        }
+
+        function shouldIgnoreDirtyTarget(target) {
+            if (!target) return true;
+            if (target.closest?.('#follow-up-modal') || target.closest?.('#delete-modal')) return true;
+            const skipIds = new Set([
+                'delete-confirm-input',
+                'recap-headline',
+                'recap-items',
+                'recap-rightfiber',
+                'spec-pricing-file',
+                'salesforce-pricing-file'
+            ]);
+            if (target.id && skipIds.has(target.id)) return true;
+            return false;
+        }
+
+        function markDirtyFromEvent(event) {
+            if (suppressDirty) return;
+            const target = event.target;
+            if (shouldIgnoreDirtyTarget(target)) return;
+            const tag = target.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable) {
+                markDirty();
+            }
         }
 
         function syncNameFields() {
@@ -1385,6 +1439,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     const nextOrder = pageOrder.filter(id => id !== draggedPageId);
                     nextOrder.splice(nextOrder.indexOf(targetId), 0, draggedPageId);
                     pageOrder = nextOrder;
+                    markDirty();
                     render();
                 });
             });
@@ -1420,6 +1475,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     if (!selected || !selected.type.startsWith('image/')) return;
                     setStatus('Optimizing photo…');
                     onChange(await compressImageFile(selected, { maxEdge: 1600, quality: 0.82 }));
+                    markDirty();
                     renderEditorFields();
                     setStatus('Photo updated.');
                 };
@@ -1775,6 +1831,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             const items = clone(Array.isArray(studies) ? studies : []);
             const id = `case-studies-${Math.random().toString(36).slice(2)}`;
             const commit = (rerender = false) => {
+                markDirty();
                 onChange(items.map(cs => ({
                     image: cs.image || '',
                     industry: cs.industry || '',
@@ -1874,6 +1931,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             const id = `dcs-${Math.random().toString(36).slice(2)}`;
             const hasCustom = items.some(dc => dc.custom === true);
             const commit = (rerender = false) => {
+                markDirty();
                 onChange(items.map(dc => ({
                     city: dc.city || '',
                     name: dc.name || '',
@@ -2010,6 +2068,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                                     if (el.dataset.productDesc != null) el.dataset.productDesc = String(index);
                                 });
                             });
+                            markDirty();
                             commit(false);
                         }
                     });
@@ -2071,11 +2130,13 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     });
                 });
                 root.querySelector('[data-add-item]')?.addEventListener('click', () => {
+                    markDirty();
                     onChange([...values, '']);
                     renderEditorFields();
                 });
                 root.querySelectorAll('[data-remove-index]').forEach(button => {
                     button.addEventListener('click', () => {
+                        markDirty();
                         onChange(values.filter((_, index) => index !== Number(button.dataset.removeIndex)));
                         renderEditorFields();
                     });
@@ -2087,6 +2148,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         const next = [...values];
                         setStatus('Optimizing photo…');
                         next[Number(input.dataset.fileIndex)] = await compressImageFile(selected, { maxEdge: 1600, quality: 0.82 });
+                        markDirty();
                         onChange(next);
                         renderEditorFields();
                         setStatus('Photo updated.');
@@ -2155,6 +2217,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             const condensedSize = heroPreviewMetrics(metricCount, (dualCrop && showCondensed) ? 'condensed' : 'capability');
 
             const commit = (next, { rerender = false } = {}) => {
+                markDirty();
                 onChange(normalizeHeroImageList(next));
                 if (rerender) renderEditorFields();
             };
@@ -2613,6 +2676,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         const cardIndex = Number(button.dataset.addPoint);
                         working[cardIndex] = working[cardIndex] || { title: '', points: [] };
                         working[cardIndex].points = [...readRichPoints(root, cardIndex), ''];
+                        markDirty();
                         onChange(clone(working));
                         renderEditorFields();
                     });
@@ -2626,6 +2690,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         points.splice(pointIndex, 1);
                         working[cardIndex] = working[cardIndex] || { title: '', points: [] };
                         working[cardIndex].points = points.length ? points : [''];
+                        markDirty();
                         onChange(clone(working));
                         renderEditorFields();
                     });
@@ -2780,6 +2845,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 return false;
             }
             persistActive();
+            setDirty(false);
             if (showNotice) {
                 flashButton(document.getElementById('save-local'), 'Saved');
                 const bytes = estimateDraftJsonBytes(draft);
@@ -3473,6 +3539,16 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         window.__studioApplyFollowUpRecap = applyFollowUpRecap;
         window.__studioRender = render;
         window.__studioFlashButton = flashButton;
+        window.__studioIsDirty = () => isDirty;
+        window.__studioSetDirty = setDirty;
+
+        document.body.addEventListener('input', markDirtyFromEvent);
+        document.body.addEventListener('change', markDirtyFromEvent);
+        window.addEventListener('beforeunload', event => {
+            if (!isDirty) return;
+            event.preventDefault();
+            event.returnValue = '';
+        });
 
         document.getElementById('save-local').addEventListener('click', () => saveLocal(true));
         document.getElementById('refresh-preview').addEventListener('click', refreshPreview);
@@ -3499,22 +3575,28 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             clearFollowUpState();
             nameInput.value = '';
             if (repNameInput) repNameInput.value = '';
+            suppressDirty = true;
             prepareDraft(baseData);
             render();
+            suppressDirty = false;
             syncPublishPanelValues();
             hidePublishUrlRows();
             persistActive();
             syncPublishButtonLabel();
             refreshPreview();
+            setDirty(false);
             setStatus('New presentation from template.');
         });
         document.getElementById('reset-draft').addEventListener('click', () => {
             if (!confirm('Reset the current draft to content.json?')) return;
             if (presentationSlug) localStorage.removeItem(draftKey());
             else localStorage.removeItem(LEGACY_STORAGE_KEY);
+            suppressDirty = true;
             prepareDraft(baseData);
             render();
+            suppressDirty = false;
             refreshPreview();
+            setDirty(false);
             setStatus('Draft reset to template.');
         });
         document.getElementById('close-follow-up').addEventListener('click', closeFollowUpModal);
@@ -3550,6 +3632,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             stripDuplicatePageLogos(draft);
             updateCustomerLogoPreview();
             persistActive();
+            markDirty();
             setStatus('Customer logo updated.');
         }
 

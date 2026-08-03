@@ -3,9 +3,10 @@
  *   python3 -m http.server 8765
  *   node scripts/e2e-smoke.mjs
  *
- * Covers: editor load, draft save, agenda heroes, data-center multi-highlight,
- * pricing SPEC (acme + GPC 2-term), publish demo-logo gate, nav toggles,
- * key-routes / omaha-metro side heroes, map insight lightbulb (default off).
+ * Covers: editor load, dirty→clean on Save Draft, draft save, agenda heroes,
+ * data-center multi-highlight, pricing SPEC (acme + GPC 2-term), publish
+ * demo-logo gate, nav toggles, key-routes / omaha-metro side heroes, map
+ * insight lightbulb (default off).
  * Publish/follow-up APIs need a live backend — use scripts/e2e-publish.mjs for those.
  */
 import { chromium } from 'playwright';
@@ -125,6 +126,57 @@ async function main() {
     else fail('preview-16x9-scale', JSON.stringify(scale));
     if ((scale.active || '').includes('agenda')) pass('initial-page-agenda');
     else fail('initial-page-agenda', scale.active);
+
+    // 1b) Dirty check: edit → dirty cue → Save Draft → clean
+    const dirtyBaseline = await page.evaluate(() => ({
+      dirty: window.__studioIsDirty?.() === true,
+      saveCue: document.getElementById('save-local')?.classList.contains('btn-dirty') === true,
+      publishCue: document.getElementById('publish-btn')?.classList.contains('btn-dirty') === true,
+      unsavedVisible: !document.getElementById('header-unsaved-msg')?.classList.contains('hidden')
+    }));
+    if (!dirtyBaseline.dirty && !dirtyBaseline.saveCue && !dirtyBaseline.publishCue && !dirtyBaseline.unsavedVisible) {
+      pass('dirty-clean-on-load');
+    } else {
+      fail('dirty-clean-on-load', JSON.stringify(dirtyBaseline));
+    }
+    const priorRep = await page.inputValue('#rep-name');
+    await page.fill('#rep-name', `Dirty Check ${Date.now()}`);
+    await sleep(150);
+    const dirtyAfterEdit = await page.evaluate(() => ({
+      dirty: window.__studioIsDirty?.() === true,
+      saveCue: document.getElementById('save-local')?.classList.contains('btn-dirty') === true,
+      publishCue: document.getElementById('publish-btn')?.classList.contains('btn-dirty') === true,
+      unsavedVisible: !document.getElementById('header-unsaved-msg')?.classList.contains('hidden'),
+      publishLabel: document.getElementById('publish-btn')?.textContent
+    }));
+    if (
+      dirtyAfterEdit.dirty
+      && dirtyAfterEdit.saveCue
+      && dirtyAfterEdit.publishCue
+      && dirtyAfterEdit.unsavedVisible
+      && (dirtyAfterEdit.publishLabel === 'Publish' || dirtyAfterEdit.publishLabel === 'Republish')
+    ) {
+      pass('dirty-marks-after-edit');
+    } else {
+      fail('dirty-marks-after-edit', JSON.stringify(dirtyAfterEdit));
+    }
+    await page.click('#save-local');
+    await sleep(250);
+    const dirtyAfterSave = await page.evaluate(() => ({
+      dirty: window.__studioIsDirty?.() === true,
+      saveCue: document.getElementById('save-local')?.classList.contains('btn-dirty') === true,
+      publishCue: document.getElementById('publish-btn')?.classList.contains('btn-dirty') === true,
+      unsavedVisible: !document.getElementById('header-unsaved-msg')?.classList.contains('hidden')
+    }));
+    if (!dirtyAfterSave.dirty && !dirtyAfterSave.saveCue && !dirtyAfterSave.publishCue && !dirtyAfterSave.unsavedVisible) {
+      pass('dirty-clears-on-save-draft');
+    } else {
+      fail('dirty-clears-on-save-draft', JSON.stringify(dirtyAfterSave));
+    }
+    // Restore prior rep so later cases stay predictable.
+    await page.fill('#rep-name', priorRep);
+    await page.click('#save-local');
+    await sleep(200);
 
     // 2) Page click sync via postMessage
     for (const id of ['data-centers', 'products', 'core-capabilities', 'agenda']) {
