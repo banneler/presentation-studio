@@ -174,6 +174,11 @@ async function main() {
       fail('publish-presentation', bodyText.match(/.{0,30}(fail|error|GITHUB|Published|Live).{0,100}/i)?.[0] || bodyText.slice(0, 220));
     }
 
+    const publishLabelAfter = await page.evaluate(() => document.getElementById('publish-btn')?.textContent || '');
+    if (publishLabelAfter === 'Republish' || publishLabelAfter === 'Republished')
+      pass('publish-button-becomes-republish', publishLabelAfter);
+    else fail('publish-button-becomes-republish', publishLabelAfter);
+
     // Persistent URL row (no timed auto-hide) + manual dismiss
     const liveWrapVisible = await page.evaluate(() => {
       const wrap = document.getElementById('live-url-wrap');
@@ -308,7 +313,7 @@ async function main() {
     });
     if (branchState.branch) pass('follow-up-branch-after-publish');
     else fail('follow-up-branch-after-publish', JSON.stringify(branchState));
-    if (branchState.publishText === 'Publish' || branchState.publishText === 'Published')
+    if (branchState.publishText === 'Republish' || branchState.publishText === 'Republished')
       pass('publish-button-not-stuck-after-follow-up', branchState.publishText);
     else fail('publish-button-not-stuck-after-follow-up', branchState.publishText);
 

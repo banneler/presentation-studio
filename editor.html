@@ -895,6 +895,35 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             }
         }
 
+        function syncPublishedStateFromLibrary() {
+            if (!presentationSlug || !library.length) return;
+            const entry = library.find(item => item.slug === presentationSlug);
+            if (!entry?.url) return;
+            if (!publishedUrl) {
+                publishedUrl = `${window.location.origin}${entry.url}`;
+            }
+        }
+
+        function isPresentationPublished() {
+            if (publishedUrl) return true;
+            if (presentationSlug && library.some(item => item.slug === presentationSlug)) return true;
+            return false;
+        }
+
+        function publishButtonLabels(alreadyPublished = isPresentationPublished()) {
+            return alreadyPublished
+                ? { idle: 'Republish', busy: 'Republishing...', success: 'Republished' }
+                : { idle: 'Publish', busy: 'Publishing...', success: 'Published' };
+        }
+
+        function syncPublishButtonLabel() {
+            const button = document.getElementById('publish-btn');
+            if (!button || button.disabled) return;
+            const transient = new Set(['Publishing...', 'Republishing...', 'Published', 'Republished']);
+            if (transient.has(button.textContent)) return;
+            button.textContent = publishButtonLabels().idle;
+        }
+
         function buildClientFollowUpContent(source, recap = {}) {
             // Mirrors api/_lib/viewer.js applyMeetingRecap for local preview.
             const next = clone(source || {});
@@ -1065,7 +1094,9 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             // Preview iframe defaults to template content.json; point it at the restored draft.
             refreshPreview();
             await refreshLibrary();
+            syncPublishedStateFromLibrary();
             syncHasFollowUpFromLibrary();
+            syncPublishButtonLabel();
             if (hasFollowUp && isFollowUpPageId(selectedPageId)) {
                 await ensureFollowUpEditLoaded();
             }
@@ -1202,6 +1233,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     syncPublishPanelValues();
                     hidePublishUrlRows();
                     persistActive();
+                    syncPublishButtonLabel();
                     render();
                 }
                 closeDeleteModal();
@@ -1225,7 +1257,9 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 library = data.presentations || [];
                 renderLibrary();
                 const before = hasFollowUp;
+                syncPublishedStateFromLibrary();
                 syncHasFollowUpFromLibrary();
+                syncPublishButtonLabel();
                 if (before !== hasFollowUp) renderPageList();
             } catch (error) {
                 library = [];
@@ -1254,6 +1288,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 syncPublishPanelValues();
                 hidePublishUrlRows();
                 persistActive();
+                syncPublishButtonLabel();
                 saveLocal(false);
                 refreshPreview();
                 setStatus(`Opened published deck: ${presentationName}`);
@@ -2890,10 +2925,11 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             if (!assertCustomerLogoReadyForPublish()) return;
             if (saveLocal(false) === false) return;
             const button = document.getElementById('publish-btn');
-            const idleLabel = 'Publish';
-            button.textContent = 'Publishing...';
+            const alreadyPublished = isPresentationPublished();
+            const labels = publishButtonLabels(alreadyPublished);
+            button.textContent = labels.busy;
             button.disabled = true;
-            setStatus('Preparing publish…');
+            setStatus(alreadyPublished ? 'Preparing republish…' : 'Preparing publish…');
             let didPublish = false;
             try {
                 const { body, bytes } = await buildPublishPayload();
@@ -2908,23 +2944,24 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 publishedUrl = `${window.location.origin}${data.url}`;
                 persistActive();
                 showLiveUrlRow();
-                setStatus(`Published. Syncing library…`);
+                setStatus(`${labels.success}. Syncing library…`);
                 await refreshLibrary();
-                setStatus(`Published. Live soon at ${data.url}`);
+                setStatus(`${labels.success}. Live soon at ${data.url}`);
                 didPublish = true;
             } catch (error) {
                 if (error?.cancelled) {
-                    setStatus('Publish cancelled');
+                    setStatus(alreadyPublished ? 'Republish cancelled' : 'Publish cancelled');
                 } else {
                     alert(error.message || 'Publish failed. Confirm GITHUB_TOKEN is set in Vercel.');
                     setStatus(error.message || 'Publish failed');
                 }
             } finally {
                 button.disabled = false;
-                button.textContent = idleLabel;
+                // After first success, publishedUrl is set so idle becomes Republish.
+                button.textContent = publishButtonLabels().idle;
             }
-            // Flash after finally so the timeout restores "Publish", not "Publishing..."
-            if (didPublish) flashButton(button, 'Published');
+            // Flash after finally so the timeout restores idle, not the busy label.
+            if (didPublish) flashButton(button, labels.success);
         }
 
         function openFollowUpModal() {
@@ -2962,8 +2999,9 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             }
             // Never leave the main Publish control stuck in a busy label.
             const publishBtn = document.getElementById('publish-btn');
-            if (publishBtn && publishBtn.textContent === 'Publishing...') {
-                publishBtn.textContent = 'Publish';
+            const publishBusy = new Set(['Publishing...', 'Republishing...']);
+            if (publishBtn && publishBusy.has(publishBtn.textContent)) {
+                publishBtn.textContent = publishButtonLabels().idle;
                 publishBtn.disabled = false;
             }
             setStatus(fromEditor ? 'Updating follow-up…' : 'Preparing follow-up…');
@@ -3023,9 +3061,11 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     button.textContent = idleLabel;
                     button.disabled = false;
                 }
-                if (publishBtn && publishBtn.textContent === 'Publishing...') {
-                    publishBtn.textContent = 'Publish';
+                if (publishBtn && publishBusy.has(publishBtn.textContent)) {
+                    publishBtn.textContent = publishButtonLabels().idle;
                     publishBtn.disabled = false;
+                } else {
+                    syncPublishButtonLabel();
                 }
             }
             if (didPublish && button) flashButton(button, fromEditor ? 'Updated' : 'Published');
@@ -3464,6 +3504,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             syncPublishPanelValues();
             hidePublishUrlRows();
             persistActive();
+            syncPublishButtonLabel();
             refreshPreview();
             setStatus('New presentation from template.');
         });
@@ -3492,6 +3533,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         nameInput.addEventListener('input', () => {
             syncNameFields();
             persistActive();
+            syncPublishButtonLabel();
         });
         repNameInput.addEventListener('input', () => {
             repName = repNameInput.value.trim();

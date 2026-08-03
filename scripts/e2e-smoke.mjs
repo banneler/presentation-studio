@@ -806,20 +806,32 @@ async function main() {
       fail('follow-up-branch-visible-after-create', 'branch still hidden after markHasFollowUp');
     }
 
-    // 17) Publish button must not stick on "Publishing..." after flash success path
+    // 17) Publish button must not stick on busy label after flash success path
     const publishReset = await page.evaluate(async () => {
       const button = document.getElementById('publish-btn');
       if (!button) return { ok: false, reason: 'missing publish-btn' };
+      // First publish: finally restores idle, then flash success.
       button.textContent = 'Publishing...';
       button.disabled = true;
-      // Mirror the fixed publish success path: reset in finally, then flash.
       button.disabled = false;
       button.textContent = 'Publish';
       if (typeof window.__studioFlashButton === 'function') {
         window.__studioFlashButton(button, 'Published');
       }
       await new Promise(r => setTimeout(r, 1300));
-      return { ok: button.textContent === 'Publish', text: button.textContent };
+      if (button.textContent !== 'Publish') {
+        return { ok: false, text: button.textContent, phase: 'publish' };
+      }
+      // Republish path: idle is already Republish after a live publish exists.
+      button.textContent = 'Republishing...';
+      button.disabled = true;
+      button.disabled = false;
+      button.textContent = 'Republish';
+      if (typeof window.__studioFlashButton === 'function') {
+        window.__studioFlashButton(button, 'Republished');
+      }
+      await new Promise(r => setTimeout(r, 1300));
+      return { ok: button.textContent === 'Republish', text: button.textContent, phase: 'republish' };
     });
     if (publishReset.ok) pass('publish-button-resets-after-flash');
     else fail('publish-button-resets-after-flash', JSON.stringify(publishReset));
