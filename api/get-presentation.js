@@ -24,11 +24,28 @@ module.exports = async function handler(req, res) {
     const content = JSON.parse(decoded);
 
     let hasFollowUp = false;
+    let followUpRecap = null;
     try {
       const followUp = await getFile(`presentations/${slug}/follow-up/content.json`);
       hasFollowUp = Boolean(followUp?.content);
+      if (hasFollowUp) {
+        const decodedFollowUp = Buffer.from(followUp.content, 'base64').toString('utf8');
+        const followUpContent = JSON.parse(decodedFollowUp);
+        const agenda = followUpContent?.pageContent?.agenda || {};
+        const keyNav = followUpContent?.settings?.keyConceptsNav || [];
+        const extNav = followUpContent?.settings?.extendedNav || followUpContent?.navOrder || [];
+        followUpRecap = {
+          headline: agenda.headline || '',
+          items: Array.isArray(agenda.items) ? agenda.items : [],
+          subtitle: followUpContent?.mapData?.agenda?.subtitle || 'Follow-Up from Our Conversation',
+          includeRightfiber: keyNav.includes('rightfiber') || extNav.includes('rightfiber'),
+          keyConceptsNav: keyNav,
+          extendedNav: extNav
+        };
+      }
     } catch (error) {
       hasFollowUp = false;
+      followUpRecap = null;
     }
 
     return res.status(200).json({
@@ -37,7 +54,8 @@ module.exports = async function handler(req, res) {
       content,
       url: `/presentations/${slug}/`,
       followUpUrl: hasFollowUp ? `/presentations/${slug}/follow-up/` : null,
-      hasFollowUp
+      hasFollowUp,
+      followUpRecap
     });
   } catch (error) {
     console.error('get-presentation failed:', error);

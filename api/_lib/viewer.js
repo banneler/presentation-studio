@@ -139,9 +139,20 @@ function applyMeetingRecap(content, recap = {}) {
     return order;
   };
 
-  next.navOrder = ensureNav(next.navOrder || next.settings.extendedNav || []);
-  next.settings.extendedNav = ensureNav(next.settings.extendedNav || next.navOrder || []);
-  next.settings.keyConceptsNav = ensureNav(next.settings.keyConceptsNav || []);
+  // Optional explicit nav overrides (follow-up editor). Still honor includeRightfiber.
+  if (Array.isArray(recap.extendedNav)) {
+    next.settings.extendedNav = ensureNav(recap.extendedNav);
+    next.navOrder = next.settings.extendedNav.slice();
+  } else {
+    next.navOrder = ensureNav(next.navOrder || next.settings.extendedNav || []);
+    next.settings.extendedNav = ensureNav(next.settings.extendedNav || next.navOrder || []);
+  }
+
+  if (Array.isArray(recap.keyConceptsNav)) {
+    next.settings.keyConceptsNav = ensureNav(recap.keyConceptsNav);
+  } else {
+    next.settings.keyConceptsNav = ensureNav(next.settings.keyConceptsNav || []);
+  }
 
   return next;
 }

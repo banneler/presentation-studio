@@ -292,6 +292,39 @@ async function main() {
     const fuGet = await apiJson(`/api/get-presentation?slug=${encodeURIComponent(SLUG)}`);
     if (fuGet.data?.hasFollowUp) pass('get-presentation-follow-up-flag');
     else fail('get-presentation-follow-up-flag', JSON.stringify(fuGet.data));
+    if (fuGet.data?.followUpRecap?.headline) pass('get-presentation-follow-up-recap', fuGet.data.followUpRecap.headline.slice(0, 60));
+    else fail('get-presentation-follow-up-recap', JSON.stringify(fuGet.data?.followUpRecap || null));
+
+    // Follow-up branch under Meeting Agenda + Publish button not stuck
+    await page.click('#refresh-library');
+    await sleep(800);
+    const branchState = await page.evaluate(() => {
+      const branch = document.querySelector('[data-select-id="__follow-up__"]');
+      const publishText = document.getElementById('publish-btn')?.textContent || '';
+      return {
+        branch: Boolean(branch),
+        publishText
+      };
+    });
+    if (branchState.branch) pass('follow-up-branch-after-publish');
+    else fail('follow-up-branch-after-publish', JSON.stringify(branchState));
+    if (branchState.publishText === 'Publish' || branchState.publishText === 'Published')
+      pass('publish-button-not-stuck-after-follow-up', branchState.publishText);
+    else fail('publish-button-not-stuck-after-follow-up', branchState.publishText);
+
+    if (branchState.branch) {
+      await page.click('[data-select-id="__follow-up__"]');
+      await sleep(800);
+      const fuEditor = await page.evaluate(() => ({
+        heading: document.getElementById('selected-heading')?.textContent || '',
+        updateBtn: Boolean(document.getElementById('update-follow-up-btn')),
+        previewDraft: new URL(document.getElementById('preview')?.contentWindow?.location?.href || '', location.href)
+          .searchParams.get('draft')
+      }));
+      if (/Meeting Recap|Follow-Up/i.test(fuEditor.heading) && fuEditor.updateBtn)
+        pass('follow-up-branch-loads-editor', fuEditor.heading);
+      else fail('follow-up-branch-loads-editor', JSON.stringify(fuEditor));
+    }
 
     // DELETE via UI
     await page.click('#refresh-library');

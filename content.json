@@ -11,7 +11,8 @@
       "layer2",
       "ip-network",
       "key-routes",
-      "why-gpc"
+      "why-gpc",
+      "case-studies"
     ],
     "extendedNav": [
       "agenda",
@@ -24,7 +25,8 @@
       "key-routes",
       "data-centers",
       "products",
-      "why-gpc"
+      "why-gpc",
+      "case-studies"
     ]
   },
   "navOrder": [
@@ -38,7 +40,8 @@
     "key-routes",
     "data-centers",
     "products",
-    "why-gpc"
+    "why-gpc",
+    "case-studies"
   ],
   "mapData": {
     "agenda": {
@@ -361,6 +364,25 @@
         }
       ],
       "navLabel": "GPC Advantage"
+    },
+    "case-studies": {
+      "id": "case-studies",
+      "title": "Client Success",
+      "navLabel": "Case Studies",
+      "subtitle": "Proven Solutions in Action",
+      "type": "html",
+      "stats": [
+        {
+          "label": "Delivery Timeline",
+          "value": "Fast Turn-Up",
+          "color": "text-gpc-orange"
+        },
+        {
+          "label": "Connection Type",
+          "value": "100% Fiber",
+          "color": "text-gpc-green"
+        }
+      ]
     }
   },
   "pageContent": {
@@ -732,6 +754,32 @@
           "icon": "M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
         }
       ]
-    }
+    },
+    "case-studies": [
+      {
+        "image": "boystown.webp",
+        "industry": "Healthcare & Education",
+        "client": "Boys Town",
+        "need": "A nationally recognized healthcare and educational campus required a highly secure, scalable, and redundant network to handle explosive data growth and ensure uninterrupted connectivity across its medical research facilities.",
+        "solution": "GPC engineered a customized, highly available fiber architecture featuring two dedicated 40 Gbps transport links between critical data centers, ensuring maximum uptime for life-saving medical data.",
+        "quote": "Great Plains Communications provides the dependable, high-capacity fiber backbone we need to seamlessly connect our data centers and ensure our staff can focus entirely on the children and families we serve."
+      },
+      {
+        "image": "aerospace.webp",
+        "industry": "Aerospace",
+        "client": "Global Manufacturer",
+        "need": "Due to the extreme demands of aerospace engineering, the client required massive bandwidth availability, an intricate custom network design, and an aggressive installation timeline to support mission-critical operations.",
+        "solution": "GPC navigated complex permitting and rapidly deployed a custom-built fiber infrastructure, delivering four dedicated 400G optical waves to a major Western data center—fully operational ahead of schedule.",
+        "quote": "GPC's ability to deliver reliable connectivity for our most critical operations, combined with their dedicated support and attention to detail, resulted in a flawlessly executed deployment."
+      },
+      {
+        "image": "hospitality.webp",
+        "industry": "Restaurants & Hospitality",
+        "client": "Regional Franchise Group",
+        "need": "Managing rapid expansion across 14 regional locations, the hospitality group faced connectivity bottlenecks. Consistent upload speeds and unified network performance were vital for modernizing their operational systems.",
+        "solution": "GPC deployed a 100% fiber-optic network delivering 100x100 Mbps symmetrical broadband and enterprise voice services, enabling the seamless rollout of upgraded firewalls and advanced WiFi infrastructure.",
+        "quote": "GPC's tailored approach provided the robust, uniform connectivity we desperately needed. We gained superior network performance that instantly elevated operations across every single location."
+      }
+    ]
   }
 }

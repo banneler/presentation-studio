@@ -305,10 +305,11 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         const LEGACY_STORAGE_KEY = 'presentation-studio-draft';
         const ACTIVE_KEY = 'presentation-studio-active';
         const EDITOR_WIDTH_KEY = 'presentation-studio-editor-width';
-        const DEFAULT_KEY_CONCEPTS_NAV = ['agenda', 'core-capabilities', 'national', 'layer2', 'ip-network', 'key-routes', 'why-gpc'];
+        const DEFAULT_KEY_CONCEPTS_NAV = ['agenda', 'core-capabilities', 'national', 'layer2', 'ip-network', 'key-routes', 'why-gpc', 'case-studies'];
         const DEMO_CUSTOMER_LOGO = 'demo-customer-logo.webp';
         // Current demo asset plus the previous bundled default (mid-flight drafts).
         const DEMO_CUSTOMER_LOGO_NAMES = new Set([DEMO_CUSTOMER_LOGO, 'tenaska_logo.png']);
+        const FOLLOW_UP_PAGE_ID = '__follow-up__';
         const DEFAULT_PRICING_SIDE_IMAGE = {
             src: 'pricing-hero.jpg',
             panXFull: 0.5,
@@ -331,6 +332,8 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         let repName = '';
         let publishedUrl = '';
         let followUpUrl = '';
+        let hasFollowUp = false;
+        let followUpEdit = null;
         let library = [];
         // Keep publish payloads under typical serverless body limits (~4.5MB).
         const PUBLISH_WARN_BYTES = 2.5 * 1024 * 1024;
@@ -759,11 +762,59 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 }));
             }
             pageOrder = draft.settings.editorPageOrder || buildDefaultPageOrder();
+            ensureTemplatePages();
             selectedPageId = resolveSelectedPageId(selectedPageId);
             syncIdentityFieldsFromDraft();
         }
 
+        function ensureTemplatePages() {
+            if (!draft || !baseData) return;
+            draft.mapData = draft.mapData || {};
+            draft.pageContent = draft.pageContent || {};
+            draft.settings = draft.settings || {};
+
+            const hadCaseStudies = Boolean(draft.mapData['case-studies']);
+            if (!hadCaseStudies && baseData.mapData?.['case-studies']) {
+                draft.mapData['case-studies'] = clone(baseData.mapData['case-studies']);
+            }
+            const caseStudiesEmpty = !Array.isArray(draft.pageContent['case-studies'])
+                || draft.pageContent['case-studies'].length === 0;
+            if (caseStudiesEmpty && Array.isArray(baseData.pageContent?.['case-studies'])) {
+                draft.pageContent['case-studies'] = clone(baseData.pageContent['case-studies']);
+            }
+
+            if (!draft.mapData['case-studies']) return;
+
+            if (!Array.isArray(pageOrder) || !pageOrder.length) {
+                pageOrder = draft.settings.editorPageOrder || buildDefaultPageOrder();
+            }
+            if (!pageOrder.includes('case-studies')) {
+                const after = pageOrder.indexOf('why-gpc');
+                if (after >= 0) pageOrder.splice(after + 1, 0, 'case-studies');
+                else pageOrder.push('case-studies');
+            }
+
+            // Newly introduced template page: match template Key/Ext defaults.
+            if (!hadCaseStudies) {
+                const keyNav = new Set(draft.settings.keyConceptsNav || []);
+                const extNav = new Set(draft.settings.extendedNav || draft.navOrder || []);
+                const templateKey = new Set(baseData.settings?.keyConceptsNav || []);
+                const templateExt = new Set(baseData.settings?.extendedNav || baseData.navOrder || []);
+                if (templateKey.has('case-studies')) keyNav.add('case-studies');
+                if (templateExt.has('case-studies')) extNav.add('case-studies');
+                draft.settings.keyConceptsNav = pageOrder.filter(id => keyNav.has(id));
+                draft.settings.extendedNav = pageOrder.filter(id => extNav.has(id));
+                draft.navOrder = draft.settings.extendedNav.slice();
+            }
+            draft.settings.editorPageOrder = pageOrder.slice();
+        }
+
+        function isFollowUpPageId(pageId) {
+            return pageId === FOLLOW_UP_PAGE_ID;
+        }
+
         function pageIsNavigable(pageId, data = draft) {
+            if (isFollowUpPageId(pageId)) return hasFollowUp;
             if (!pageId || !data?.mapData?.[pageId] || data.mapData[pageId].hidden === true) return false;
             const keyNav = data.settings?.keyConceptsNav || [];
             const extNav = data.settings?.extendedNav || data.navOrder || [];
@@ -771,11 +822,188 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         }
 
         function resolveSelectedPageId(preferredId, data = draft) {
+            if (isFollowUpPageId(preferredId) && hasFollowUp) return FOLLOW_UP_PAGE_ID;
             const order = (data?.settings?.editorPageOrder || pageOrder || []).filter(id => data?.mapData?.[id]);
             if (preferredId && pageIsNavigable(preferredId, data)) return preferredId;
             if (preferredId && data?.mapData?.[preferredId] && order.includes(preferredId)) return preferredId;
             const firstVisible = order.find(id => pageIsNavigable(id, data));
             return firstVisible || order[0] || Object.keys(data?.mapData || {})[0] || null;
+        }
+
+        function followUpPreviewStorageKey(slug = presentationSlug) {
+            return slug
+                ? `presentation-studio-follow-up-preview:${slug}`
+                : 'presentation-studio-follow-up-preview';
+        }
+
+        function defaultFollowUpEdit() {
+            const keyNav = (draft?.settings?.keyConceptsNav || []).slice();
+            const extNav = (draft?.settings?.extendedNav || draft?.navOrder || []).slice();
+            return {
+                headline: document.getElementById('recap-headline')?.value?.trim()
+                    || 'Thank you for the conversation. Here are the next steps.',
+                items: (document.getElementById('recap-items')?.value || '')
+                    .split('\n')
+                    .map(item => item.trim())
+                    .filter(Boolean),
+                subtitle: 'Follow-Up from Our Conversation',
+                includeRightfiber: document.getElementById('recap-rightfiber')?.checked !== false,
+                keyConceptsNav: keyNav,
+                extendedNav: extNav
+            };
+        }
+
+        function applyFollowUpRecap(recap) {
+            if (!recap || typeof recap !== 'object') return;
+            followUpEdit = {
+                headline: String(recap.headline || '').trim()
+                    || 'Thank you for the conversation. Here are the next steps.',
+                items: Array.isArray(recap.items)
+                    ? recap.items.map(item => String(item || '').trim()).filter(Boolean)
+                    : [],
+                subtitle: String(recap.subtitle || 'Follow-Up from Our Conversation'),
+                includeRightfiber: recap.includeRightfiber !== false,
+                keyConceptsNav: Array.isArray(recap.keyConceptsNav) ? recap.keyConceptsNav.slice() : null,
+                extendedNav: Array.isArray(recap.extendedNav) ? recap.extendedNav.slice() : null
+            };
+        }
+
+        function markHasFollowUp(url = followUpUrl) {
+            hasFollowUp = true;
+            if (url) followUpUrl = url;
+            if (!followUpEdit) followUpEdit = defaultFollowUpEdit();
+        }
+
+        function clearFollowUpState() {
+            hasFollowUp = false;
+            followUpEdit = null;
+            followUpUrl = '';
+            if (isFollowUpPageId(selectedPageId)) selectedPageId = 'agenda';
+            try {
+                localStorage.removeItem(followUpPreviewStorageKey());
+            } catch (error) { /* ignore */ }
+        }
+
+        function syncHasFollowUpFromLibrary() {
+            if (!presentationSlug || !library.length) return;
+            const entry = library.find(item => item.slug === presentationSlug);
+            if (!entry) return;
+            if (entry.hasFollowUp) {
+                markHasFollowUp(entry.followUpUrl
+                    ? `${window.location.origin}${entry.followUpUrl}`
+                    : followUpUrl || `${window.location.origin}/presentations/${presentationSlug}/follow-up/`);
+            }
+        }
+
+        function buildClientFollowUpContent(source, recap = {}) {
+            // Mirrors api/_lib/viewer.js applyMeetingRecap for local preview.
+            const next = clone(source || {});
+            next.settings = { ...(next.settings || {}) };
+            next.mapData = { ...(next.mapData || {}) };
+            next.pageContent = { ...(next.pageContent || {}) };
+
+            if (next.mapData.agenda) {
+                next.mapData.agenda = {
+                    ...next.mapData.agenda,
+                    title: 'Meeting Recap',
+                    navLabel: 'Meeting Recap',
+                    subtitle: recap.subtitle || 'Follow-Up from Our Conversation'
+                };
+            }
+            if (next.pageContent.agenda) {
+                next.pageContent.agenda = {
+                    ...next.pageContent.agenda,
+                    kicker: 'Meeting Recap',
+                    headline: recap.headline || 'Thank you for the conversation. Here are the next steps.',
+                    items: Array.isArray(recap.items) && recap.items.length
+                        ? recap.items.map(item => String(item || '').trim()).filter(Boolean)
+                        : (next.pageContent.agenda.items || [])
+                };
+            }
+
+            const includeRightfiber = recap.includeRightfiber !== false;
+            const ensureNav = (list = []) => {
+                const order = Array.isArray(list) ? list.slice() : [];
+                if (!includeRightfiber) return order.filter(id => id !== 'rightfiber');
+                if (!order.includes('rightfiber')) {
+                    const after = order.indexOf('core-capabilities');
+                    if (after >= 0) order.splice(after + 1, 0, 'rightfiber');
+                    else order.unshift('rightfiber');
+                }
+                return order;
+            };
+
+            if (Array.isArray(recap.extendedNav)) {
+                next.settings.extendedNav = ensureNav(recap.extendedNav);
+                next.navOrder = next.settings.extendedNav.slice();
+            } else {
+                next.navOrder = ensureNav(next.navOrder || next.settings.extendedNav || []);
+                next.settings.extendedNav = ensureNav(next.settings.extendedNav || next.navOrder || []);
+            }
+            if (Array.isArray(recap.keyConceptsNav)) {
+                next.settings.keyConceptsNav = ensureNav(recap.keyConceptsNav);
+            } else {
+                next.settings.keyConceptsNav = ensureNav(next.settings.keyConceptsNav || []);
+            }
+            next.settings.variant = 'follow-up';
+            return next;
+        }
+
+        function currentFollowUpRecap() {
+            const edit = followUpEdit || defaultFollowUpEdit();
+            const recap = {
+                headline: String(edit.headline || '').trim(),
+                items: Array.isArray(edit.items)
+                    ? edit.items.map(item => String(item || '').trim()).filter(Boolean)
+                    : [],
+                subtitle: String(edit.subtitle || 'Follow-Up from Our Conversation'),
+                includeRightfiber: edit.includeRightfiber !== false
+            };
+            if (Array.isArray(edit.keyConceptsNav)) recap.keyConceptsNav = edit.keyConceptsNav.slice();
+            if (Array.isArray(edit.extendedNav)) recap.extendedNav = edit.extendedNav.slice();
+            return recap;
+        }
+
+        async function ensureFollowUpEditLoaded() {
+            if (followUpEdit) return followUpEdit;
+            if (!presentationSlug) {
+                followUpEdit = defaultFollowUpEdit();
+                return followUpEdit;
+            }
+            try {
+                const response = await fetch(`/api/get-presentation?slug=${encodeURIComponent(presentationSlug)}&t=${Date.now()}`);
+                const data = await response.json();
+                if (response.ok && data.ok && data.followUpRecap) {
+                    applyFollowUpRecap(data.followUpRecap);
+                    markHasFollowUp(data.followUpUrl
+                        ? `${window.location.origin}${data.followUpUrl}`
+                        : followUpUrl);
+                    return followUpEdit;
+                }
+            } catch (error) {
+                // Fall through to published content.json / defaults.
+            }
+            try {
+                const response = await fetch(`/presentations/${presentationSlug}/follow-up/content.json?t=${Date.now()}`);
+                if (response.ok) {
+                    const content = await response.json();
+                    applyFollowUpRecap({
+                        headline: content?.pageContent?.agenda?.headline,
+                        items: content?.pageContent?.agenda?.items,
+                        subtitle: content?.mapData?.agenda?.subtitle,
+                        includeRightfiber: (content?.settings?.keyConceptsNav || []).includes('rightfiber')
+                            || (content?.settings?.extendedNav || content?.navOrder || []).includes('rightfiber'),
+                        keyConceptsNav: content?.settings?.keyConceptsNav,
+                        extendedNav: content?.settings?.extendedNav || content?.navOrder
+                    });
+                    markHasFollowUp();
+                    return followUpEdit;
+                }
+            } catch (error) {
+                // Defaults below.
+            }
+            followUpEdit = defaultFollowUpEdit();
+            return followUpEdit;
         }
 
         function syncIdentityFieldsFromDraft() {
@@ -820,6 +1048,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             repName = active?.repName || '';
             publishedUrl = active?.publishedUrl || '';
             followUpUrl = active?.followUpUrl || '';
+            hasFollowUp = Boolean(followUpUrl);
             selectedPageId = active?.selectedPageId || null;
             nameInput.value = presentationName;
             if (repNameInput) repNameInput.value = repName;
@@ -836,6 +1065,11 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             // Preview iframe defaults to template content.json; point it at the restored draft.
             refreshPreview();
             await refreshLibrary();
+            syncHasFollowUpFromLibrary();
+            if (hasFollowUp && isFollowUpPageId(selectedPageId)) {
+                await ensureFollowUpEditLoaded();
+            }
+            render();
             setStatus(presentationSlug ? `Editing ${presentationName || presentationSlug}` : 'Name this presentation to begin publishing.');
         }
 
@@ -964,10 +1198,11 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 if (!response.ok || !data.ok) throw new Error(data.error || 'Delete failed');
                 if (presentationSlug === slug) {
                     publishedUrl = '';
-                    followUpUrl = '';
+                    clearFollowUpState();
                     syncPublishPanelValues();
                     hidePublishUrlRows();
                     persistActive();
+                    render();
                 }
                 closeDeleteModal();
                 await refreshLibrary();
@@ -989,6 +1224,9 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 if (!response.ok || !data.ok) throw new Error(data.error || 'Failed to load library');
                 library = data.presentations || [];
                 renderLibrary();
+                const before = hasFollowUp;
+                syncHasFollowUpFromLibrary();
+                if (before !== hasFollowUp) renderPageList();
             } catch (error) {
                 library = [];
                 libraryList.innerHTML = `<p class="text-slate-500 text-xs">${escapeHtml(error.message || 'Library unavailable until GitHub env is configured.')}</p>`;
@@ -1006,6 +1244,9 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 repName = content.settings?.repName || content.meta?.repName || '';
                 publishedUrl = `${window.location.origin}${data.url || `/presentations/${slug}/`}`;
                 followUpUrl = data.followUpUrl ? `${window.location.origin}${data.followUpUrl}` : '';
+                hasFollowUp = Boolean(data.hasFollowUp || followUpUrl);
+                followUpEdit = null;
+                if (data.followUpRecap) applyFollowUpRecap(data.followUpRecap);
                 nameInput.value = presentationName;
                 if (repNameInput) repNameInput.value = repName;
                 prepareDraft(content);
@@ -1024,6 +1265,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         function renderPageList() {
             const keyVisible = new Set(draft.settings.keyConceptsNav || []);
             const extendedVisible = new Set(draft.settings.extendedNav || draft.navOrder || []);
+            const followUpSelected = isFollowUpPageId(selectedPageId);
             pageList.innerHTML = `
                 <div class="grid grid-cols-[1.5rem_minmax(0,1fr)_3rem_3rem] gap-3 px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                     <span></span><span></span><span class="text-center">Key</span><span class="text-center">Ext</span>
@@ -1031,7 +1273,18 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             ` + pageOrder.map((id, index) => {
                 const page = draft.mapData[id];
                 if (!page) return '';
-                const isSelected = id === selectedPageId;
+                const isSelected = id === selectedPageId && !followUpSelected;
+                const branch = (id === 'agenda' && hasFollowUp) ? `
+                    <button type="button" data-select-id="${FOLLOW_UP_PAGE_ID}" class="mt-2 ml-5 w-[calc(100%-1.25rem)] rounded-md border border-dashed ${followUpSelected ? 'border-orange-400 bg-orange-50/80' : 'border-slate-200 bg-white/80'} px-3 py-2 text-left transition hover:border-orange-300">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-slate-300 text-xs font-mono shrink-0" aria-hidden="true">└</span>
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-medium text-slate-700">Meeting Recap</p>
+                                <p class="truncate text-[11px] text-slate-400">Follow-up</p>
+                            </div>
+                        </div>
+                    </button>
+                ` : '';
                 return `
                     <div draggable="true" data-page-id="${id}" class="nav-row rounded-lg border border-slate-200 bg-slate-50 p-3 cursor-grab shadow-sm group transition hover:border-orange-300 ${isSelected ? 'border-l-4 border-l-orange-400 bg-orange-50/60' : ''}">
                         <div class="grid grid-cols-[1.5rem_minmax(0,1fr)_3rem_3rem] items-center gap-3">
@@ -1047,16 +1300,24 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                                 <input data-nav-id="${id}" data-nav-mode="extended" type="checkbox" ${extendedVisible.has(id) ? 'checked' : ''} class="nav-dot" title="Include in Extended">
                             </div>
                         </div>
+                        ${branch}
                     </div>
                 `;
             }).join('');
 
             pageList.querySelectorAll('[data-select-id]').forEach(item => {
-                item.addEventListener('click', () => {
-                    selectedPageId = item.dataset.selectId;
+                item.addEventListener('click', async event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const nextId = item.dataset.selectId;
+                    selectedPageId = nextId;
+                    if (isFollowUpPageId(nextId)) {
+                        await ensureFollowUpEditLoaded();
+                    }
                     persistActive();
                     render();
-                    syncPreviewToPage(selectedPageId);
+                    if (isFollowUpPageId(selectedPageId)) refreshPreview();
+                    else syncPreviewToPage(selectedPageId);
                 });
             });
 
@@ -1164,7 +1425,105 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             `;
         }
 
+        function renderFollowUpEditorFields() {
+            const edit = followUpEdit || defaultFollowUpEdit();
+            followUpEdit = edit;
+            selectedHeading.textContent = 'Meeting Recap (Follow-Up)';
+            const enabledPages = Array.isArray(edit.extendedNav)
+                ? edit.extendedNav.slice()
+                : (draft.settings.extendedNav || draft.navOrder || pageOrder).slice();
+            const enabledSet = new Set(enabledPages);
+            // Always keep agenda in the follow-up nav.
+            enabledSet.add('agenda');
+
+            const pageToggles = pageOrder
+                .filter(id => draft.mapData[id] && id !== 'agenda')
+                .map(id => {
+                    const page = draft.mapData[id];
+                    const label = page.navLabel || page.title || id;
+                    return `
+                        <label class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 cursor-pointer">
+                            <input data-fu-page="${id}" type="checkbox" ${enabledSet.has(id) ? 'checked' : ''} class="h-4 w-4 accent-orange-500">
+                            <span class="truncate">${escapeHtml(label)}</span>
+                        </label>
+                    `;
+                }).join('');
+
+            editorFields.innerHTML = `
+                <div class="rounded-xl border border-orange-200 bg-orange-50/50 p-4 space-y-1">
+                    <p class="text-sm font-semibold text-slate-800">Follow-up meeting recap</p>
+                    <p class="text-xs text-slate-500">Edits update the published follow-up only — the main deck is unchanged. Preview shows the follow-up agenda.</p>
+                </div>
+                ${textarea('Recap Headline', edit.headline || '', value => {
+                    edit.headline = value;
+                    followUpEdit = edit;
+                }, 2)}
+                ${editStringArray('Recap Bullets', edit.items || [], value => {
+                    edit.items = value;
+                    followUpEdit = edit;
+                })}
+                <label class="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700 cursor-pointer">
+                    <input id="fu-include-rightfiber" type="checkbox" ${edit.includeRightfiber !== false ? 'checked' : ''} class="h-4 w-4 accent-orange-500">
+                    <span>Include Rightfiber in Key Concepts and Extended</span>
+                </label>
+                <div class="space-y-2">
+                    <span class="field-label">Pages in Follow-Up</span>
+                    <p class="text-[11px] text-slate-500">Meeting Recap stays on. Uncheck pages to hide them from the follow-up nav.</p>
+                    <div class="grid grid-cols-1 gap-2">${pageToggles}</div>
+                </div>
+                <div class="flex flex-wrap gap-2 pt-2">
+                    <button id="update-follow-up-btn" type="button" class="btn-primary text-sm">Update Follow-Up</button>
+                    <button id="preview-follow-up-btn" type="button" class="btn-secondary text-sm">Refresh Follow-Up Preview</button>
+                </div>
+            `;
+
+            setTimeout(() => {
+                const rf = document.getElementById('fu-include-rightfiber');
+                rf?.addEventListener('change', () => {
+                    edit.includeRightfiber = rf.checked;
+                    followUpEdit = edit;
+                });
+                editorFields.querySelectorAll('[data-fu-page]').forEach(input => {
+                    input.addEventListener('change', () => {
+                        const next = new Set(enabledSet);
+                        if (input.checked) next.add(input.dataset.fuPage);
+                        else next.delete(input.dataset.fuPage);
+                        next.add('agenda');
+                        const ordered = pageOrder.filter(id => next.has(id));
+                        if (edit.includeRightfiber !== false && draft.mapData.rightfiber && !ordered.includes('rightfiber')) {
+                            const after = ordered.indexOf('core-capabilities');
+                            if (after >= 0) ordered.splice(after + 1, 0, 'rightfiber');
+                            else ordered.push('rightfiber');
+                        }
+                        if (edit.includeRightfiber === false) {
+                            const filtered = ordered.filter(id => id !== 'rightfiber');
+                            edit.extendedNav = filtered;
+                            edit.keyConceptsNav = filtered.filter(id => (draft.settings.keyConceptsNav || []).includes(id) || id === 'agenda' || id === 'rightfiber');
+                        } else {
+                            edit.extendedNav = ordered;
+                            const keyBase = new Set(draft.settings.keyConceptsNav || DEFAULT_KEY_CONCEPTS_NAV);
+                            keyBase.add('agenda');
+                            if (ordered.includes('rightfiber')) keyBase.add('rightfiber');
+                            edit.keyConceptsNav = ordered.filter(id => keyBase.has(id));
+                        }
+                        followUpEdit = edit;
+                    });
+                });
+                document.getElementById('update-follow-up-btn')?.addEventListener('click', () => publishFollowUp({ fromEditor: true }));
+                document.getElementById('preview-follow-up-btn')?.addEventListener('click', refreshPreview);
+            });
+        }
+
         function renderEditorFields() {
+            if (isFollowUpPageId(selectedPageId)) {
+                if (!hasFollowUp) {
+                    selectedPageId = resolveSelectedPageId('agenda');
+                } else {
+                    renderFollowUpEditorFields();
+                    return;
+                }
+            }
+
             const page = draft.mapData[selectedPageId];
             const content = draft.pageContent[selectedPageId];
             if (!page) return;
@@ -1278,6 +1637,13 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 html += editPillars(content.pillars || [], value => content.pillars = value);
             }
 
+            if (selectedPageId === 'case-studies' && Array.isArray(content)) {
+                html += `<hr class="border-slate-200 my-5">`;
+                html += editCaseStudies(content, value => {
+                    draft.pageContent['case-studies'] = value;
+                });
+            }
+
             if (selectedPageId === 'data-centers' && Array.isArray(content)) {
                 html += `<hr class="border-slate-200 my-5">`;
                 html += editDataCenters(content, value => {
@@ -1360,7 +1726,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         <p class="text-[11px] text-slate-500 pt-1">Re-upload a .spec or Salesforce CSV above to replace pricing data. Side image crop settings are kept.</p>
                     </div>
                 `;
-            } else if (content && !['agenda', 'core-capabilities', 'rightfiber', 'why-gpc', 'data-centers', 'products', 'key-routes', 'omaha-metro'].includes(selectedPageId)) {
+            } else if (content && !['agenda', 'core-capabilities', 'rightfiber', 'why-gpc', 'case-studies', 'data-centers', 'products', 'key-routes', 'omaha-metro'].includes(selectedPageId)) {
                 html += `<hr class="border-slate-200 my-5">`;
                 html += textarea('Raw Content JSON', JSON.stringify(content, null, 2), value => {
                     try { draft.pageContent[selectedPageId] = JSON.parse(value); } catch (error) {}
@@ -1368,6 +1734,104 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             }
 
             editorFields.innerHTML = html;
+        }
+
+        function editCaseStudies(studies, onChange) {
+            const items = clone(Array.isArray(studies) ? studies : []);
+            const id = `case-studies-${Math.random().toString(36).slice(2)}`;
+            const commit = (rerender = false) => {
+                onChange(items.map(cs => ({
+                    image: cs.image || '',
+                    industry: cs.industry || '',
+                    client: cs.client || '',
+                    need: cs.need || '',
+                    solution: cs.solution || '',
+                    quote: cs.quote || ''
+                })));
+                if (rerender) renderEditorFields();
+            };
+
+            setTimeout(() => {
+                const root = document.getElementById(id);
+                if (!root) return;
+                root.querySelectorAll('[data-cs-field]').forEach(input => {
+                    input.addEventListener('input', () => {
+                        const index = Number(input.dataset.csIndex);
+                        const field = input.dataset.csField;
+                        if (!items[index] || !field) return;
+                        items[index][field] = input.value;
+                        commit(false);
+                    });
+                });
+                root.querySelectorAll('[data-cs-image-file]').forEach(fileInput => {
+                    fileInput.addEventListener('change', async event => {
+                        const index = Number(fileInput.dataset.csImageFile);
+                        const selected = event.target.files && event.target.files[0];
+                        if (!selected || !items[index]) return;
+                        setStatus('Optimizing case study image…');
+                        items[index].image = await compressImageFile(selected, { maxEdge: 1600, quality: 0.82 });
+                        commit(true);
+                        setStatus('Case study image updated.');
+                        fileInput.value = '';
+                    });
+                });
+                root.querySelectorAll('[data-cs-remove]').forEach(button => {
+                    button.addEventListener('click', () => {
+                        items.splice(Number(button.dataset.csRemove), 1);
+                        commit(true);
+                    });
+                });
+                root.querySelector('[data-cs-add]')?.addEventListener('click', () => {
+                    items.push({
+                        image: '',
+                        industry: '',
+                        client: '',
+                        need: '',
+                        solution: '',
+                        quote: ''
+                    });
+                    commit(true);
+                });
+            });
+
+            return `
+                <div id="${id}" class="space-y-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <span class="field-label mb-0">Case Studies</span>
+                            <p class="text-[11px] text-slate-500 mt-1">Three-column client success cards (image, challenge, solution, quote).</p>
+                        </div>
+                        <button type="button" data-cs-add class="rounded-lg bg-slate-100 hover:bg-orange-50 hover:text-orange-600 border border-slate-200 px-3 py-1 text-xs font-bold text-slate-700 transition">Add</button>
+                    </div>
+                    ${items.map((cs, index) => {
+                        const previewSrc = resolveEditorAsset(cs.image || '');
+                        return `
+                            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3 border-l-4 border-l-orange-400">
+                                <div class="flex items-start justify-between gap-3">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Case ${index + 1}</p>
+                                    <button type="button" data-cs-remove="${index}" class="rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 transition">Remove</button>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <div class="h-20 w-36 rounded-lg border-2 border-dashed border-slate-300 bg-white flex items-center justify-center overflow-hidden shrink-0">
+                                        ${previewSrc
+                                            ? `<img src="${previewSrc.replace(/"/g, '&quot;')}" alt="" class="max-h-full max-w-full object-cover">`
+                                            : '<span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">No image</span>'}
+                                    </div>
+                                    <div class="min-w-0 flex-1 space-y-2">
+                                        <input data-cs-field="image" data-cs-index="${index}" class="field-input font-mono text-xs" value="${escapeAttr(cs.image || '')}" placeholder="Image filename or data URL">
+                                        <input data-cs-image-file="${index}" type="file" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-xs file:font-bold file:text-slate-700">
+                                    </div>
+                                </div>
+                                <label><span class="field-label">Industry</span><input data-cs-field="industry" data-cs-index="${index}" class="field-input" value="${escapeAttr(cs.industry || '')}"></label>
+                                <label><span class="field-label">Client</span><input data-cs-field="client" data-cs-index="${index}" class="field-input" value="${escapeAttr(cs.client || '')}"></label>
+                                <label><span class="field-label">The Challenge</span><textarea data-cs-field="need" data-cs-index="${index}" rows="3" class="field-input resize-y">${escapeHtml(cs.need || '')}</textarea></label>
+                                <label><span class="field-label">The Solution</span><textarea data-cs-field="solution" data-cs-index="${index}" rows="3" class="field-input resize-y">${escapeHtml(cs.solution || '')}</textarea></label>
+                                <label><span class="field-label">Quote</span><textarea data-cs-field="quote" data-cs-index="${index}" rows="3" class="field-input resize-y">${escapeHtml(cs.quote || '')}</textarea></label>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
         }
 
         function editDataCenters(centers, onChange) {
@@ -2294,6 +2758,23 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             saveLocal(false);
             selectedPageId = resolveSelectedPageId(selectedPageId);
             const slugQuery = presentationSlug ? `&slug=${encodeURIComponent(presentationSlug)}` : '';
+
+            if (isFollowUpPageId(selectedPageId) && hasFollowUp) {
+                const recap = currentFollowUpRecap();
+                const followUpContent = buildClientFollowUpContent(draft, recap);
+                try {
+                    localStorage.setItem(followUpPreviewStorageKey(), JSON.stringify(followUpContent));
+                } catch (error) {
+                    setStatus('Could not build follow-up preview locally — open the live follow-up URL instead.');
+                    if (followUpUrl) {
+                        preview.src = `${followUpUrl}${followUpUrl.includes('?') ? '&' : '?'}view=agenda&preview=1&t=${Date.now()}`;
+                        return;
+                    }
+                }
+                preview.src = `index.html?draft=follow-up${slugQuery}&preview=1&view=agenda&t=${Date.now()}`;
+                return;
+            }
+
             const viewId = selectedPageId && pageIsNavigable(selectedPageId)
                 ? selectedPageId
                 : resolveSelectedPageId(null);
@@ -2303,6 +2784,10 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
         function syncPreviewToPage(viewId) {
             if (!viewId || !preview?.contentWindow) return;
+            if (isFollowUpPageId(viewId)) {
+                refreshPreview();
+                return;
+            }
             try {
                 preview.contentWindow.postMessage({
                     type: 'presentation-studio-goto',
@@ -2405,10 +2890,11 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             if (!assertCustomerLogoReadyForPublish()) return;
             if (saveLocal(false) === false) return;
             const button = document.getElementById('publish-btn');
-            const previous = button.textContent;
+            const idleLabel = 'Publish';
             button.textContent = 'Publishing...';
             button.disabled = true;
             setStatus('Preparing publish…');
+            let didPublish = false;
             try {
                 const { body, bytes } = await buildPublishPayload();
                 setStatus(`Uploading (${formatBytes(bytes)})…`);
@@ -2425,23 +2911,32 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 setStatus(`Published. Syncing library…`);
                 await refreshLibrary();
                 setStatus(`Published. Live soon at ${data.url}`);
-                flashButton(button, 'Published');
+                didPublish = true;
             } catch (error) {
                 if (error?.cancelled) {
                     setStatus('Publish cancelled');
-                    return;
+                } else {
+                    alert(error.message || 'Publish failed. Confirm GITHUB_TOKEN is set in Vercel.');
+                    setStatus(error.message || 'Publish failed');
                 }
-                alert(error.message || 'Publish failed. Confirm GITHUB_TOKEN is set in Vercel.');
-                setStatus(error.message || 'Publish failed');
             } finally {
-                button.textContent = previous;
                 button.disabled = false;
+                button.textContent = idleLabel;
             }
+            // Flash after finally so the timeout restores "Publish", not "Publishing..."
+            if (didPublish) flashButton(button, 'Published');
         }
 
         function openFollowUpModal() {
             if (!requireIdentity()) return;
             if (!assertCustomerLogoReadyForPublish()) return;
+            if (followUpEdit) {
+                document.getElementById('recap-headline').value = followUpEdit.headline || '';
+                document.getElementById('recap-items').value = (followUpEdit.items || []).join('\n');
+                document.getElementById('recap-rightfiber').checked = followUpEdit.includeRightfiber !== false;
+            }
+            const confirmBtn = document.getElementById('confirm-follow-up');
+            if (confirmBtn) confirmBtn.textContent = hasFollowUp ? 'Update Follow-Up' : 'Publish Follow-Up';
             followUpModal.classList.remove('hidden');
             followUpModal.classList.add('flex');
         }
@@ -2451,27 +2946,51 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             followUpModal.classList.remove('flex');
         }
 
-        async function publishFollowUp() {
+        async function publishFollowUp({ fromEditor = false } = {}) {
             if (!requireIdentity()) return;
             if (!assertCustomerLogoReadyForPublish()) return;
             if (saveLocal(false) === false) return;
-            const button = document.getElementById('confirm-follow-up');
-            const previous = button.textContent;
-            button.textContent = 'Publishing...';
-            button.disabled = true;
-            setStatus('Preparing follow-up…');
+            const modalButton = document.getElementById('confirm-follow-up');
+            const editorButton = document.getElementById('update-follow-up-btn');
+            const button = fromEditor && editorButton ? editorButton : modalButton;
+            const idleLabel = fromEditor
+                ? 'Update Follow-Up'
+                : (hasFollowUp ? 'Update Follow-Up' : 'Publish Follow-Up');
+            if (button) {
+                button.textContent = 'Publishing...';
+                button.disabled = true;
+            }
+            // Never leave the main Publish control stuck in a busy label.
+            const publishBtn = document.getElementById('publish-btn');
+            if (publishBtn && publishBtn.textContent === 'Publishing...') {
+                publishBtn.textContent = 'Publish';
+                publishBtn.disabled = false;
+            }
+            setStatus(fromEditor ? 'Updating follow-up…' : 'Preparing follow-up…');
+            let didPublish = false;
             try {
-                const items = document.getElementById('recap-items').value
-                    .split('\n')
-                    .map(item => item.trim())
-                    .filter(Boolean);
-                const { body, bytes } = await buildPublishPayload({
-                    includeRecap: true,
-                    recap: {
+                let recap;
+                if (fromEditor) {
+                    recap = currentFollowUpRecap();
+                } else {
+                    const items = document.getElementById('recap-items').value
+                        .split('\n')
+                        .map(item => item.trim())
+                        .filter(Boolean);
+                    recap = {
                         headline: document.getElementById('recap-headline').value.trim(),
                         items,
                         includeRightfiber: document.getElementById('recap-rightfiber').checked
-                    }
+                    };
+                    applyFollowUpRecap({
+                        ...recap,
+                        keyConceptsNav: followUpEdit?.keyConceptsNav,
+                        extendedNav: followUpEdit?.extendedNav
+                    });
+                }
+                const { body, bytes } = await buildPublishPayload({
+                    includeRecap: true,
+                    recap
                 });
                 setStatus(`Uploading follow-up (${formatBytes(bytes)})…`);
                 const response = await fetch('/api/publish-follow-up', {
@@ -2482,29 +3001,43 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 const data = await response.json();
                 if (!response.ok || !data.ok) throw new Error(data.error || 'Follow-up publish failed');
                 followUpUrl = `${window.location.origin}${data.url}`;
+                markHasFollowUp(followUpUrl);
                 if (!publishedUrl) publishedUrl = `${window.location.origin}/presentations/${presentationSlug}/`;
                 persistActive();
                 showFollowUpUrlRow();
                 await refreshLibrary();
                 closeFollowUpModal();
+                render();
+                if (fromEditor || isFollowUpPageId(selectedPageId)) refreshPreview();
                 setStatus(`Follow-up published at ${data.url}`);
+                didPublish = true;
             } catch (error) {
                 if (error?.cancelled) {
                     setStatus('Follow-up publish cancelled');
-                    return;
+                } else {
+                    alert(error.message || 'Follow-up publish failed');
+                    setStatus(error.message || 'Follow-up publish failed');
                 }
-                alert(error.message || 'Follow-up publish failed');
-                setStatus(error.message || 'Follow-up publish failed');
             } finally {
-                button.textContent = previous;
-                button.disabled = false;
+                if (button) {
+                    button.textContent = idleLabel;
+                    button.disabled = false;
+                }
+                if (publishBtn && publishBtn.textContent === 'Publishing...') {
+                    publishBtn.textContent = 'Publish';
+                    publishBtn.disabled = false;
+                }
             }
+            if (didPublish && button) flashButton(button, fromEditor ? 'Updated' : 'Published');
         }
 
         function flashButton(button, label) {
+            if (!button) return;
             const previous = button.textContent;
             button.textContent = label;
-            setTimeout(() => button.textContent = previous, 1100);
+            setTimeout(() => {
+                if (button.textContent === label) button.textContent = previous;
+            }, 1100);
         }
 
         function escapeHtml(value) {
@@ -2895,6 +3428,12 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             }
         }
 
+        // Test hooks for e2e (static smoke suite without publish APIs).
+        window.__studioMarkHasFollowUp = markHasFollowUp;
+        window.__studioApplyFollowUpRecap = applyFollowUpRecap;
+        window.__studioRender = render;
+        window.__studioFlashButton = flashButton;
+
         document.getElementById('save-local').addEventListener('click', () => saveLocal(true));
         document.getElementById('refresh-preview').addEventListener('click', refreshPreview);
         document.getElementById('publish-btn').addEventListener('click', publishPresentation);
@@ -2917,7 +3456,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             presentationSlug = '';
             repName = '';
             publishedUrl = '';
-            followUpUrl = '';
+            clearFollowUpState();
             nameInput.value = '';
             if (repNameInput) repNameInput.value = '';
             prepareDraft(baseData);

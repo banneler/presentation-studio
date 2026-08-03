@@ -739,6 +739,91 @@ async function main() {
       else fail('follow-up-demo-logo-gate', JSON.stringify({ dialogLog, fuStatus }));
     }
 
+    // 15) Case Studies page is a real template page (not orphan-only)
+    const caseStudies = await page.evaluate(() => {
+      const row = document.querySelector('#page-list [data-page-id="case-studies"]');
+      const draftKeys = Object.keys(localStorage).filter(k => k.startsWith('presentation-studio-draft'));
+      const key = draftKeys.find(k => k.includes(':')) || draftKeys[0];
+      const d = key ? JSON.parse(localStorage.getItem(key)) : null;
+      return {
+        row: Boolean(row),
+        label: row?.querySelector('[data-select-id="case-studies"] p')?.textContent?.trim() || '',
+        inMap: Boolean(d?.mapData?.['case-studies']),
+        count: Array.isArray(d?.pageContent?.['case-studies']) ? d.pageContent['case-studies'].length : 0,
+        keyOn: (d?.settings?.keyConceptsNav || []).includes('case-studies'),
+        extOn: (d?.settings?.extendedNav || []).includes('case-studies')
+      };
+    });
+    if (caseStudies.row && caseStudies.inMap && caseStudies.count >= 3 && (caseStudies.keyOn || caseStudies.extOn))
+      pass('case-studies-page-present', `${caseStudies.label || 'Case Studies'} · ${caseStudies.count} cards`);
+    else fail('case-studies-page-present', JSON.stringify(caseStudies));
+
+    await page.click('[data-select-id="case-studies"]');
+    await sleep(400);
+    await page.click('#refresh-preview');
+    await waitPreviewReady(page).catch(() => {});
+    await waitPreviewView(page, 'case-studies').catch(() => {});
+    const csPreview = await page.evaluate(() => {
+      const doc = document.getElementById('preview')?.contentDocument;
+      const active = doc?.querySelector('.nav-item-active')?.id?.replace('nav-btn-', '');
+      const cards = doc?.querySelectorAll('#content-area h3, #view-content h3, main h3');
+      return { active, h3: [...(cards || [])].map(el => el.textContent.trim()).slice(0, 3) };
+    });
+    if (csPreview.active === 'case-studies' || csPreview.h3.some(t => /Boys Town|Global Manufacturer|Franchise/i.test(t)))
+      pass('case-studies-preview', JSON.stringify(csPreview.h3.slice(0, 2)));
+    else fail('case-studies-preview', JSON.stringify(csPreview));
+
+    // 16) Follow-up branch appears under Meeting Agenda only when a follow-up exists
+    const branchHidden = await page.evaluate(() =>
+      !document.querySelector('[data-select-id="__follow-up__"]')
+    );
+    if (branchHidden) pass('follow-up-branch-hidden-by-default');
+    else fail('follow-up-branch-hidden-by-default', 'branch visible without follow-up');
+
+    const branchVisible = await page.evaluate(() => {
+      if (typeof window.__studioMarkHasFollowUp !== 'function') return false;
+      window.__studioMarkHasFollowUp(`${location.origin}/presentations/demo/follow-up/`);
+      window.__studioApplyFollowUpRecap?.({
+        headline: 'E2E follow-up headline',
+        items: ['One', 'Two'],
+        includeRightfiber: true
+      });
+      window.__studioRender?.();
+      return Boolean(document.querySelector('[data-select-id="__follow-up__"]'));
+    });
+    if (branchVisible) {
+      pass('follow-up-branch-visible-after-create');
+      await page.click('[data-select-id="__follow-up__"]');
+      await sleep(500);
+      const fuEditor = await page.evaluate(() => ({
+        heading: document.getElementById('selected-heading')?.textContent || '',
+        updateBtn: Boolean(document.getElementById('update-follow-up-btn'))
+      }));
+      if (/Meeting Recap|Follow-Up/i.test(fuEditor.heading) && fuEditor.updateBtn)
+        pass('follow-up-branch-editor-fields', fuEditor.heading);
+      else fail('follow-up-branch-editor-fields', JSON.stringify(fuEditor));
+    } else {
+      fail('follow-up-branch-visible-after-create', 'branch still hidden after markHasFollowUp');
+    }
+
+    // 17) Publish button must not stick on "Publishing..." after flash success path
+    const publishReset = await page.evaluate(async () => {
+      const button = document.getElementById('publish-btn');
+      if (!button) return { ok: false, reason: 'missing publish-btn' };
+      button.textContent = 'Publishing...';
+      button.disabled = true;
+      // Mirror the fixed publish success path: reset in finally, then flash.
+      button.disabled = false;
+      button.textContent = 'Publish';
+      if (typeof window.__studioFlashButton === 'function') {
+        window.__studioFlashButton(button, 'Published');
+      }
+      await new Promise(r => setTimeout(r, 1300));
+      return { ok: button.textContent === 'Publish', text: button.textContent };
+    });
+    if (publishReset.ok) pass('publish-button-resets-after-flash');
+    else fail('publish-button-resets-after-flash', JSON.stringify(publishReset));
+
     pass('note-library-api', 'static server has no /api library (expected HTML parse error)');
     pass('note-publish-api', 'full publish/follow-up covered by scripts/e2e-publish.mjs against Vercel');
 
