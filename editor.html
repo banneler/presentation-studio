@@ -50,14 +50,31 @@
         .nav-dot { appearance: none; width: 1rem; height: 1rem; border-radius: 9999px; border: 1px solid rgb(203 213 225); cursor: pointer; background: white; }
         .nav-dot:checked { background: #f97316; border-color: #f97316; box-shadow: inset 0 0 0 3px white; }
         .modal-backdrop { background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px); }
-        /* Largest 16:9 stage that fits the preview pane — iframe fills it edge-to-edge */
+        /* Largest 16:9 stage that fits the preview content box (padding excluded) */
         #preview-stage {
             aspect-ratio: 16 / 9;
-            width: min(100%, calc(var(--preview-host-h, 100%) * 16 / 9));
-            max-height: 100%;
+            width: min(var(--preview-host-w, 100%), calc(var(--preview-host-h, 100%) * 16 / 9));
+            max-width: 100%;
+            max-height: var(--preview-host-h, 100%);
             height: auto;
             background: transparent;
         }
+        .drag-handle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            min-height: 2.25rem;
+            flex-shrink: 0;
+            border-radius: 0.5rem;
+            color: rgb(148 163 184);
+            cursor: grab;
+            touch-action: none;
+        }
+        .drag-handle:hover { color: #f97316; background: rgb(255 247 237); }
+        .drag-handle:active { cursor: grabbing; }
+        .sortable-ghost { opacity: 0.45; background: rgb(255 247 237) !important; }
+        .sortable-drag { box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18); }
         /* Rotate horizontal ranges — writing-mode is unreliable for range tracks */
         .slider-v-wrap {
             position: relative;
@@ -118,7 +135,7 @@
     </header>
 
     <div id="studio-shell" class="flex-1 grid overflow-hidden min-h-0" style="grid-template-columns: 440px 6px minmax(0, 1fr);">
-        <aside class="bg-white overflow-y-auto border-r border-slate-200 shadow-inner">
+        <aside class="bg-white overflow-y-auto overscroll-contain border-r border-slate-200 shadow-inner min-h-0 min-w-0">
             <div class="border-b border-slate-100 p-6 space-y-4">
                 <div>
                     <h2 class="text-lg font-bold text-slate-800 border-b border-slate-100 pb-2 mb-3">1. Presentation</h2>
@@ -178,7 +195,7 @@
                 </div>
             </div>
 
-            <div class="p-6 space-y-8">
+            <div class="p-6 pb-28 space-y-8">
                 <section>
                     <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
                         <h2 class="text-lg font-bold text-slate-800">Library</h2>
@@ -209,15 +226,15 @@
 
         <div id="splitter" class="bg-slate-200 hover:bg-orange-400 cursor-col-resize transition-colors" title="Drag to resize editor and preview"></div>
 
-        <main class="flex flex-col min-w-0 bg-slate-100">
-            <div class="bg-white border-b border-slate-200 px-4 py-3 flex flex-wrap items-center gap-2">
+        <main class="flex flex-col min-w-0 min-h-0 overflow-hidden bg-slate-100">
+            <div class="bg-white border-b border-slate-200 px-4 py-3 flex flex-wrap items-center gap-2 shrink-0">
                 <button id="save-local" type="button" class="btn-dark text-sm">Save Draft</button>
                 <button id="refresh-preview" type="button" class="btn-secondary text-sm">Refresh Preview</button>
                 <button id="make-link" type="button" class="btn-secondary text-sm">Copy Draft Link</button>
                 <button id="reset-draft" type="button" class="btn-secondary text-sm">Reset</button>
             </div>
 
-            <div id="publish-panel" class="hidden border-b border-slate-200 bg-white px-4 py-3 space-y-3">
+            <div id="publish-panel" class="hidden border-b border-slate-200 bg-white px-4 py-3 space-y-3 shrink-0">
                 <div id="live-url-wrap" class="hidden">
                     <div class="flex items-center justify-between gap-2 mb-1">
                         <label class="field-label mb-0" for="live-url">Live Presentation URL</label>
@@ -270,10 +287,7 @@ Follow up on site requirements and connectivity options.
 Schedule time with key technical stakeholders.
 Share Rightfiber / Ritter Communications merger update and expanded fiber footprint.</textarea>
                 </label>
-                <label class="flex items-center gap-3 text-sm font-semibold text-slate-700">
-                    <input id="recap-rightfiber" type="checkbox" checked class="h-4 w-4 accent-orange-500">
-                    Include Rightfiber in Key Concepts and Extended
-                </label>
+                <p class="text-[11px] text-slate-500">Toggle Rightfiber and other pages after publish in Meeting Recap → Pages in Follow-Up.</p>
             </div>
             <div class="bg-slate-50 border-t border-slate-200 px-6 py-4 flex justify-end gap-2">
                 <button id="cancel-follow-up" type="button" class="btn-secondary text-sm">Cancel</button>
@@ -331,7 +345,6 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         let draft = null;
         let selectedPageId = null;
         let pageOrder = [];
-        let draggedPageId = null;
         let presentationName = '';
         let presentationSlug = '';
         let repName = '';
@@ -468,6 +481,38 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             return list.map((entry, index) => normalizeHeroImage(entry, index));
         }
 
+        function isComingSoonDc(dc) {
+            const name = String(dc?.name || '').trim();
+            const city = String(dc?.city || '').trim();
+            return /coming\s*soon/i.test(name) || /coming\s*soon/i.test(city);
+        }
+
+        function normalizeDataCenters(list = []) {
+            let seenCustom = false;
+            return (Array.isArray(list) ? list : [])
+                .filter(dc => {
+                    // Drop hallucinated stock QTS (Mutual coming-soon, not in tactical).
+                    if (dc?.custom !== true && String(dc?.name || '').trim() === 'QTS') return false;
+                    return true;
+                })
+                .map(dc => {
+                    const comingSoon = isComingSoonDc(dc);
+                    const custom = dc?.custom === true || comingSoon;
+                    return {
+                        city: String(dc?.city || '').trim() || (comingSoon ? 'Coming Soon' : ''),
+                        name: String(dc?.name || '').trim() || (comingSoon ? 'Coming Soon' : ''),
+                        nameNormal: dc?.nameNormal || '',
+                        highlight: dc?.highlight === true,
+                        ...(custom ? { custom: true } : {})
+                    };
+                })
+                .filter(dc => {
+                    if (dc.custom !== true) return true;
+                    if (seenCustom) return false;
+                    seenCustom = true;
+                    return true;
+                });
+        }
 
         function normalizeHeroColor(color) {
             const fallback = '#0b192f';
@@ -656,7 +701,15 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         function sizePreviewStage() {
             const host = document.getElementById('preview-host');
             if (!host) return;
-            host.style.setProperty('--preview-host-h', `${host.clientHeight}px`);
+            // clientHeight includes padding; stage must fit the content box or the
+            // bottom of the 16:9 iframe clips under overflow-hidden ancestors.
+            const style = getComputedStyle(host);
+            const padX = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
+            const padY = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
+            const availW = Math.max(0, host.clientWidth - padX);
+            const availH = Math.max(0, host.clientHeight - padY);
+            host.style.setProperty('--preview-host-w', `${availW}px`);
+            host.style.setProperty('--preview-host-h', `${availH}px`);
         }
 
         function setupResizableSplit() {
@@ -724,7 +777,6 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 'delete-confirm-input',
                 'recap-headline',
                 'recap-items',
-                'recap-rightfiber',
                 'spec-pricing-file',
                 'salesforce-pricing-file'
             ]);
@@ -791,21 +843,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 draft.pageContent['omaha-metro'].sideImage = normalizeHeroImage(draft.pageContent['omaha-metro'].sideImage);
             }
             if (Array.isArray(draft.pageContent?.['data-centers'])) {
-                let seenCustom = false;
-                draft.pageContent['data-centers'] = draft.pageContent['data-centers']
-                    .filter(dc => {
-                        if (dc?.custom !== true) return true;
-                        if (seenCustom) return false;
-                        seenCustom = true;
-                        return true;
-                    })
-                    .map(dc => ({
-                        city: dc?.city || '',
-                        name: dc?.name || '',
-                        nameNormal: dc?.nameNormal || '',
-                        highlight: dc?.highlight === true,
-                        ...(dc?.custom === true ? { custom: true } : {})
-                    }));
+                draft.pageContent['data-centers'] = normalizeDataCenters(draft.pageContent['data-centers']);
             }
             if (Array.isArray(draft.pageContent?.products)) {
                 draft.pageContent.products = draft.pageContent.products.map(product => ({
@@ -890,6 +928,14 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 : 'presentation-studio-follow-up-preview';
         }
 
+        function followUpIncludesRightfiber(data = draft, edit = followUpEdit) {
+            if (edit && Array.isArray(edit.extendedNav)) return edit.extendedNav.includes('rightfiber');
+            if (edit && Array.isArray(edit.keyConceptsNav)) return edit.keyConceptsNav.includes('rightfiber');
+            const keyNav = data?.settings?.keyConceptsNav || [];
+            const extNav = data?.settings?.extendedNav || data?.navOrder || [];
+            return keyNav.includes('rightfiber') || extNav.includes('rightfiber');
+        }
+
         function defaultFollowUpEdit() {
             const keyNav = (draft?.settings?.keyConceptsNav || []).slice();
             const extNav = (draft?.settings?.extendedNav || draft?.navOrder || []).slice();
@@ -901,7 +947,8 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     .map(item => item.trim())
                     .filter(Boolean),
                 subtitle: 'Follow-Up from Our Conversation',
-                includeRightfiber: document.getElementById('recap-rightfiber')?.checked !== false,
+                // Inherit parent nav — do not force-add Rightfiber.
+                includeRightfiber: followUpIncludesRightfiber(draft, { keyConceptsNav: keyNav, extendedNav: extNav }),
                 keyConceptsNav: keyNav,
                 extendedNav: extNav
             };
@@ -909,6 +956,8 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
         function applyFollowUpRecap(recap) {
             if (!recap || typeof recap !== 'object') return;
+            const keyConceptsNav = Array.isArray(recap.keyConceptsNav) ? recap.keyConceptsNav.slice() : null;
+            const extendedNav = Array.isArray(recap.extendedNav) ? recap.extendedNav.slice() : null;
             followUpEdit = {
                 headline: String(recap.headline || '').trim()
                     || 'Thank you for the conversation. Here are the next steps.',
@@ -916,9 +965,11 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     ? recap.items.map(item => String(item || '').trim()).filter(Boolean)
                     : [],
                 subtitle: String(recap.subtitle || 'Follow-Up from Our Conversation'),
-                includeRightfiber: recap.includeRightfiber !== false,
-                keyConceptsNav: Array.isArray(recap.keyConceptsNav) ? recap.keyConceptsNav.slice() : null,
-                extendedNav: Array.isArray(recap.extendedNav) ? recap.extendedNav.slice() : null
+                includeRightfiber: typeof recap.includeRightfiber === 'boolean'
+                    ? recap.includeRightfiber
+                    : followUpIncludesRightfiber(draft, { keyConceptsNav, extendedNav }),
+                keyConceptsNav,
+                extendedNav
             };
         }
 
@@ -1004,15 +1055,11 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 };
             }
 
-            const includeRightfiber = recap.includeRightfiber !== false;
+            // Page toggles own Rightfiber. Legacy includeRightfiber:false still strips it;
+            // never force-inject when absent from the nav lists.
             const ensureNav = (list = []) => {
                 const order = Array.isArray(list) ? list.slice() : [];
-                if (!includeRightfiber) return order.filter(id => id !== 'rightfiber');
-                if (!order.includes('rightfiber')) {
-                    const after = order.indexOf('core-capabilities');
-                    if (after >= 0) order.splice(after + 1, 0, 'rightfiber');
-                    else order.unshift('rightfiber');
-                }
+                if (recap.includeRightfiber === false) return order.filter(id => id !== 'rightfiber');
                 return order;
             };
 
@@ -1040,7 +1087,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     ? edit.items.map(item => String(item || '').trim()).filter(Boolean)
                     : [],
                 subtitle: String(edit.subtitle || 'Follow-Up from Our Conversation'),
-                includeRightfiber: edit.includeRightfiber !== false
+                includeRightfiber: followUpIncludesRightfiber(draft, edit)
             };
             if (Array.isArray(edit.keyConceptsNav)) recap.keyConceptsNav = edit.keyConceptsNav.slice();
             if (Array.isArray(edit.extendedNav)) recap.extendedNav = edit.extendedNav.slice();
@@ -1355,10 +1402,12 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             const keyVisible = new Set(draft.settings.keyConceptsNav || []);
             const extendedVisible = new Set(draft.settings.extendedNav || draft.navOrder || []);
             const followUpSelected = isFollowUpPageId(selectedPageId);
+            const handleIcon = `<span class="drag-handle handle" title="Drag to reorder" aria-label="Drag to reorder"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01"></path></svg></span>`;
             pageList.innerHTML = `
-                <div class="grid grid-cols-[1.5rem_minmax(0,1fr)_3rem_3rem] gap-3 px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <div class="grid grid-cols-[2rem_minmax(0,1fr)_3rem_3rem] gap-3 px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                     <span></span><span></span><span class="text-center">Key</span><span class="text-center">Ext</span>
                 </div>
+                <div data-page-sortable class="space-y-2">
             ` + pageOrder.map((id, index) => {
                 const page = draft.mapData[id];
                 if (!page) return '';
@@ -1375,12 +1424,12 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     </button>
                 ` : '';
                 return `
-                    <div draggable="true" data-page-id="${id}" class="nav-row rounded-lg border border-slate-200 bg-slate-50 p-3 cursor-grab shadow-sm group transition hover:border-orange-300 ${isSelected ? 'border-l-4 border-l-orange-400 bg-orange-50/60' : ''}">
-                        <div class="grid grid-cols-[1.5rem_minmax(0,1fr)_3rem_3rem] items-center gap-3">
-                            <span class="text-xs text-slate-400 font-bold w-5 group-hover:text-orange-500 transition">${index + 1}</span>
+                    <div data-page-id="${id}" class="nav-row rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-sm group transition hover:border-orange-300 ${isSelected ? 'border-l-4 border-l-orange-400 bg-orange-50/60' : ''}">
+                        <div class="grid grid-cols-[2rem_minmax(0,1fr)_3rem_3rem] items-center gap-3">
+                            ${handleIcon}
                             <div class="min-w-0 flex-1 cursor-pointer" data-select-id="${id}">
                                 <p class="truncate text-sm font-medium text-slate-700">${page.navLabel || page.title || id}</p>
-                                <p class="truncate text-[11px] text-slate-400">${id}</p>
+                                <p class="truncate text-[11px] text-slate-400">${index + 1}. ${id}</p>
                             </div>
                             <div class="flex justify-center">
                                 <input data-nav-id="${id}" data-nav-mode="key" type="checkbox" ${keyVisible.has(id) ? 'checked' : ''} class="nav-dot" title="Include in Key Concepts">
@@ -1392,7 +1441,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         ${branch}
                     </div>
                 `;
-            }).join('');
+            }).join('') + '</div>';
 
             pageList.querySelectorAll('[data-select-id]').forEach(item => {
                 item.addEventListener('click', async event => {
@@ -1422,27 +1471,31 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 });
             });
 
-            pageList.querySelectorAll('.nav-row').forEach(row => {
-                row.addEventListener('dragstart', () => {
-                    draggedPageId = row.dataset.pageId;
-                    row.classList.add('dragging');
+            const sortableRoot = pageList.querySelector('[data-page-sortable]');
+            if (sortableRoot && typeof Sortable !== 'undefined') {
+                Sortable.create(sortableRoot, {
+                    animation: 180,
+                    handle: '.handle',
+                    draggable: '.nav-row',
+                    forceFallback: true,
+                    fallbackOnBody: true,
+                    swapThreshold: 0.65,
+                    ghostClass: 'sortable-ghost',
+                    dragClass: 'sortable-drag',
+                    filter: 'input, button, [data-select-id], [data-nav-id]',
+                    preventOnFilter: false,
+                    onEnd: () => {
+                        const nextOrder = [...sortableRoot.querySelectorAll('[data-page-id]')]
+                            .map(row => row.dataset.pageId)
+                            .filter(id => draft.mapData[id]);
+                        if (!nextOrder.length || sameList(nextOrder, pageOrder)) return;
+                        pageOrder = nextOrder;
+                        draft.settings.editorPageOrder = pageOrder.slice();
+                        markDirty();
+                        render();
+                    }
                 });
-                row.addEventListener('dragend', () => {
-                    draggedPageId = null;
-                    row.classList.remove('dragging');
-                });
-                row.addEventListener('dragover', event => event.preventDefault());
-                row.addEventListener('drop', event => {
-                    event.preventDefault();
-                    const targetId = row.dataset.pageId;
-                    if (!draggedPageId || draggedPageId === targetId) return;
-                    const nextOrder = pageOrder.filter(id => id !== draggedPageId);
-                    nextOrder.splice(nextOrder.indexOf(targetId), 0, draggedPageId);
-                    pageOrder = nextOrder;
-                    markDirty();
-                    render();
-                });
-            });
+            }
         }
 
         function input(label, value, onChange, type = 'text') {
@@ -1553,13 +1606,9 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     edit.items = value;
                     followUpEdit = edit;
                 })}
-                <label class="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700 cursor-pointer">
-                    <input id="fu-include-rightfiber" type="checkbox" ${edit.includeRightfiber !== false ? 'checked' : ''} class="h-4 w-4 accent-orange-500">
-                    <span>Include Rightfiber in Key Concepts and Extended</span>
-                </label>
                 <div class="space-y-2">
                     <span class="field-label">Pages in Follow-Up</span>
-                    <p class="text-[11px] text-slate-500">Meeting Recap stays on. Uncheck pages to hide them from the follow-up nav.</p>
+                    <p class="text-[11px] text-slate-500">Meeting Recap stays on. Toggle Rightfiber and other pages here — they are not auto-added.</p>
                     <div class="grid grid-cols-1 gap-2">${pageToggles}</div>
                 </div>
                 <div class="flex flex-wrap gap-2 pt-2">
@@ -1569,11 +1618,6 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             `;
 
             setTimeout(() => {
-                const rf = document.getElementById('fu-include-rightfiber');
-                rf?.addEventListener('change', () => {
-                    edit.includeRightfiber = rf.checked;
-                    followUpEdit = edit;
-                });
                 editorFields.querySelectorAll('[data-fu-page]').forEach(input => {
                     input.addEventListener('change', () => {
                         const next = new Set(enabledSet);
@@ -1581,22 +1625,12 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         else next.delete(input.dataset.fuPage);
                         next.add('agenda');
                         const ordered = pageOrder.filter(id => next.has(id));
-                        if (edit.includeRightfiber !== false && draft.mapData.rightfiber && !ordered.includes('rightfiber')) {
-                            const after = ordered.indexOf('core-capabilities');
-                            if (after >= 0) ordered.splice(after + 1, 0, 'rightfiber');
-                            else ordered.push('rightfiber');
-                        }
-                        if (edit.includeRightfiber === false) {
-                            const filtered = ordered.filter(id => id !== 'rightfiber');
-                            edit.extendedNav = filtered;
-                            edit.keyConceptsNav = filtered.filter(id => (draft.settings.keyConceptsNav || []).includes(id) || id === 'agenda' || id === 'rightfiber');
-                        } else {
-                            edit.extendedNav = ordered;
-                            const keyBase = new Set(draft.settings.keyConceptsNav || DEFAULT_KEY_CONCEPTS_NAV);
-                            keyBase.add('agenda');
-                            if (ordered.includes('rightfiber')) keyBase.add('rightfiber');
-                            edit.keyConceptsNav = ordered.filter(id => keyBase.has(id));
-                        }
+                        edit.extendedNav = ordered;
+                        const keyBase = new Set(draft.settings.keyConceptsNav || DEFAULT_KEY_CONCEPTS_NAV);
+                        keyBase.add('agenda');
+                        if (ordered.includes('rightfiber')) keyBase.add('rightfiber');
+                        edit.keyConceptsNav = ordered.filter(id => keyBase.has(id));
+                        edit.includeRightfiber = ordered.includes('rightfiber');
                         followUpEdit = edit;
                     });
                 });
@@ -1927,42 +1961,68 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         }
 
         function editDataCenters(centers, onChange) {
-            const items = clone(centers || []);
+            const items = normalizeDataCenters(clone(centers || []));
             const id = `dcs-${Math.random().toString(36).slice(2)}`;
             const hasCustom = items.some(dc => dc.custom === true);
+            const handleIcon = `<span class="drag-handle handle mt-0.5" title="Drag to reorder" aria-label="Drag to reorder"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01"></path></svg></span>`;
             const commit = (rerender = false) => {
                 markDirty();
-                onChange(items.map(dc => ({
-                    city: dc.city || '',
-                    name: dc.name || '',
-                    nameNormal: dc.nameNormal || '',
-                    highlight: dc.highlight === true,
-                    ...(dc.custom === true ? { custom: true } : {})
-                })));
+                onChange(normalizeDataCenters(items));
                 if (rerender) renderEditorFields();
+            };
+            const reindexRows = (root) => {
+                root.querySelectorAll('[data-dc-row]').forEach((row, index) => {
+                    row.dataset.dcRow = String(index);
+                    const highlight = row.querySelector('[data-dc-highlight]');
+                    if (highlight) highlight.value = String(index);
+                    row.querySelectorAll('[data-dc-city]').forEach(el => { el.dataset.dcCity = String(index); });
+                    row.querySelectorAll('[data-dc-name]').forEach(el => { el.dataset.dcName = String(index); });
+                    row.querySelectorAll('[data-dc-remove]').forEach(el => { el.dataset.dcRemove = String(index); });
+                    row.classList.toggle('border-orange-400', items[index]?.highlight === true);
+                    row.classList.toggle('bg-orange-50/70', items[index]?.highlight === true);
+                });
             };
 
             setTimeout(() => {
                 const root = document.getElementById(id);
                 if (!root) return;
+                const list = root.querySelector('[data-dc-list]');
+                if (list && typeof Sortable !== 'undefined') {
+                    Sortable.create(list, {
+                        animation: 180,
+                        handle: '.handle',
+                        draggable: '[data-dc-row]',
+                        forceFallback: true,
+                        fallbackOnBody: true,
+                        swapThreshold: 0.65,
+                        ghostClass: 'sortable-ghost',
+                        dragClass: 'sortable-drag',
+                        filter: 'input, button',
+                        preventOnFilter: false,
+                        onEnd: () => {
+                            const next = [...list.querySelectorAll('[data-dc-row]')].map(row => {
+                                const index = Number(row.dataset.dcRow);
+                                return items[index];
+                            }).filter(Boolean);
+                            items.splice(0, items.length, ...next);
+                            reindexRows(root);
+                            commit(false);
+                        }
+                    });
+                }
                 root.querySelectorAll('[data-dc-highlight]').forEach(input => {
                     input.addEventListener('change', () => {
                         const index = Number(input.value);
                         if (items[index]) items[index].highlight = input.checked;
                         commit();
-                        root.querySelectorAll('[data-dc-row]').forEach((row, i) => {
-                            row.classList.toggle('border-orange-400', items[i]?.highlight);
-                            row.classList.toggle('bg-orange-50/70', items[i]?.highlight);
-                        });
+                        reindexRows(root);
                     });
                 });
                 root.querySelector('[data-dc-clear]')?.addEventListener('click', () => {
                     items.forEach(dc => { dc.highlight = false; });
                     commit();
                     root.querySelectorAll('[data-dc-highlight]').forEach(input => { input.checked = false; });
-                    root.querySelectorAll('[data-dc-row]').forEach(row => {
-                        row.classList.remove('border-orange-400', 'bg-orange-50/70');
-                    });
+                    reindexRows(root);
                 });
                 root.querySelectorAll('[data-dc-city]').forEach(input => {
                     input.addEventListener('input', () => {
@@ -1982,7 +2042,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 });
                 root.querySelector('[data-dc-add]')?.addEventListener('click', () => {
                     if (items.some(dc => dc.custom === true)) return;
-                    items.push({ city: '', name: '', custom: true, highlight: false });
+                    items.push({ city: 'Coming Soon', name: 'Coming Soon', custom: true, highlight: false });
                     commit(true);
                 });
                 root.querySelectorAll('[data-dc-remove]').forEach(button => {
@@ -2000,19 +2060,20 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     <div class="flex items-center justify-between gap-2">
                         <div>
                             <span class="field-label mb-0">Data Centers</span>
-                            <p class="text-[11px] text-slate-500 mt-1">Highlight sites on the slide (hero-color border). Stock names are fixed — add one custom site if needed.</p>
+                            <p class="text-[11px] text-slate-500 mt-1">Highlight sites on the slide (hero-color border). Stock names match tactical — Coming Soon is editable and off by default.</p>
                         </div>
                         <div class="flex items-center gap-3 shrink-0">
-                            <button type="button" data-dc-add class="text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-orange-500 transition ${hasCustom ? 'opacity-40 pointer-events-none' : ''}">Add custom</button>
+                            <button type="button" data-dc-add class="text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-orange-500 transition ${hasCustom ? 'opacity-40 pointer-events-none' : ''}">Add Coming Soon</button>
                             <button type="button" data-dc-clear class="text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-orange-500">Clear highlights</button>
                         </div>
                     </div>
-                    <div class="space-y-2 max-h-[28rem] overflow-y-auto pr-1">
+                    <div data-dc-list class="space-y-2 max-h-[28rem] overflow-y-auto pr-1">
                         ${items.map((dc, index) => {
                             const isCustom = dc.custom === true;
                             return `
-                            <div data-dc-row="${index}" class="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 hover:border-orange-300 transition ${dc.highlight ? 'border-orange-400 bg-orange-50/70' : ''}">
-                                <input data-dc-highlight type="checkbox" value="${index}" ${dc.highlight ? 'checked' : ''} class="mt-1 h-4 w-4 accent-orange-500 cursor-pointer" title="Highlight on slide">
+                            <div data-dc-row="${index}" class="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 hover:border-orange-300 transition ${dc.highlight ? 'border-orange-400 bg-orange-50/70' : ''}">
+                                ${handleIcon}
+                                <input data-dc-highlight type="checkbox" value="${index}" ${dc.highlight ? 'checked' : ''} class="mt-1.5 h-4 w-4 accent-orange-500 cursor-pointer shrink-0" title="Highlight on slide">
                                 <div class="min-w-0 flex-1 space-y-2">
                                     ${isCustom ? `
                                         <input data-dc-city="${index}" class="field-input text-xs" value="${escapeAttr(dc.city || '')}" placeholder="City, ST">
@@ -2050,9 +2111,15 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 const list = root.querySelector('[data-product-list]');
                 if (list && typeof Sortable !== 'undefined') {
                     Sortable.create(list, {
-                        animation: 150,
+                        animation: 180,
                         handle: '.handle',
-                        ghostClass: 'bg-orange-50',
+                        forceFallback: true,
+                        fallbackOnBody: true,
+                        swapThreshold: 0.65,
+                        ghostClass: 'sortable-ghost',
+                        dragClass: 'sortable-drag',
+                        filter: 'input, button, textarea',
+                        preventOnFilter: false,
                         onEnd: () => {
                             const next = [...list.querySelectorAll('[data-product-index]')].map(row => {
                                 const index = Number(row.dataset.productIndex);
@@ -2093,7 +2160,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 });
             });
 
-            const handleIcon = `<svg class="w-5 h-5 handle text-slate-400 group-hover:text-orange-500 transition cursor-grab active:cursor-grabbing shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01"></path></svg>`;
+            const handleIcon = `<span class="drag-handle handle" title="Drag to reorder" aria-label="Drag to reorder"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01"></path></svg></span>`;
 
             return `
                 <div id="${id}" class="space-y-3">
@@ -2103,9 +2170,9 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     </div>
                     <ul data-product-list class="space-y-2 pb-1">
                         ${items.map((product, index) => `
-                            <li data-product-index="${index}" class="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-sm group ${product.enabled === false ? 'opacity-60' : ''}">
+                            <li data-product-index="${index}" class="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-sm group ${product.enabled === false ? 'opacity-60' : ''}">
                                 ${handleIcon}
-                                <input data-product-enabled="${index}" type="checkbox" ${product.enabled !== false ? 'checked' : ''} class="mt-1 h-4 w-4 accent-orange-500 shrink-0" title="Show on slide">
+                                <input data-product-enabled="${index}" type="checkbox" ${product.enabled !== false ? 'checked' : ''} class="mt-1.5 h-4 w-4 accent-orange-500 shrink-0" title="Show on slide">
                                 <div class="min-w-0 flex-1 space-y-2">
                                     <input data-product-title="${index}" class="field-input font-semibold" value="${escapeAttr(product.title || '')}" placeholder="Product title">
                                     <textarea data-product-desc="${index}" rows="2" class="field-input resize-y text-sm">${escapeHtml(product.desc || '')}</textarea>
@@ -3036,7 +3103,6 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             if (followUpEdit) {
                 document.getElementById('recap-headline').value = followUpEdit.headline || '';
                 document.getElementById('recap-items').value = (followUpEdit.items || []).join('\n');
-                document.getElementById('recap-rightfiber').checked = followUpEdit.includeRightfiber !== false;
             }
             const confirmBtn = document.getElementById('confirm-follow-up');
             if (confirmBtn) confirmBtn.textContent = hasFollowUp ? 'Update Follow-Up' : 'Publish Follow-Up';
@@ -3081,16 +3147,18 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         .split('\n')
                         .map(item => item.trim())
                         .filter(Boolean);
+                    const keyConceptsNav = followUpEdit?.keyConceptsNav
+                        || (draft.settings.keyConceptsNav || []).slice();
+                    const extendedNav = followUpEdit?.extendedNav
+                        || (draft.settings.extendedNav || draft.navOrder || []).slice();
                     recap = {
                         headline: document.getElementById('recap-headline').value.trim(),
                         items,
-                        includeRightfiber: document.getElementById('recap-rightfiber').checked
+                        includeRightfiber: keyConceptsNav.includes('rightfiber') || extendedNav.includes('rightfiber'),
+                        keyConceptsNav,
+                        extendedNav
                     };
-                    applyFollowUpRecap({
-                        ...recap,
-                        keyConceptsNav: followUpEdit?.keyConceptsNav,
-                        extendedNav: followUpEdit?.extendedNav
-                    });
+                    applyFollowUpRecap(recap);
                 }
                 const { body, bytes } = await buildPublishPayload({
                     includeRecap: true,

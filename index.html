@@ -82,24 +82,36 @@
             transition: opacity 0.25s ease;
             pointer-events: none;
         }
-        .capability-front::before {
-            content: '›';
+        .capability-flip-hint {
             position: absolute;
-            right: 1.5rem;
+            right: 1.25rem;
             bottom: 1rem;
             z-index: 2;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
             color: white;
-            font-size: 4rem;
-            line-height: 1;
-            opacity: 0;
-            transform: translateX(-8px);
+            opacity: 0.9;
+            transform: translateX(-4px);
             transition: opacity 0.25s ease, transform 0.25s ease;
             text-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
             pointer-events: none;
         }
+        .capability-flip-hint-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+        .capability-flip-hint-chevron {
+            font-size: 2.75rem;
+            line-height: 0.7;
+            font-weight: 300;
+        }
         .capability-card:hover { transform: translateY(-4px); box-shadow: 0 24px 45px -20px rgba(15, 23, 42, 0.5); }
-        .capability-card:hover .capability-front::after, .capability-card:hover .capability-front::before { opacity: 1; }
-        .capability-card:hover .capability-front::before { transform: translateX(0); }
+        .capability-card:hover .capability-front::after { opacity: 1; }
+        .capability-card:hover .capability-flip-hint { opacity: 1; transform: translateX(0); }
         .capability-body {
             position: relative;
             background-image:
@@ -1475,6 +1487,10 @@
                                     <div class="capability-card-inner relative h-full w-full">
                                         <div class="capability-face capability-front absolute inset-0 overflow-hidden rounded-3xl bg-slate-200">
                                             <img src="${resolveAsset(slot.src)}" alt="${card.title || `Capability ${index + 1}`}" class="capability-hero-img absolute inset-0 w-full h-full object-cover" style="${heroFrameVars(slot)}">
+                                            <div class="capability-flip-hint" aria-hidden="true">
+                                                <span class="capability-flip-hint-label">Click to flip</span>
+                                                <span class="capability-flip-hint-chevron">›</span>
+                                            </div>
                                         </div>
                                         <div class="capability-face capability-back absolute inset-0 overflow-hidden rounded-3xl bg-white text-gpc-orange flex flex-col">
                                             <div class="bg-gpc-orange h-32 px-8 flex items-center justify-center border-b-4 border-black">

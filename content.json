@@ -572,10 +572,6 @@
         "name": "Coresite"
       },
       {
-        "city": "Chicago, IL",
-        "name": "QTS"
-      },
-      {
         "city": "Minneapolis, MN",
         "name": "Cologix Minneapolis"
       },
@@ -641,7 +637,9 @@
       },
       {
         "city": "Coming Soon",
-        "name": "Coming Soon"
+        "name": "Coming Soon",
+        "custom": true,
+        "highlight": false
       }
     ],
     "products": [

@@ -127,19 +127,15 @@ function applyMeetingRecap(content, recap = {}) {
     next.pageContent.agenda = agenda;
   }
 
-  const includeRightfiber = recap.includeRightfiber !== false;
+  // Page toggles own Rightfiber. Legacy includeRightfiber:false still strips it;
+  // never force-inject when absent from the nav lists.
   const ensureNav = (list = []) => {
     const order = Array.isArray(list) ? list.slice() : [];
-    if (!includeRightfiber) return order.filter(id => id !== 'rightfiber');
-    if (!order.includes('rightfiber')) {
-      const after = order.indexOf('core-capabilities');
-      if (after >= 0) order.splice(after + 1, 0, 'rightfiber');
-      else order.unshift('rightfiber');
-    }
+    if (recap.includeRightfiber === false) return order.filter(id => id !== 'rightfiber');
     return order;
   };
 
-  // Optional explicit nav overrides (follow-up editor). Still honor includeRightfiber.
+  // Optional explicit nav overrides (follow-up editor).
   if (Array.isArray(recap.extendedNav)) {
     next.settings.extendedNav = ensureNav(recap.extendedNav);
     next.navOrder = next.settings.extendedNav.slice();

@@ -107,17 +107,24 @@ async function main() {
     const scale = await page.evaluate(() => {
       const stage = document.getElementById('preview-stage');
       const host = document.getElementById('preview-host');
+      const style = getComputedStyle(host);
+      const padX = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
+      const padY = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
+      const availW = host.clientWidth - padX;
+      const availH = host.clientHeight - padY;
       const sizer = document.getElementById('preview').contentDocument.getElementById('scale-sizer');
       const ratio = stage.offsetWidth / stage.offsetHeight;
       const ss = document.getElementById('preview').contentDocument.getElementById('screensaver');
+      const aside = document.querySelector('#studio-shell > aside');
       return {
         ratio: Number(ratio.toFixed(3)),
         is16x9: Math.abs(ratio - 16 / 9) < 0.02,
-        fitsHost: stage.offsetWidth <= host.offsetWidth + 1 && stage.offsetHeight <= host.offsetHeight + 1,
+        fitsHost: stage.offsetWidth <= availW + 1 && stage.offsetHeight <= availH + 1,
         sizerMatch: !!sizer && Math.abs(sizer.offsetWidth - stage.offsetWidth) < 2,
         ssDismissed: ss?.classList.contains('screensaver-dismissed'),
         studioPreview: document.getElementById('preview').contentDocument.body.classList.contains('studio-preview'),
-        active: document.getElementById('preview').contentDocument.querySelector('.nav-item-active')?.id
+        active: document.getElementById('preview').contentDocument.querySelector('.nav-item-active')?.id,
+        asideScrollable: !!aside && getComputedStyle(aside).overflowY === 'auto' && aside.scrollHeight >= aside.clientHeight
       };
     });
     if (scale.studioPreview && scale.ssDismissed) pass('preview-skips-screensaver');
@@ -126,6 +133,8 @@ async function main() {
     else fail('preview-16x9-scale', JSON.stringify(scale));
     if ((scale.active || '').includes('agenda')) pass('initial-page-agenda');
     else fail('initial-page-agenda', scale.active);
+    if (scale.asideScrollable) pass('editor-aside-scrollable');
+    else fail('editor-aside-scrollable', JSON.stringify({ asideScrollable: scale.asideScrollable }));
 
     // 1b) Dirty check: edit → dirty cue → Save Draft → clean
     const dirtyBaseline = await page.evaluate(() => ({
@@ -186,6 +195,21 @@ async function main() {
       if (nav === id) pass(`page-sync-${id}`);
       else fail(`page-sync-${id}`, `nav=${nav}`);
     }
+
+    await page.click('[data-select-id="core-capabilities"]');
+    await sleep(500);
+    await waitPreviewView(page, 'core-capabilities').catch(() => {});
+    const flipCue = await page.evaluate(() => {
+      const doc = document.getElementById('preview')?.contentDocument;
+      const hints = [...(doc?.querySelectorAll('.capability-flip-hint') || [])];
+      return {
+        count: hints.length,
+        text: hints[0]?.textContent?.replace(/\s+/g, ' ').trim() || ''
+      };
+    });
+    if (flipCue.count >= 1 && /Click to flip/i.test(flipCue.text))
+      pass('capabilities-click-to-flip', `${flipCue.count} hints`);
+    else fail('capabilities-click-to-flip', JSON.stringify(flipCue));
 
     // 3) Refresh keeps selected page, no screensaver
     await page.click('[data-select-id="data-centers"]');
@@ -531,6 +555,37 @@ async function main() {
     if (dcPreview.heroBorderCards >= 2) pass('data-centers-preview-multi-border', `${dcPreview.heroBorderCards} cards`);
     else fail('data-centers-preview-multi-border', JSON.stringify(dcPreview));
 
+    const dcList = await page.evaluate(() => {
+      const draftKeys = Object.keys(localStorage).filter(k => k.startsWith('presentation-studio-draft'));
+      const key = draftKeys.find(k => k.includes(':')) || draftKeys[0];
+      const d = key ? JSON.parse(localStorage.getItem(key)) : null;
+      const centers = d?.pageContent?.['data-centers'] || [];
+      const coming = centers.find(dc => /coming\s*soon/i.test(dc?.name || '') || /coming\s*soon/i.test(dc?.city || ''));
+      const editableComing = Boolean(document.querySelector('[data-dc-city]'));
+      const handles = document.querySelectorAll('#editor-fields .handle').length;
+      return {
+        count: centers.length,
+        hasQts: centers.some(dc => String(dc?.name || '').trim() === 'QTS'),
+        comingCustom: coming?.custom === true,
+        comingHighlight: coming?.highlight === true,
+        editableComing,
+        handles
+      };
+    });
+    if (!dcList.hasQts && dcList.count >= 27) pass('data-centers-no-qts', `${dcList.count} centers`);
+    else fail('data-centers-no-qts', JSON.stringify(dcList));
+    if (dcList.comingCustom && !dcList.comingHighlight && dcList.editableComing)
+      pass('data-centers-coming-soon-editable-off');
+    else fail('data-centers-coming-soon-editable-off', JSON.stringify(dcList));
+    if (dcList.handles >= 3) pass('data-centers-drag-handles', `${dcList.handles}`);
+    else fail('data-centers-drag-handles', JSON.stringify(dcList));
+
+    const pageHandles = await page.evaluate(() =>
+      document.querySelectorAll('#page-list .handle').length
+    );
+    if (pageHandles >= 3) pass('pages-drag-handles', `${pageHandles}`);
+    else fail('pages-drag-handles', `${pageHandles}`);
+
     // 8) Products toggles + drag handles
     await page.click('[data-select-id="products"]');
     await sleep(600);
@@ -791,6 +846,22 @@ async function main() {
       else fail('follow-up-demo-logo-gate', JSON.stringify({ dialogLog, fuStatus }));
     }
 
+    // Create Follow-Up modal must not include the old Rightfiber toggle
+    const rfToggleGone = await page.evaluate(() => {
+      const modal = document.getElementById('follow-up-modal');
+      if (!modal) return { ok: false, reason: 'missing modal' };
+      // Temporarily open to inspect markup even if gate blocked earlier.
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      const hasLegacy = Boolean(document.getElementById('recap-rightfiber'))
+        || /Include Rightfiber/i.test(modal.textContent || '');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      return { ok: !hasLegacy, hasLegacy };
+    });
+    if (rfToggleGone.ok) pass('follow-up-modal-no-rightfiber-toggle');
+    else fail('follow-up-modal-no-rightfiber-toggle', JSON.stringify(rfToggleGone));
+
     // 15) Case Studies page is a real template page (not orphan-only)
     const caseStudies = await page.evaluate(() => {
       const row = document.querySelector('#page-list [data-page-id="case-studies"]');
@@ -838,7 +909,8 @@ async function main() {
       window.__studioApplyFollowUpRecap?.({
         headline: 'E2E follow-up headline',
         items: ['One', 'Two'],
-        includeRightfiber: true
+        keyConceptsNav: ['agenda', 'core-capabilities'],
+        extendedNav: ['agenda', 'core-capabilities', 'rightfiber']
       });
       window.__studioRender?.();
       return Boolean(document.querySelector('[data-select-id="__follow-up__"]'));
@@ -849,11 +921,16 @@ async function main() {
       await sleep(500);
       const fuEditor = await page.evaluate(() => ({
         heading: document.getElementById('selected-heading')?.textContent || '',
-        updateBtn: Boolean(document.getElementById('update-follow-up-btn'))
+        updateBtn: Boolean(document.getElementById('update-follow-up-btn')),
+        legacyRf: Boolean(document.getElementById('fu-include-rightfiber'))
+          || /Include Rightfiber/i.test(document.getElementById('editor-fields')?.textContent || ''),
+        pageToggleRf: Boolean(document.querySelector('#editor-fields [data-fu-page="rightfiber"]'))
       }));
       if (/Meeting Recap|Follow-Up/i.test(fuEditor.heading) && fuEditor.updateBtn)
         pass('follow-up-branch-editor-fields', fuEditor.heading);
       else fail('follow-up-branch-editor-fields', JSON.stringify(fuEditor));
+      if (!fuEditor.legacyRf && fuEditor.pageToggleRf) pass('follow-up-editor-no-rightfiber-toggle');
+      else fail('follow-up-editor-no-rightfiber-toggle', JSON.stringify(fuEditor));
     } else {
       fail('follow-up-branch-visible-after-create', 'branch still hidden after markHasFollowUp');
     }
