@@ -759,8 +759,23 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 }));
             }
             pageOrder = draft.settings.editorPageOrder || buildDefaultPageOrder();
-            selectedPageId = pageOrder[0];
+            selectedPageId = resolveSelectedPageId(selectedPageId);
             syncIdentityFieldsFromDraft();
+        }
+
+        function pageIsNavigable(pageId, data = draft) {
+            if (!pageId || !data?.mapData?.[pageId] || data.mapData[pageId].hidden === true) return false;
+            const keyNav = data.settings?.keyConceptsNav || [];
+            const extNav = data.settings?.extendedNav || data.navOrder || [];
+            return keyNav.includes(pageId) || extNav.includes(pageId);
+        }
+
+        function resolveSelectedPageId(preferredId, data = draft) {
+            const order = (data?.settings?.editorPageOrder || pageOrder || []).filter(id => data?.mapData?.[id]);
+            if (preferredId && pageIsNavigable(preferredId, data)) return preferredId;
+            if (preferredId && data?.mapData?.[preferredId] && order.includes(preferredId)) return preferredId;
+            const firstVisible = order.find(id => pageIsNavigable(id, data));
+            return firstVisible || order[0] || Object.keys(data?.mapData || {})[0] || null;
         }
 
         function syncIdentityFieldsFromDraft() {
@@ -789,7 +804,8 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 slug: presentationSlug,
                 repName,
                 publishedUrl,
-                followUpUrl
+                followUpUrl,
+                selectedPageId
             }));
         }
 
@@ -804,6 +820,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             repName = active?.repName || '';
             publishedUrl = active?.publishedUrl || '';
             followUpUrl = active?.followUpUrl || '';
+            selectedPageId = active?.selectedPageId || null;
             nameInput.value = presentationName;
             if (repNameInput) repNameInput.value = repName;
             if (!presentationSlug && presentationName) presentationSlug = slugify(presentationName);
@@ -811,6 +828,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             const saved = localStorage.getItem(draftKey()) || (!presentationSlug ? localStorage.getItem(LEGACY_STORAGE_KEY) : null);
             prepareDraft(saved ? JSON.parse(saved) : baseData);
             if (!draft.settings.repName && repName) draft.settings.repName = repName;
+            selectedPageId = resolveSelectedPageId(selectedPageId);
             render();
             syncPublishPanelValues();
             hidePublishUrlRows();
@@ -1036,6 +1054,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             pageList.querySelectorAll('[data-select-id]').forEach(item => {
                 item.addEventListener('click', () => {
                     selectedPageId = item.dataset.selectId;
+                    persistActive();
                     render();
                     syncPreviewToPage(selectedPageId);
                 });
@@ -2244,8 +2263,12 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
         function refreshPreview() {
             saveLocal(false);
+            selectedPageId = resolveSelectedPageId(selectedPageId);
             const slugQuery = presentationSlug ? `&slug=${encodeURIComponent(presentationSlug)}` : '';
-            const viewQuery = selectedPageId ? `&view=${encodeURIComponent(selectedPageId)}` : '';
+            const viewId = selectedPageId && pageIsNavigable(selectedPageId)
+                ? selectedPageId
+                : resolveSelectedPageId(null);
+            const viewQuery = viewId ? `&view=${encodeURIComponent(viewId)}` : '';
             preview.src = `index.html?draft=local${slugQuery}&preview=1${viewQuery}&t=${Date.now()}`;
         }
 

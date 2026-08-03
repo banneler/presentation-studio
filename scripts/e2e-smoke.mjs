@@ -155,6 +155,74 @@ async function main() {
       pass('refresh-keeps-page-no-screensaver');
     else fail('refresh-keeps-page-no-screensaver', JSON.stringify(afterRefresh));
 
+    // 3b) Editor reload restores the selected page into preview (not agenda)
+    await page.click('[data-select-id="products"]');
+    await sleep(300);
+    await page.click('#save-local');
+    await sleep(300);
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.waitForSelector('#preview');
+    await waitPreviewReady(page);
+    await waitPreviewView(page, 'products');
+    const afterEditorReload = await page.evaluate(() => {
+      const selected = document.querySelector('#page-list [data-select-id].border-l-orange-400, #page-list .border-l-orange-400 [data-select-id], #page-list .nav-row.border-l-orange-400 [data-select-id]');
+      const selectedRow = document.querySelector('#page-list .nav-row.border-l-orange-400');
+      const win = document.getElementById('preview').contentWindow;
+      const doc = document.getElementById('preview').contentDocument;
+      return {
+        editorPage: selectedRow?.dataset?.pageId || selected?.dataset?.selectId || null,
+        view: win ? new URL(win.location.href).searchParams.get('view') : null,
+        active: doc.querySelector('.nav-item-active')?.id?.replace('nav-btn-', '') || null
+      };
+    });
+    if (afterEditorReload.editorPage === 'products' && afterEditorReload.view === 'products' && afterEditorReload.active === 'products')
+      pass('editor-reload-keeps-selected-page');
+    else fail('editor-reload-keeps-selected-page', JSON.stringify(afterEditorReload));
+
+    // 3c) Refresh falls back when the selected page is hidden from both nav lists
+    await page.click('[data-select-id="why-gpc"]');
+    await sleep(200);
+    const hidWhy = await page.evaluate(() => {
+      const row = document.querySelector('#page-list [data-page-id="why-gpc"]');
+      if (!row) return false;
+      row.querySelectorAll('input[data-nav-id="why-gpc"]').forEach(input => {
+        if (input.checked) {
+          input.checked = false;
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+      return [...row.querySelectorAll('input[data-nav-id="why-gpc"]')].every(i => !i.checked);
+    });
+    await page.click('[data-select-id="why-gpc"]');
+    await sleep(200);
+    await page.click('#refresh-preview');
+    await waitPreviewReady(page);
+    await sleep(300);
+    const hiddenRefresh = await page.evaluate(() => {
+      const win = document.getElementById('preview').contentWindow;
+      const doc = document.getElementById('preview').contentDocument;
+      return {
+        view: win ? new URL(win.location.href).searchParams.get('view') : null,
+        active: doc.querySelector('.nav-item-active')?.id?.replace('nav-btn-', '') || null
+      };
+    });
+    if (hidWhy && hiddenRefresh.view && hiddenRefresh.view !== 'why-gpc' && hiddenRefresh.active !== 'why-gpc')
+      pass('refresh-hidden-page-fallback', JSON.stringify(hiddenRefresh));
+    else fail('refresh-hidden-page-fallback', JSON.stringify({ hidWhy, ...hiddenRefresh }));
+
+    // Re-enable why-gpc for later nav tests
+    await page.evaluate(() => {
+      const row = document.querySelector('#page-list [data-page-id="why-gpc"]');
+      row?.querySelectorAll('input[data-nav-id="why-gpc"]').forEach(input => {
+        if (!input.checked) {
+          input.checked = true;
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+    });
+    await page.click('[data-select-id="agenda"]');
+    await sleep(200);
+
     // 4) Acme (2-term) SPEC pricing import
     const acmePath = join(ROOT, 'samples/acme-pricing.spec');
     await page.setInputFiles('#spec-pricing-file', acmePath);

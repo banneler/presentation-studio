@@ -964,14 +964,29 @@
             // checkClientGreeting(); // Disabled: hardcoded Tenaska client experience
             buildNavigation();
             setupStudioPreviewBridge();
-            const order = getFilteredNavOrder();
-            const requestedView = new URLSearchParams(window.location.search).get('view');
-            const startView = requestedView && mapData[requestedView] ? requestedView : order[0];
+            const startView = resolveStartView(new URLSearchParams(window.location.search).get('view'));
             if (startView) {
                 // Deep-link / editor refresh can target Extended-only pages while still in Key mode.
                 ensureNavModeForView(startView);
                 updateView(startView);
             }
+        }
+
+        function isViewNavigable(viewId) {
+            if (!viewId || !mapData[viewId] || mapData[viewId].hidden === true) return false;
+            const keyNav = getVisibleNavList('keyConceptsNav', KEY_CONCEPTS_NAV);
+            const extNav = getVisibleNavList('extendedNav', navOrder);
+            return keyNav.includes(viewId) || extNav.includes(viewId);
+        }
+
+        /** Prefer ?view= when still present & visible; otherwise first visible page (agenda/home). */
+        function resolveStartView(requestedView) {
+            if (requestedView && isViewNavigable(requestedView)) return requestedView;
+            const order = getFilteredNavOrder();
+            if (order[0]) return order[0];
+            const keyNav = getVisibleNavList('keyConceptsNav', KEY_CONCEPTS_NAV);
+            const extNav = getVisibleNavList('extendedNav', navOrder);
+            return keyNav[0] || extNav[0] || (mapData.agenda ? 'agenda' : Object.keys(mapData || {})[0]) || null;
         }
 
         function dismissScreensaverForStudio() {
@@ -1011,7 +1026,8 @@
                 if (event.origin !== window.location.origin) return;
                 const data = event.data || {};
                 if (data.type !== 'presentation-studio-goto' || !data.viewId) return;
-                if (!mapData[data.viewId]) return;
+                // Live editor sync may target a page unchecked from nav while you edit it.
+                if (!mapData[data.viewId] || mapData[data.viewId].hidden === true) return;
                 dismissScreensaverForStudio();
                 ensureNavModeForView(data.viewId);
                 updateView(data.viewId);
