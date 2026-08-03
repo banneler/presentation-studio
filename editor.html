@@ -1187,7 +1187,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         <input id="${statsToggleId}" type="checkbox" ${page.showStats === true ? 'checked' : ''} class="h-4 w-4 accent-orange-500">
                         <span>
                             Show header stats
-                            <span class="block text-[11px] font-normal text-slate-500 mt-0.5">Locations and monthly total in the top-right. Off by default so you can walk the table first.</span>
+                            <span class="block text-[11px] font-normal text-slate-500 mt-0.5">Single option: locations + monthly. Multiple options: Option 1 MRC vs Option 2 MRC (and so on). Off by default so you can walk the table first.</span>
                         </span>
                     </label>
                 `;
@@ -1282,8 +1282,13 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
             if (page.type === 'pricing' && content) {
                 const optionCount = Array.isArray(content.options) ? content.options.length : 0;
-                const locationCount = (content.options || []).reduce((sum, opt) => sum + ((opt.locations || []).length), 0);
-                const firstTotal = optionCount ? formatStudioMoney(computeOptionMonthlyTotal(content.options[0], !!content.enableDecimalPointsAmy), !!content.enableDecimalPointsAmy) : '—';
+                const useDecimals = !!content.enableDecimalPointsAmy;
+                // Prefer first-option location count — summing across options double-counts shared sites.
+                const locationCount = optionCount ? ((content.options[0].locations || []).length) : 0;
+                const optionMrcRows = (content.options || []).map((opt, index) => {
+                    const total = formatStudioMoney(computeOptionMonthlyTotal(opt, useDecimals), useDecimals);
+                    return `<div class="col-span-2"><dt class="text-slate-400 uppercase tracking-wider font-bold">Option ${index + 1} MRC</dt><dd class="font-semibold text-slate-800">${escapeHtml(total)}</dd></div>`;
+                }).join('');
                 content.sideImage = normalizeHeroImage(content.sideImage);
                 html += `<hr class="border-slate-200 my-5">`;
                 html += editHeroImages('Side Image', [content.sideImage], value => {
@@ -1302,7 +1307,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         <dl class="grid grid-cols-2 gap-2 text-xs pt-1">
                             <div><dt class="text-slate-400 uppercase tracking-wider font-bold">Options</dt><dd class="font-semibold text-slate-800">${optionCount}</dd></div>
                             <div><dt class="text-slate-400 uppercase tracking-wider font-bold">Locations</dt><dd class="font-semibold text-slate-800">${locationCount}</dd></div>
-                            <div class="col-span-2"><dt class="text-slate-400 uppercase tracking-wider font-bold">First option MRC</dt><dd class="font-semibold text-slate-800">${escapeHtml(firstTotal)}</dd></div>
+                            ${optionMrcRows || '<div class="col-span-2"><dt class="text-slate-400 uppercase tracking-wider font-bold">MRC</dt><dd class="font-semibold text-slate-800">—</dd></div>'}
                         </dl>
                         <p class="text-[11px] text-slate-500 pt-1">Re-upload a .spec or Salesforce CSV above to replace pricing data. Side image crop settings are kept.</p>
                     </div>
@@ -2485,6 +2490,24 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             }, 0);
         }
 
+        function buildPricingHeaderStats(options, useDecimals) {
+            const list = Array.isArray(options) ? options : [];
+            if (!list.length) return [];
+            if (list.length === 1) {
+                return [
+                    { label: 'Locations', value: String((list[0].locations || []).length), color: 'text-gpc-blue' },
+                    { label: 'Monthly', value: formatStudioMoney(computeOptionMonthlyTotal(list[0], useDecimals), useDecimals), color: 'text-gpc-orange' }
+                ];
+            }
+            // Multi-option: compare MRC totals — do not sum locations across options (double-counts shared sites).
+            const colors = ['text-gpc-blue', 'text-gpc-orange', 'text-slate-800'];
+            return list.map((opt, index) => ({
+                label: `Option ${index + 1} MRC`,
+                value: formatStudioMoney(computeOptionMonthlyTotal(opt, useDecimals), useDecimals),
+                color: colors[index % colors.length]
+            }));
+        }
+
         function normalizeSpecPromotions(promotions) {
             if (!Array.isArray(promotions)) return [];
             return promotions.map(promo => ({
@@ -2734,13 +2757,14 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
         function applyPricingImport(extracted, sourceName) {
             const useDecimals = !!extracted.enableDecimalPointsAmy;
-            const firstTotal = computeOptionMonthlyTotal(extracted.options[0], useDecimals);
-            const locationCount = extracted.options.reduce((sum, opt) => sum + (opt.locations || []).length, 0);
+            const options = Array.isArray(extracted.options) ? extracted.options : [];
+            // Shared sites across options — count locations on the first option only.
+            const locationCount = options.length ? ((options[0].locations || []).length) : 0;
             const biz = extracted.businessName;
             const subtitleBits = [];
             if (biz) subtitleBits.push(biz);
             if (extracted.importSource === 'salesforce-csv') subtitleBits.push('Salesforce import');
-            subtitleBits.push(extracted.options.length > 1 ? `${extracted.options.length} options` : 'Investment summary');
+            subtitleBits.push(options.length > 1 ? `${options.length} options` : 'Investment summary');
 
             draft.mapData = draft.mapData || {};
             draft.pageContent = draft.pageContent || {};
@@ -2758,10 +2782,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 type: 'pricing',
                 useCustomerLogo: true,
                 showStats: priorShowStats,
-                stats: [
-                    { label: 'Locations', value: String(locationCount), color: 'text-gpc-blue' },
-                    { label: 'Monthly', value: formatStudioMoney(firstTotal, useDecimals), color: 'text-gpc-orange' }
-                ]
+                stats: buildPricingHeaderStats(options, useDecimals)
             };
             draft.pageContent.pricing = {
                 sourceName: sourceName || 'import',
@@ -2775,7 +2796,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 quoteExpirationDays: extracted.quoteExpirationDays,
                 enableTaxesFeesExclusion: extracted.enableTaxesFeesExclusion,
                 sideImage,
-                options: extracted.options
+                options
             };
             insertPricingIntoPageOrder();
             selectedPageId = 'pricing';
@@ -2812,7 +2833,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             if (!statusEl || !removeBtn) return;
             if (content) {
                 const optionCount = Array.isArray(content.options) ? content.options.length : 0;
-                const locationCount = (content.options || []).reduce((sum, opt) => sum + ((opt.locations || []).length), 0);
+                const locationCount = optionCount ? ((content.options[0].locations || []).length) : 0;
                 const kind = content.importSource === 'salesforce-csv' ? 'Salesforce CSV' : 'spec';
                 statusEl.textContent = `${content.sourceName || 'Pricing'} · ${kind} · ${locationCount} loc · ${optionCount} opt`;
                 removeBtn.classList.remove('hidden');

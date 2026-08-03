@@ -262,6 +262,50 @@ async function main() {
       if (Number.isFinite(p0) && Number.isFinite(p1) && p1 < p0)
         pass('gpc-2term-discounted-60', `${p0} -> ${p1}`);
       else fail('gpc-2term-discounted-60', JSON.stringify({ p0, p1 }));
+
+      // Multi-option header stats compare Option MRC totals (not summed location counts)
+      const headerStats = (dGpc?.mapData?.pricing?.stats || []).map(s => ({
+        label: s.label,
+        value: s.value
+      }));
+      const labels = headerStats.map(s => s.label);
+      const hasOpt1 = labels.some(l => /Option\s*1\s*MRC/i.test(l));
+      const hasOpt2 = labels.some(l => /Option\s*2\s*MRC/i.test(l));
+      const hasLocationsLabel = labels.some(l => /^Locations$/i.test(l));
+      if (hasOpt1 && hasOpt2 && !hasLocationsLabel && headerStats.length >= 2)
+        pass('gpc-2term-header-stats', JSON.stringify(headerStats));
+      else fail('gpc-2term-header-stats', JSON.stringify(headerStats));
+
+      // Enable showStats and confirm preview renders Option MRC labels (not a Locations total)
+      await page.click('[data-select-id="pricing"]');
+      await sleep(400);
+      const toggled = await page.evaluate(() => {
+        const input = [...document.querySelectorAll('label')]
+          .find(l => /Show header stats/i.test(l.textContent || ''))
+          ?.querySelector('input[type="checkbox"]');
+        if (!input) return false;
+        if (!input.checked) {
+          input.checked = true;
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        return input.checked === true;
+      });
+      await page.click('#refresh-preview');
+      await waitPreviewReady(page);
+      await sleep(400);
+      const statsUi = await page.evaluate(() => {
+        const doc = document.getElementById('preview').contentDocument;
+        const text = doc?.getElementById('stats-container')?.innerText || '';
+        return {
+          text,
+          hasOpt1: /Option\s*1\s*MRC/i.test(text),
+          hasOpt2: /Option\s*2\s*MRC/i.test(text),
+          hasLocations: /\bLocations\b/i.test(text)
+        };
+      });
+      if (toggled && statsUi.hasOpt1 && statsUi.hasOpt2 && !statsUi.hasLocations)
+        pass('gpc-2term-header-stats-preview', statsUi.text.replace(/\s+/g, ' ').trim());
+      else fail('gpc-2term-header-stats-preview', JSON.stringify({ toggled, ...statsUi }));
     }
 
     // 5) Salesforce CSV replaces with single option
@@ -286,6 +330,11 @@ async function main() {
     if (csvDraft.source === 'salesforce-csv' && csvDraft.options === 1 && csvDraft.locations >= 2)
       pass('csv-import-single-option', `${csvDraft.locations} locations`);
     else fail('csv-import-single-option', JSON.stringify(csvDraft));
+
+    const csvStats = (dCsv?.mapData?.pricing?.stats || []).map(s => s.label);
+    if (csvStats.includes('Locations') && csvStats.includes('Monthly') && !csvStats.some(l => /Option\s*\d+\s*MRC/i.test(l)))
+      pass('csv-import-single-option-stats', JSON.stringify(csvStats));
+    else fail('csv-import-single-option-stats', JSON.stringify(csvStats));
 
     // 6) Remove pricing (confirm accepted via dialog handler)
     await page.click('#spec-pricing-remove');
