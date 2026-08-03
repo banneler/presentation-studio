@@ -70,11 +70,25 @@
             color: rgb(148 163 184);
             cursor: grab;
             touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
         .drag-handle:hover { color: #f97316; background: rgb(255 247 237); }
         .drag-handle:active { cursor: grabbing; }
+        .sortable-ghost,
+        .sortable-drag,
+        .sortable-fallback {
+            -webkit-user-select: none;
+            user-select: none;
+        }
         .sortable-ghost { opacity: 0.45; background: rgb(255 247 237) !important; }
-        .sortable-drag { box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18); }
+        .sortable-drag,
+        .sortable-fallback { box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18); }
+        body.is-sortable-dragging,
+        body.is-sortable-dragging * {
+            -webkit-user-select: none !important;
+            user-select: none !important;
+        }
         /* Rotate horizontal ranges — writing-mode is unreliable for range tracks */
         .slider-v-wrap {
             position: relative;
@@ -523,6 +537,33 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
         function sameList(left = [], right = []) {
             return left.length === right.length && left.every((value, index) => value === right[index]);
+        }
+
+        /** Prevent text selection/highlight flash while SortableJS is dragging. */
+        function withSortableSelectionLock(options = {}) {
+            const { onStart, onEnd, ...rest } = options;
+            let previousUserSelect = '';
+            let previousWebkitUserSelect = '';
+            return {
+                ...rest,
+                fallbackClass: rest.fallbackClass || 'sortable-fallback',
+                onStart(evt) {
+                    previousUserSelect = document.body.style.userSelect;
+                    previousWebkitUserSelect = document.body.style.webkitUserSelect;
+                    document.body.style.userSelect = 'none';
+                    document.body.style.webkitUserSelect = 'none';
+                    document.body.classList.add('is-sortable-dragging');
+                    window.getSelection()?.removeAllRanges();
+                    onStart?.(evt);
+                },
+                onEnd(evt) {
+                    document.body.style.userSelect = previousUserSelect;
+                    document.body.style.webkitUserSelect = previousWebkitUserSelect;
+                    document.body.classList.remove('is-sortable-dragging');
+                    window.getSelection()?.removeAllRanges();
+                    onEnd?.(evt);
+                }
+            };
         }
 
         function normalizeScreensaverTimeoutMinutes(value, fallback = 5) {
@@ -1473,7 +1514,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
             const sortableRoot = pageList.querySelector('[data-page-sortable]');
             if (sortableRoot && typeof Sortable !== 'undefined') {
-                Sortable.create(sortableRoot, {
+                Sortable.create(sortableRoot, withSortableSelectionLock({
                     animation: 180,
                     handle: '.handle',
                     draggable: '.nav-row',
@@ -1494,7 +1535,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         markDirty();
                         render();
                     }
-                });
+                }));
             }
         }
 
@@ -1988,7 +2029,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 if (!root) return;
                 const list = root.querySelector('[data-dc-list]');
                 if (list && typeof Sortable !== 'undefined') {
-                    Sortable.create(list, {
+                    Sortable.create(list, withSortableSelectionLock({
                         animation: 180,
                         handle: '.handle',
                         draggable: '[data-dc-row]',
@@ -2008,7 +2049,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                             reindexRows(root);
                             commit(false);
                         }
-                    });
+                    }));
                 }
                 root.querySelectorAll('[data-dc-highlight]').forEach(input => {
                     input.addEventListener('change', () => {
@@ -2110,7 +2151,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 if (!root) return;
                 const list = root.querySelector('[data-product-list]');
                 if (list && typeof Sortable !== 'undefined') {
-                    Sortable.create(list, {
+                    Sortable.create(list, withSortableSelectionLock({
                         animation: 180,
                         handle: '.handle',
                         forceFallback: true,
@@ -2138,7 +2179,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                             markDirty();
                             commit(false);
                         }
-                    });
+                    }));
                 }
                 root.querySelectorAll('[data-product-enabled]').forEach(input => {
                     input.addEventListener('change', () => {
