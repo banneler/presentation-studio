@@ -1172,17 +1172,32 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
             const logoToggleId = `use-logo-${Math.random().toString(36).slice(2)}`;
             const statsToggleId = `show-stats-${Math.random().toString(36).slice(2)}`;
+            const insightToggleId = `insight-enabled-${Math.random().toString(36).slice(2)}`;
+            const insightTextId = `insight-text-${Math.random().toString(36).slice(2)}`;
             setTimeout(() => {
                 const toggle = document.getElementById(logoToggleId);
-                if (!toggle) return;
-                toggle.addEventListener('change', () => {
-                    page.useCustomerLogo = toggle.checked;
-                    delete page.logo;
-                });
+                if (toggle) {
+                    toggle.addEventListener('change', () => {
+                        page.useCustomerLogo = toggle.checked;
+                        delete page.logo;
+                    });
+                }
                 const statsToggle = document.getElementById(statsToggleId);
                 if (statsToggle) {
                     statsToggle.addEventListener('change', () => {
                         page.showStats = statsToggle.checked;
+                    });
+                }
+                const insightToggle = document.getElementById(insightToggleId);
+                if (insightToggle) {
+                    insightToggle.addEventListener('change', () => {
+                        page.insightEnabled = insightToggle.checked;
+                    });
+                }
+                const insightText = document.getElementById(insightTextId);
+                if (insightText) {
+                    insightText.addEventListener('input', () => {
+                        page.insight = insightText.value;
                     });
                 }
             });
@@ -1214,6 +1229,20 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
 
             if (page.type === 'map') {
                 html += imageField('Static Map Image', page.file || '', value => page.file = value);
+                html += `<hr class="border-slate-200 my-5">`;
+                html += `
+                    <label class="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700 cursor-pointer">
+                        <input id="${insightToggleId}" type="checkbox" data-insight-enabled ${page.insightEnabled === true ? 'checked' : ''} class="h-4 w-4 accent-orange-500">
+                        <span>
+                            Show insight lightbulb
+                            <span class="block text-[11px] font-normal text-slate-500 mt-0.5">Off by default. When enabled, a lightbulb appears on this map page with the insight text below.</span>
+                        </span>
+                    </label>
+                    <label>
+                        <span class="field-label">Insight Text</span>
+                        <textarea id="${insightTextId}" data-insight-text rows="4" class="field-input resize-y">${escapeHtml(page.insight || '')}</textarea>
+                    </label>
+                `;
             }
 
             if (selectedPageId === 'agenda' && content) {

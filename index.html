@@ -456,6 +456,17 @@
                 </div>
             </div>
 
+            <div id="insight-container" class="absolute left-12 bottom-12 z-20 hidden flex-col items-start gap-4 transition-opacity duration-300">
+                <div id="insight-modal" class="relative bg-gpc-navy/95 backdrop-blur-md border border-slate-700/50 rounded-2xl p-6 shadow-2xl w-80 hidden opacity-0 transition-all duration-300 translate-y-4 origin-bottom-left">
+                    <h4 class="text-gpc-orange font-bold text-sm uppercase tracking-widest mb-3">Key Insight</h4>
+                    <p id="insight-text" class="text-slate-300 text-sm leading-relaxed"></p>
+                    <button type="button" onclick="toggleInsight()" class="absolute top-4 right-4 text-slate-400 hover:text-white" aria-label="Close insight">✕</button>
+                </div>
+                <button type="button" onclick="toggleInsight()" class="w-14 h-14 bg-white rounded-full shadow-floating flex items-center justify-center text-gpc-orange hover:bg-gpc-orange hover:text-white transition-colors border border-slate-200" aria-label="Show key insight">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                </button>
+            </div>
+
         </section>
     </main>
     </div>
@@ -1207,6 +1218,12 @@
             const agendaList = document.getElementById('agenda-list');
             const agendaFace = document.getElementById('agenda-face');
             const capabilitiesFace = document.getElementById('capabilities-face');
+            const insightContainer = document.getElementById('insight-container');
+            const insightModal = document.getElementById('insight-modal');
+            const insightTextEl = document.getElementById('insight-text');
+
+            // Close insight popup when changing views.
+            if (insightModal) insightModal.classList.add('hidden', 'opacity-0', 'translate-y-4');
 
             if (data.type === 'map') {
                 htmlLayer.classList.add('hidden');
@@ -1260,12 +1277,41 @@
                     talkingPointsPanel.classList.add('hidden');
                 }
 
+                // Insight lightbulb: opt-in only (existing insight copy stays hidden until enabled).
+                const insightText = String(data.insight || '').trim();
+                const insightOn = data.insightEnabled === true && insightText.length > 0;
+                if (insightContainer && insightTextEl) {
+                    if (insightOn) {
+                        insightTextEl.innerText = insightText;
+                        insightContainer.classList.remove('hidden');
+                    } else {
+                        insightContainer.classList.add('hidden');
+                    }
+                }
+
             } else {
                 mapLayer.classList.add('hidden');
                 talkingPointsPanel.classList.add('hidden');
+                if (insightContainer) insightContainer.classList.add('hidden');
 
                 htmlLayer.classList.remove('hidden');
                 renderHTMLContent(viewId, htmlLayer);
+            }
+        }
+
+        function toggleInsight() {
+            const modal = document.getElementById('insight-modal');
+            if (!modal) return;
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0', 'translate-y-4');
+                }, 10);
+            } else {
+                modal.classList.add('opacity-0', 'translate-y-4');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
             }
         }
 

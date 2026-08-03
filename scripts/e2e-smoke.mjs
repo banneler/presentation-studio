@@ -5,8 +5,8 @@
  *
  * Covers: editor load, draft save, agenda heroes, data-center multi-highlight,
  * pricing SPEC (acme + GPC 2-term), publish demo-logo gate, nav toggles,
- * key-routes / omaha-metro side heroes. Publish/follow-up APIs need a live
- * backend — use scripts/e2e-publish.mjs for those.
+ * key-routes / omaha-metro side heroes, map insight lightbulb (default off).
+ * Publish/follow-up APIs need a live backend — use scripts/e2e-publish.mjs for those.
  */
 import { chromium } from 'playwright';
 import { writeFileSync, existsSync } from 'fs';
@@ -611,6 +611,65 @@ async function main() {
         pass(`${pageId}-side-hero-preview`);
       else fail(`${pageId}-side-hero-preview`, JSON.stringify(previewSide));
     }
+
+    // 12b) Map insight lightbulb — default hidden; enable + optional text edit
+    await page.click('[data-select-id="layer2"]');
+    await sleep(400);
+    await page.click('#refresh-preview');
+    await waitPreviewView(page, 'layer2');
+    const insightDefault = await page.evaluate(() => {
+      const doc = document.getElementById('preview').contentDocument;
+      const container = doc.getElementById('insight-container');
+      return {
+        nav: doc.querySelector('.nav-item-active')?.id?.replace('nav-btn-', ''),
+        hidden: !container || container.classList.contains('hidden'),
+        hasInsightCopy: !!document.querySelector('#editor-fields textarea[data-insight-text]')?.value?.trim(),
+        toggleOff: !document.querySelector('#editor-fields input[data-insight-enabled]')?.checked
+      };
+    });
+    if (insightDefault.nav === 'layer2' && insightDefault.hidden && insightDefault.hasInsightCopy && insightDefault.toggleOff)
+      pass('insight-default-hidden', 'layer2 has copy but lightbulb off');
+    else fail('insight-default-hidden', JSON.stringify(insightDefault));
+
+    const insightEdited = `E2E insight ${Date.now().toString(36)}`;
+    await page.locator('#editor-fields input[data-insight-enabled]').check();
+    await page.locator('#editor-fields textarea[data-insight-text]').fill(insightEdited);
+    await page.click('#save-local');
+    await sleep(300);
+    await page.click('#refresh-preview');
+    await waitPreviewView(page, 'layer2');
+    const insightEnabled = await page.evaluate((expected) => {
+      const doc = document.getElementById('preview').contentDocument;
+      const container = doc.getElementById('insight-container');
+      const text = doc.getElementById('insight-text')?.textContent || '';
+      const modal = doc.getElementById('insight-modal');
+      const bulb = container?.querySelector('button[aria-label="Show key insight"]');
+      bulb?.click();
+      return {
+        nav: doc.querySelector('.nav-item-active')?.id?.replace('nav-btn-', ''),
+        visible: !!container && !container.classList.contains('hidden'),
+        text,
+        modalOpen: !!modal && !modal.classList.contains('hidden'),
+        draftOn: (() => {
+          const keys = Object.keys(localStorage).filter(k => k.startsWith('presentation-studio-draft'));
+          const key = keys.find(k => k.includes(':')) || keys[0];
+          const d = key ? JSON.parse(localStorage.getItem(key)) : null;
+          return d?.mapData?.layer2?.insightEnabled === true && d?.mapData?.layer2?.insight === expected;
+        })()
+      };
+    }, insightEdited);
+    if (
+      insightEnabled.nav === 'layer2'
+      && insightEnabled.visible
+      && insightEnabled.text === insightEdited
+      && insightEnabled.draftOn
+    ) {
+      pass('insight-enable-shows-lightbulb', insightEdited.slice(0, 40));
+    } else {
+      fail('insight-enable-shows-lightbulb', JSON.stringify(insightEnabled));
+    }
+    if (insightEnabled.modalOpen) pass('insight-modal-opens');
+    else fail('insight-modal-opens', JSON.stringify({ modalOpen: insightEnabled.modalOpen }));
 
     // 13) Draft save + reload recall
     const stamp = `E2E Local ${Date.now().toString(36)}`;
