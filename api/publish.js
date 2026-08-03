@@ -1,5 +1,5 @@
 const { upsertFile, slugify, requireGitHub } = require('./_lib/github');
-const { buildViewerHtml, buildServiceWorker } = require('./_lib/viewer');
+const { buildViewerHtml, buildServiceWorker, serializePresentationContent } = require('./_lib/viewer');
 
 function parseBody(req) {
   return typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
@@ -38,6 +38,15 @@ module.exports = async function handler(req, res) {
       updatedAt: new Date().toISOString()
     };
 
+    const contentJson = serializePresentationContent(content);
+    // GitHub Contents API + Vercel request bodies struggle past a few MB.
+    if (contentJson.length > 4.5 * 1024 * 1024) {
+      return res.status(413).json({
+        ok: false,
+        error: `Presentation content is too large (${(contentJson.length / (1024 * 1024)).toFixed(1)} MB). Compress or remove embedded photos/logos and publish again.`
+      });
+    }
+
     const cacheVersion = `presentation-${slug}-v${Date.now()}`;
     const basePath = `presentations/${slug}`;
     const viewerHtml = buildViewerHtml({
@@ -49,7 +58,6 @@ module.exports = async function handler(req, res) {
       cacheVersion
     });
     const swJs = buildServiceWorker(cacheVersion);
-    const contentJson = `${JSON.stringify(content, null, 2)}\n`;
 
     await upsertFile({
       path: `${basePath}/content.json`,

@@ -214,14 +214,20 @@
 
             <div id="publish-panel" class="hidden border-b border-slate-200 bg-white px-4 py-3 space-y-3">
                 <div id="live-url-wrap" class="hidden">
-                    <label class="field-label">Live Presentation URL</label>
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                        <label class="field-label mb-0" for="live-url">Live Presentation URL</label>
+                        <button id="dismiss-live-url" type="button" class="text-slate-400 hover:text-slate-700 text-lg font-bold leading-none px-1" aria-label="Dismiss live URL" title="Dismiss">✕</button>
+                    </div>
                     <div class="flex gap-2">
                         <input id="live-url" class="field-input font-mono text-xs" readonly>
                         <button id="copy-live-url" type="button" class="btn-dark text-sm shrink-0">Copy</button>
                     </div>
                 </div>
                 <div id="follow-up-url-wrap" class="hidden">
-                    <label class="field-label">Follow-Up URL</label>
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                        <label class="field-label mb-0" for="follow-up-url">Follow-Up URL</label>
+                        <button id="dismiss-follow-up-url" type="button" class="text-slate-400 hover:text-slate-700 text-lg font-bold leading-none px-1" aria-label="Dismiss follow-up URL" title="Dismiss">✕</button>
+                    </div>
                     <div class="flex gap-2">
                         <input id="follow-up-url" class="field-input font-mono text-xs" readonly>
                         <button id="copy-follow-up-url" type="button" class="btn-dark text-sm shrink-0">Copy</button>
@@ -325,10 +331,10 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         let repName = '';
         let publishedUrl = '';
         let followUpUrl = '';
-        let liveUrlHideTimer = null;
-        let followUpUrlHideTimer = null;
-        const URL_ROW_FLASH_MS = 4500;
         let library = [];
+        // Keep publish payloads under typical serverless body limits (~4.5MB).
+        const PUBLISH_WARN_BYTES = 2.5 * 1024 * 1024;
+        const PUBLISH_BLOCK_BYTES = 4.2 * 1024 * 1024;
 
         const pageList = document.getElementById('page-list');
         const editorFields = document.getElementById('editor-fields');
@@ -497,6 +503,139 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             });
         }
 
+        function yieldToMain() {
+            return new Promise(resolve => {
+                if (typeof requestAnimationFrame === 'function') {
+                    requestAnimationFrame(() => setTimeout(resolve, 0));
+                } else {
+                    setTimeout(resolve, 0);
+                }
+            });
+        }
+
+        function loadImageElement(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(new Error('Could not decode image'));
+                img.src = src;
+            });
+        }
+
+        function canvasToDataUrl(canvas, mime, quality) {
+            try {
+                const dataUrl = canvas.toDataURL(mime, quality);
+                if (dataUrl && dataUrl.startsWith('data:image/')) return dataUrl;
+            } catch (error) {
+                // Canvas may be tainted or mime unsupported.
+            }
+            return '';
+        }
+
+        /**
+         * Resize/compress uploads before embedding as data URLs.
+         * Full-resolution phone photos otherwise bloat localStorage + publish JSON
+         * and freeze the UI on stringify/upload.
+         */
+        async function compressImageFile(file, {
+            maxEdge = 1600,
+            quality = 0.82,
+            mimePrefer = 'image/webp'
+        } = {}) {
+            if (!file || !file.type?.startsWith('image/')) {
+                return readFileAsDataUrl(file);
+            }
+            // Tiny assets (icons / e2e fixtures) — keep as-is.
+            if (file.size < 48 * 1024) {
+                return readFileAsDataUrl(file);
+            }
+
+            const original = await readFileAsDataUrl(file);
+            try {
+                await yieldToMain();
+                const img = await loadImageElement(original);
+                const width = img.naturalWidth || img.width;
+                const height = img.naturalHeight || img.height;
+                if (!width || !height) return original;
+
+                const scale = Math.min(1, maxEdge / Math.max(width, height));
+                const targetW = Math.max(1, Math.round(width * scale));
+                const targetH = Math.max(1, Math.round(height * scale));
+                const canvas = document.createElement('canvas');
+                canvas.width = targetW;
+                canvas.height = targetH;
+                const ctx = canvas.getContext('2d', { alpha: true });
+                if (!ctx) return original;
+                ctx.drawImage(img, 0, 0, targetW, targetH);
+                await yieldToMain();
+
+                const candidates = [];
+                const tryMime = (mime, q) => {
+                    const out = canvasToDataUrl(canvas, mime, q);
+                    if (out) candidates.push(out);
+                };
+                tryMime(mimePrefer, quality);
+                if (mimePrefer !== 'image/jpeg') tryMime('image/jpeg', quality);
+                if (!candidates.length) tryMime('image/png', undefined);
+
+                let best = original;
+                for (const candidate of candidates) {
+                    if (candidate.length < best.length) best = candidate;
+                }
+                return best;
+            } catch (error) {
+                console.warn('Image compression failed; using original file.', error);
+                return original;
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (!Number.isFinite(bytes) || bytes < 0) return '0 B';
+            if (bytes < 1024) return `${bytes} B`;
+            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+            return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+        }
+
+        /** Strip duplicated page.logo copies of the global customer logo. */
+        function stripDuplicatePageLogos(data = draft) {
+            const globalLogo = data?.settings?.customerLogo || '';
+            Object.values(data?.mapData || {}).forEach(page => {
+                if (!page || typeof page !== 'object') return;
+                if (page.useCustomerLogo === true) {
+                    // Viewer resolves settings.customerLogo when the toggle is on.
+                    delete page.logo;
+                    return;
+                }
+                if (page.useCustomerLogo === false) {
+                    delete page.logo;
+                    return;
+                }
+                if (globalLogo && page.logo === globalLogo) {
+                    page.useCustomerLogo = true;
+                    delete page.logo;
+                }
+            });
+        }
+
+        function estimateDraftJsonBytes(data = draft) {
+            try {
+                return new Blob([JSON.stringify(data)]).size;
+            } catch (error) {
+                try {
+                    return JSON.stringify(data).length;
+                } catch (inner) {
+                    return 0;
+                }
+            }
+        }
+
+        function syncPageLogoFlags() {
+            // Keep logo bytes only in settings.customerLogo; page toggles are flags.
+            Object.values(draft.mapData || {}).forEach(page => {
+                delete page.logo;
+            });
+        }
+
         function setEditorWidth(width) {
             const maxWidth = Math.max(520, window.innerWidth - 520);
             const clampedWidth = Math.min(Math.max(width, 320), maxWidth);
@@ -578,6 +717,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     page.navLabel = page.title || page.id || '';
                 }
             });
+            stripDuplicatePageLogos(draft);
 
             ['agenda', 'core-capabilities'].forEach(pageId => {
                 if (draft.pageContent?.[pageId]?.heroImages) {
@@ -963,8 +1103,10 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 const openPicker = () => file?.click();
                 const applyFile = async (selected) => {
                     if (!selected || !selected.type.startsWith('image/')) return;
-                    onChange(await readFileAsDataUrl(selected));
+                    setStatus('Optimizing photo…');
+                    onChange(await compressImageFile(selected, { maxEdge: 1600, quality: 0.82 }));
                     renderEditorFields();
+                    setStatus('Photo updated.');
                 };
                 preview?.addEventListener('click', openPicker);
                 preview?.addEventListener('dragover', event => {
@@ -1016,8 +1158,7 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                 if (!toggle) return;
                 toggle.addEventListener('change', () => {
                     page.useCustomerLogo = toggle.checked;
-                    if (toggle.checked && draft.settings.customerLogo) page.logo = draft.settings.customerLogo;
-                    if (!toggle.checked) delete page.logo;
+                    delete page.logo;
                 });
                 const statsToggle = document.getElementById(statsToggleId);
                 if (statsToggle) {
@@ -1392,9 +1533,11 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         const selected = event.target.files && event.target.files[0];
                         if (!selected) return;
                         const next = [...values];
-                        next[Number(input.dataset.fileIndex)] = await readFileAsDataUrl(selected);
+                        setStatus('Optimizing photo…');
+                        next[Number(input.dataset.fileIndex)] = await compressImageFile(selected, { maxEdge: 1600, quality: 0.82 });
                         onChange(next);
                         renderEditorFields();
+                        setStatus('Photo updated.');
                     });
                 });
             });
@@ -1626,9 +1769,11 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         const selected = event.target.files && event.target.files[0];
                         if (!selected) return;
                         const index = Number(input.dataset.heroFile);
-                        heroes[index].src = await readFileAsDataUrl(selected);
+                        setStatus('Optimizing photo…');
+                        heroes[index].src = await compressImageFile(selected, { maxEdge: 1600, quality: 0.82 });
                         heroes[index].enabled = true;
                         commit(heroes, { rerender: true });
+                        setStatus('Photo updated.');
                     });
                 });
 
@@ -1650,9 +1795,11 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                         const file = event.dataTransfer?.files?.[0];
                         if (!file || !file.type.startsWith('image/')) return;
                         const index = Number(zone.dataset.heroPreview);
-                        heroes[index].src = await readFileAsDataUrl(file);
+                        setStatus('Optimizing photo…');
+                        heroes[index].src = await compressImageFile(file, { maxEdge: 1600, quality: 0.82 });
                         heroes[index].enabled = true;
                         commit(heroes, { rerender: true });
+                        setStatus('Photo updated.');
                     });
                 });
 
@@ -2068,19 +2215,26 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             if (presentationName || nameInput.value.trim()) syncNameFields();
             syncVisibleNavFromOrder();
             draft.settings.repName = repName;
-            Object.values(draft.mapData || {}).forEach(page => {
-                if (page.useCustomerLogo) {
-                    if (draft.settings.customerLogo) page.logo = draft.settings.customerLogo;
-                } else {
-                    delete page.logo;
-                }
-            });
-            localStorage.setItem(draftKey(), JSON.stringify(draft));
+            stripDuplicatePageLogos(draft);
+            syncPageLogoFlags();
+            try {
+                localStorage.setItem(draftKey(), JSON.stringify(draft));
+            } catch (error) {
+                const bytes = estimateDraftJsonBytes(draft);
+                const message = `Could not save draft locally (${formatBytes(bytes)}). Embedded photos/logos may exceed browser storage — try smaller images or remove unused hero slots.`;
+                console.error(error);
+                alert(message);
+                setStatus(message);
+                return false;
+            }
             persistActive();
             if (showNotice) {
                 flashButton(document.getElementById('save-local'), 'Saved');
-                setStatus(`Draft saved for ${presentationName || presentationSlug || 'untitled'}`);
+                const bytes = estimateDraftJsonBytes(draft);
+                const sizeNote = bytes > PUBLISH_WARN_BYTES ? ` · ${formatBytes(bytes)}` : '';
+                setStatus(`Draft saved for ${presentationName || presentationSlug || 'untitled'}${sizeNote}`);
             }
+            return true;
         }
 
         function refreshPreview() {
@@ -2131,19 +2285,11 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         }
 
         function hideLiveUrlRow() {
-            if (liveUrlHideTimer) {
-                clearTimeout(liveUrlHideTimer);
-                liveUrlHideTimer = null;
-            }
             document.getElementById('live-url-wrap').classList.add('hidden');
             updatePublishPanelVisibility();
         }
 
         function hideFollowUpUrlRow() {
-            if (followUpUrlHideTimer) {
-                clearTimeout(followUpUrlHideTimer);
-                followUpUrlHideTimer = null;
-            }
             document.getElementById('follow-up-url-wrap').classList.add('hidden');
             updatePublishPanelVisibility();
         }
@@ -2153,50 +2299,81 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             hideFollowUpUrlRow();
         }
 
-        function flashLiveUrlRow() {
+        function showLiveUrlRow() {
             syncPublishPanelValues();
             document.getElementById('live-url-wrap').classList.remove('hidden');
             updatePublishPanelVisibility();
-            if (liveUrlHideTimer) clearTimeout(liveUrlHideTimer);
-            liveUrlHideTimer = setTimeout(hideLiveUrlRow, URL_ROW_FLASH_MS);
         }
 
-        function flashFollowUpUrlRow() {
+        function showFollowUpUrlRow() {
             syncPublishPanelValues();
             document.getElementById('follow-up-url-wrap').classList.remove('hidden');
             updatePublishPanelVisibility();
-            if (followUpUrlHideTimer) clearTimeout(followUpUrlHideTimer);
-            followUpUrlHideTimer = setTimeout(hideFollowUpUrlRow, URL_ROW_FLASH_MS);
+        }
+
+        async function buildPublishPayload({ includeRecap = false, recap = null } = {}) {
+            stripDuplicatePageLogos(draft);
+            syncPageLogoFlags();
+            await yieldToMain();
+            const bytes = estimateDraftJsonBytes(draft);
+            if (bytes > PUBLISH_BLOCK_BYTES) {
+                throw new Error(
+                    `Draft is too large to publish (${formatBytes(bytes)}). Replace oversized photos/logos with smaller images (max ~1600px) or remove unused hero slots, then try again.`
+                );
+            }
+            if (bytes > PUBLISH_WARN_BYTES) {
+                const proceed = confirm(
+                    `This draft is large (${formatBytes(bytes)}). Publish may be slow or fail on the server size limit. Continue?`
+                );
+                if (!proceed) {
+                    const cancel = new Error('Publish cancelled');
+                    cancel.cancelled = true;
+                    throw cancel;
+                }
+            }
+            await yieldToMain();
+            const payload = {
+                name: presentationName,
+                slug: presentationSlug,
+                content: draft
+            };
+            if (includeRecap) payload.recap = recap;
+            const body = JSON.stringify(payload);
+            await yieldToMain();
+            return { body, bytes };
         }
 
         async function publishPresentation() {
             if (!requireIdentity()) return;
             if (!assertCustomerLogoReadyForPublish()) return;
-            saveLocal(false);
+            if (saveLocal(false) === false) return;
             const button = document.getElementById('publish-btn');
             const previous = button.textContent;
             button.textContent = 'Publishing...';
             button.disabled = true;
-            setStatus('Publishing...');
+            setStatus('Preparing publish…');
             try {
+                const { body, bytes } = await buildPublishPayload();
+                setStatus(`Uploading (${formatBytes(bytes)})…`);
                 const response = await fetch('/api/publish', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: presentationName,
-                        slug: presentationSlug,
-                        content: draft
-                    })
+                    body
                 });
                 const data = await response.json();
                 if (!response.ok || !data.ok) throw new Error(data.error || 'Publish failed');
                 publishedUrl = `${window.location.origin}${data.url}`;
                 persistActive();
-                flashLiveUrlRow();
+                showLiveUrlRow();
+                setStatus(`Published. Syncing library…`);
                 await refreshLibrary();
                 setStatus(`Published. Live soon at ${data.url}`);
                 flashButton(button, 'Published');
             } catch (error) {
+                if (error?.cancelled) {
+                    setStatus('Publish cancelled');
+                    return;
+                }
                 alert(error.message || 'Publish failed. Confirm GITHUB_TOKEN is set in Vercel.');
                 setStatus(error.message || 'Publish failed');
             } finally {
@@ -2220,41 +2397,47 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         async function publishFollowUp() {
             if (!requireIdentity()) return;
             if (!assertCustomerLogoReadyForPublish()) return;
-            saveLocal(false);
+            if (saveLocal(false) === false) return;
             const button = document.getElementById('confirm-follow-up');
             const previous = button.textContent;
             button.textContent = 'Publishing...';
             button.disabled = true;
+            setStatus('Preparing follow-up…');
             try {
                 const items = document.getElementById('recap-items').value
                     .split('\n')
                     .map(item => item.trim())
                     .filter(Boolean);
+                const { body, bytes } = await buildPublishPayload({
+                    includeRecap: true,
+                    recap: {
+                        headline: document.getElementById('recap-headline').value.trim(),
+                        items,
+                        includeRightfiber: document.getElementById('recap-rightfiber').checked
+                    }
+                });
+                setStatus(`Uploading follow-up (${formatBytes(bytes)})…`);
                 const response = await fetch('/api/publish-follow-up', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: presentationName,
-                        slug: presentationSlug,
-                        content: draft,
-                        recap: {
-                            headline: document.getElementById('recap-headline').value.trim(),
-                            items,
-                            includeRightfiber: document.getElementById('recap-rightfiber').checked
-                        }
-                    })
+                    body
                 });
                 const data = await response.json();
                 if (!response.ok || !data.ok) throw new Error(data.error || 'Follow-up publish failed');
                 followUpUrl = `${window.location.origin}${data.url}`;
                 if (!publishedUrl) publishedUrl = `${window.location.origin}/presentations/${presentationSlug}/`;
                 persistActive();
-                flashFollowUpUrlRow();
+                showFollowUpUrlRow();
                 await refreshLibrary();
                 closeFollowUpModal();
                 setStatus(`Follow-up published at ${data.url}`);
             } catch (error) {
+                if (error?.cancelled) {
+                    setStatus('Follow-up publish cancelled');
+                    return;
+                }
                 alert(error.message || 'Follow-up publish failed');
+                setStatus(error.message || 'Follow-up publish failed');
             } finally {
                 button.textContent = previous;
                 button.disabled = false;
@@ -2580,9 +2763,6 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
                     { label: 'Monthly', value: formatStudioMoney(firstTotal, useDecimals), color: 'text-gpc-orange' }
                 ]
             };
-            if (draft.settings.customerLogo) {
-                draft.mapData.pricing.logo = draft.settings.customerLogo;
-            }
             draft.pageContent.pricing = {
                 sourceName: sourceName || 'import',
                 importSource: extracted.importSource || 'spec',
@@ -2655,6 +2835,8 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
             await navigator.clipboard.writeText(document.getElementById('follow-up-url').value);
             flashButton(document.getElementById('copy-follow-up-url'), 'Copied');
         });
+        document.getElementById('dismiss-live-url').addEventListener('click', hideLiveUrlRow);
+        document.getElementById('dismiss-follow-up-url').addEventListener('click', hideFollowUpUrlRow);
         document.getElementById('refresh-library').addEventListener('click', refreshLibrary);
         document.getElementById('new-presentation').addEventListener('click', () => {
             if (!confirm('Start a new presentation from the template? Unsaved draft changes for the current name may be overwritten when you save.')) return;
@@ -2707,14 +2889,14 @@ Share Rightfiber / Ritter Communications merger update and expanded fiber footpr
         });
         async function applyCustomerLogoFile(file) {
             if (!file || !file.type.startsWith('image/')) return;
-            const dataUrl = await readFileAsDataUrl(file);
+            setStatus('Optimizing logo…');
+            const dataUrl = await compressImageFile(file, { maxEdge: 720, quality: 0.9, mimePrefer: 'image/webp' });
             draft.settings = draft.settings || {};
             draft.settings.customerLogo = dataUrl;
+            stripDuplicatePageLogos(draft);
             updateCustomerLogoPreview();
-            Object.values(draft.mapData || {}).forEach(page => {
-                if (page.useCustomerLogo) page.logo = dataUrl;
-            });
             persistActive();
+            setStatus('Customer logo updated.');
         }
 
         customerLogoPreview?.addEventListener('click', () => {

@@ -174,6 +174,31 @@ async function main() {
       fail('publish-presentation', bodyText.match(/.{0,30}(fail|error|GITHUB|Published|Live).{0,100}/i)?.[0] || bodyText.slice(0, 220));
     }
 
+    // Persistent URL row (no timed auto-hide) + manual dismiss
+    const liveWrapVisible = await page.evaluate(() => {
+      const wrap = document.getElementById('live-url-wrap');
+      return Boolean(wrap && !wrap.classList.contains('hidden'));
+    });
+    if (liveWrapVisible) pass('live-url-row-persistent');
+    else fail('live-url-row-persistent', 'live-url-wrap hidden immediately after publish');
+
+    await sleep(5200);
+    const stillVisible = await page.evaluate(() => {
+      const wrap = document.getElementById('live-url-wrap');
+      return Boolean(wrap && !wrap.classList.contains('hidden'));
+    });
+    if (stillVisible) pass('live-url-row-not-auto-hidden');
+    else fail('live-url-row-not-auto-hidden', 'live URL row auto-hid (~5s) — expected persistent until dismiss');
+
+    await page.click('#dismiss-live-url');
+    await sleep(200);
+    const dismissed = await page.evaluate(() => {
+      const wrap = document.getElementById('live-url-wrap');
+      return Boolean(wrap && wrap.classList.contains('hidden'));
+    });
+    if (dismissed) pass('live-url-row-dismiss');
+    else fail('live-url-row-dismiss', 'dismiss X did not hide live URL row');
+
     const got = await apiJson(`/api/get-presentation?slug=${encodeURIComponent(SLUG)}`);
     if (got.status === 200 && got.data?.ok) {
       pass('get-presentation-api', got.data.url);
@@ -186,10 +211,16 @@ async function main() {
         || '';
       if (String(pubHero).startsWith('data:image/')) pass('published-content-retains-base64-hero');
       else fail('published-content-retains-base64-hero', String(pubHero).slice(0, 100));
+
+      const duplicatedLogos = Object.values(got.data.content?.mapData || {})
+        .filter(page => typeof page?.logo === 'string' && page.logo.startsWith('data:image/'));
+      if (!duplicatedLogos.length) pass('published-content-no-duplicate-page-logos');
+      else fail('published-content-no-duplicate-page-logos', `pagesWithLogo=${duplicatedLogos.length}`);
     } else {
       fail('get-presentation-api', JSON.stringify(got));
       fail('published-content-retains-base64-logo', 'skipped');
       fail('published-content-retains-base64-hero', 'skipped');
+      fail('published-content-no-duplicate-page-logos', 'skipped');
     }
 
     await page.click('#refresh-library');
@@ -236,6 +267,22 @@ async function main() {
     const fuUrl = await page.inputValue('#follow-up-url').catch(() => '');
     if (fuUrl.includes('/follow-up')) pass('publish-follow-up', fuUrl);
     else fail('publish-follow-up', await page.evaluate(() => document.body.innerText).then(t => t.slice(0, 240)));
+
+    const fuWrapVisible = await page.evaluate(() => {
+      const wrap = document.getElementById('follow-up-url-wrap');
+      return Boolean(wrap && !wrap.classList.contains('hidden'));
+    });
+    if (fuWrapVisible) pass('follow-up-url-row-persistent');
+    else fail('follow-up-url-row-persistent', 'follow-up-url-wrap hidden after publish');
+
+    await page.click('#dismiss-follow-up-url');
+    await sleep(200);
+    const fuDismissed = await page.evaluate(() => {
+      const wrap = document.getElementById('follow-up-url-wrap');
+      return Boolean(wrap && wrap.classList.contains('hidden'));
+    });
+    if (fuDismissed) pass('follow-up-url-row-dismiss');
+    else fail('follow-up-url-row-dismiss', 'dismiss X did not hide follow-up URL row');
 
     const listed2 = await apiJson('/api/list-presentations');
     const entry = listed2.data?.presentations?.find(p => p.slug === SLUG);

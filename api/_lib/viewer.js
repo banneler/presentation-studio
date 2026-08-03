@@ -100,21 +100,31 @@ self.addEventListener('fetch', event => {
 }
 
 function applyMeetingRecap(content, recap = {}) {
-  const next = JSON.parse(JSON.stringify(content));
-  next.settings = next.settings || {};
+  // Shallow-clone only mutated branches so large embedded data-URL assets are not
+  // duplicated in memory during follow-up publish.
+  const source = content && typeof content === 'object' ? content : {};
+  const next = { ...source };
+  next.settings = { ...(source.settings || {}) };
+  next.mapData = { ...(source.mapData || {}) };
+  next.pageContent = { ...(source.pageContent || {}) };
 
-  if (next.mapData?.agenda) {
-    next.mapData.agenda.title = 'Meeting Recap';
-    next.mapData.agenda.navLabel = 'Meeting Recap';
-    next.mapData.agenda.subtitle = recap.subtitle || 'Follow-Up from Our Conversation';
+  if (source.mapData?.agenda) {
+    next.mapData.agenda = {
+      ...source.mapData.agenda,
+      title: 'Meeting Recap',
+      navLabel: 'Meeting Recap',
+      subtitle: recap.subtitle || 'Follow-Up from Our Conversation'
+    };
   }
 
-  if (next.pageContent?.agenda) {
-    next.pageContent.agenda.kicker = 'Meeting Recap';
-    next.pageContent.agenda.headline = recap.headline || 'Thank you for the conversation. Here are the next steps.';
+  if (source.pageContent?.agenda) {
+    const agenda = { ...source.pageContent.agenda };
+    agenda.kicker = 'Meeting Recap';
+    agenda.headline = recap.headline || 'Thank you for the conversation. Here are the next steps.';
     if (Array.isArray(recap.items) && recap.items.length) {
-      next.pageContent.agenda.items = recap.items.map(item => String(item || '').trim()).filter(Boolean);
+      agenda.items = recap.items.map(item => String(item || '').trim()).filter(Boolean);
     }
+    next.pageContent.agenda = agenda;
   }
 
   const includeRightfiber = recap.includeRightfiber !== false;
@@ -136,8 +146,39 @@ function applyMeetingRecap(content, recap = {}) {
   return next;
 }
 
+/** Remove duplicated page.logo copies of settings.customerLogo before writing content.json. */
+function stripDuplicatePageLogos(content) {
+  if (!content || typeof content !== 'object') return content;
+  const globalLogo = content.settings?.customerLogo || '';
+  Object.values(content.mapData || {}).forEach(page => {
+    if (!page || typeof page !== 'object') return;
+    if (page.useCustomerLogo === true || page.useCustomerLogo === false) {
+      delete page.logo;
+      return;
+    }
+    if (globalLogo && page.logo === globalLogo) {
+      page.useCustomerLogo = true;
+      delete page.logo;
+    }
+  });
+  return content;
+}
+
+function serializePresentationContent(content) {
+  stripDuplicatePageLogos(content);
+  // Pretty-print is fine for template decks; skip indent for large asset-heavy payloads
+  // so GitHub Contents uploads stay smaller/faster.
+  const compact = JSON.stringify(content);
+  if (compact.length > 400 * 1024) {
+    return `${compact}\n`;
+  }
+  return `${JSON.stringify(content, null, 2)}\n`;
+}
+
 module.exports = {
   buildViewerHtml,
   buildServiceWorker,
-  applyMeetingRecap
+  applyMeetingRecap,
+  stripDuplicatePageLogos,
+  serializePresentationContent
 };
