@@ -555,30 +555,56 @@ async function main() {
     if (dcPreview.heroBorderCards >= 2) pass('data-centers-preview-multi-border', `${dcPreview.heroBorderCards} cards`);
     else fail('data-centers-preview-multi-border', JSON.stringify(dcPreview));
 
-    const dcList = await page.evaluate(() => {
+    const dcListBeforeAdd = await page.evaluate(() => {
       const draftKeys = Object.keys(localStorage).filter(k => k.startsWith('presentation-studio-draft'));
       const key = draftKeys.find(k => k.includes(':')) || draftKeys[0];
       const d = key ? JSON.parse(localStorage.getItem(key)) : null;
       const centers = d?.pageContent?.['data-centers'] || [];
       const coming = centers.find(dc => /coming\s*soon/i.test(dc?.name || '') || /coming\s*soon/i.test(dc?.city || ''));
-      const editableComing = Boolean(document.querySelector('[data-dc-city]'));
       const handles = document.querySelectorAll('#editor-fields .handle').length;
       return {
         count: centers.length,
         hasQts: centers.some(dc => String(dc?.name || '').trim() === 'QTS'),
-        comingCustom: coming?.custom === true,
-        comingHighlight: coming?.highlight === true,
-        editableComing,
+        hasComingSoon: Boolean(coming),
+        addDisabled: document.querySelector('[data-dc-add]')?.classList.contains('pointer-events-none'),
+        editableComing: Boolean(document.querySelector('[data-dc-city]')),
         handles
       };
     });
-    if (!dcList.hasQts && dcList.count >= 27) pass('data-centers-no-qts', `${dcList.count} centers`);
-    else fail('data-centers-no-qts', JSON.stringify(dcList));
-    if (dcList.comingCustom && !dcList.comingHighlight && dcList.editableComing)
-      pass('data-centers-coming-soon-editable-off');
-    else fail('data-centers-coming-soon-editable-off', JSON.stringify(dcList));
-    if (dcList.handles >= 3) pass('data-centers-drag-handles', `${dcList.handles}`);
-    else fail('data-centers-drag-handles', JSON.stringify(dcList));
+    if (!dcListBeforeAdd.hasQts && dcListBeforeAdd.count >= 26) pass('data-centers-no-qts', `${dcListBeforeAdd.count} centers`);
+    else fail('data-centers-no-qts', JSON.stringify(dcListBeforeAdd));
+    if (!dcListBeforeAdd.hasComingSoon && !dcListBeforeAdd.editableComing && !dcListBeforeAdd.addDisabled)
+      pass('data-centers-no-default-coming-soon');
+    else fail('data-centers-no-default-coming-soon', JSON.stringify(dcListBeforeAdd));
+
+    await page.click('[data-dc-add]');
+    await sleep(300);
+    await page.click('#save-local');
+    await sleep(300);
+    const dcListAfterAdd = await page.evaluate(() => {
+      const draftKeys = Object.keys(localStorage).filter(k => k.startsWith('presentation-studio-draft'));
+      const key = draftKeys.find(k => k.includes(':')) || draftKeys[0];
+      const d = key ? JSON.parse(localStorage.getItem(key)) : null;
+      const centers = d?.pageContent?.['data-centers'] || [];
+      const coming = centers.find(dc => /coming\s*soon/i.test(dc?.name || '') || /coming\s*soon/i.test(dc?.city || ''));
+      return {
+        count: centers.length,
+        comingCustom: coming?.custom === true,
+        comingHighlight: coming?.highlight === true,
+        editableComing: Boolean(document.querySelector('[data-dc-city]')),
+        addDisabled: document.querySelector('[data-dc-add]')?.classList.contains('pointer-events-none')
+      };
+    });
+    if (
+      dcListAfterAdd.comingCustom
+      && !dcListAfterAdd.comingHighlight
+      && dcListAfterAdd.editableComing
+      && dcListAfterAdd.addDisabled
+      && dcListAfterAdd.count === dcListBeforeAdd.count + 1
+    ) pass('data-centers-coming-soon-addable-off');
+    else fail('data-centers-coming-soon-addable-off', JSON.stringify(dcListAfterAdd));
+    if (dcListBeforeAdd.handles >= 3) pass('data-centers-drag-handles', `${dcListBeforeAdd.handles}`);
+    else fail('data-centers-drag-handles', JSON.stringify(dcListBeforeAdd));
 
     const pageHandles = await page.evaluate(() =>
       document.querySelectorAll('#page-list .handle').length
